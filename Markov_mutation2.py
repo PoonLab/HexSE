@@ -1,3 +1,8 @@
+"""
+Example code from https://github.com/hplgit/scipro-primer/blob/master/src-3rd/random/mutate.py
+by @hplgit
+"""
+
 import random
 
 # # Compute the nucleotide frequencies in a DNA string
