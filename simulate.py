@@ -1,23 +1,49 @@
 from Bio import Phylo
+import random
 
-
-class Sim:
+class Simulate:
     def __init__(self, rate, matrix, alphabet='ACGT'):
         self.rate = rate
         self.matrix = matrix
         self.alphabet = alphabet
         # should include some checks on matrix here (e.g., square)
 
-    def simulate_on_branch(self, seq0, time):
+    # TODO: Ask the professor about the accuracy of this method
+    def select_base(self, base_probabilities):
+        """
+        Select a random letter according to the probabilities of that nucleotide
+        Source: https://github.com/hplgit/scipro-primer/blob/master/src-3rd/random/mutate.py
+        """
+        # Method:
+        # http://en.wikipedia.org/wiki/Pseudo-random_number_sampling
+        limit = 0
+        r = random.random()
+        for value in base_probabilities:
+            limit += base_probabilities[value]
+            if r < limit:
+                return value
+
+    def simulate_on_branch(self, seq0, evolution_time):
         """
         Simulate molecular evolution on the branch given starting sequence seq0
         :param seq0:
-        :param time:
+        :param evolution_time:
         :return:
         """
-        seq1 = ''
-        # TODO: evolution happens here
-        return seq1
+        seq_list = list(seq0)
+        # Generate random waiting times to mutate while sum(t)<=branch_length
+        times_sum = 0
+        while True:
+            random_time = random.random()
+            times_sum += random_time
+            if round(times_sum, 10) > evolution_time:
+                break
+            # Mutate sequence
+            mutation_site = random.randint(0, len(seq_list)-1)
+            nucleotide = seq_list[mutation_site]
+            seq_list[mutation_site] = self.select_base(self.matrix[nucleotide])
+
+        return ''.join(seq_list)
 
     def traverse_tree(self, tree, root_seq):
         """
@@ -51,8 +77,7 @@ class Sim:
         """
 
 
-sim = Sim()  # create an instance of object class Sim
-tree = Phylo.read('<some file>', 'newick')
-tree = sim.traverse_tree(tree, 'ACGT')
-result = sim.get_alignment(tree)
-
+# sim = Sim()  # create an instance of object class Sim
+# tree = Phylo.read('<some file>', 'newick')
+# tree = sim.traverse_tree(tree, 'ACGT')
+# result = sim.get_alignment(tree)
