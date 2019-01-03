@@ -56,10 +56,11 @@ class Simulate:
 
         # assign root_seq to root Clade
         tree.root.sequence = root_seq
-
+        print(tree)
         # annotate Clades with parents
         for clade in tree.find_clades(order='level'):
             for child in clade:
+                print(child)
                 child.parent = clade
 
         for node in tree.find_clades(order='level'):
