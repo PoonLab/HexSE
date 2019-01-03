@@ -60,12 +60,21 @@ class Simulate:
         # annotate Clades with parents
         for clade in tree.find_clades(order='level'):
             for child in clade:
-                print(child)
                 child.parent = clade
+                print(child, child.parent)
 
         for node in tree.find_clades(order='level'):
             # TODO: skip the root (sequence already assigned)
-            node.sequence = self.simulate_on_branch(node.parent.sequence, node.branch_length)
+            print("--", node)
+            if hasattr(node, 'sequence') == False:
+                #print("second loop", node, node.parent, node.parent.sequence)
+                node.sequence = self.simulate_on_branch(node.parent.sequence, node.branch_length)
+                print('*', node.sequence)
+
+        # Cleanup to avoid RecursionError when printing the tree
+        for clade in tree.find_clades(order='level'):
+            for child in clade:
+                del child.parent
 
         return tree
 

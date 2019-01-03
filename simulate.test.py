@@ -61,7 +61,33 @@ class TestSimulate(unittest.TestCase):
     #     self.assertEqual(mutated, 'AAACCC')
 
         def test_simulate_traverse_tree(self):
-            sim= Simulate(rate=None, matrix=None)
+            matrix = {
+                'A': {
+                    'A': 0.025,
+                    'T': 0.025,
+                    'G': 0.025,
+                    'C': 0.825,
+                },
+                'T': {
+                    'A': 0.025,
+                    'T': 0.025,
+                    'G': 0.025,
+                    'C': 0.825,
+                },
+                'G': {
+                    'A': 0.025,
+                    'T': 0.025,
+                    'G': 0.025,
+                    'C': 0.825,
+                },
+                'C': {
+                    'A': 0.025,
+                    'T': 0.025,
+                    'G': 0.025,
+                    'C': 0.825,
+                }
+            }
+            sim= Simulate(rate=None, matrix=matrix)
             tree= Phylo.read('test_tree.txt','newick', rooted=True)
             sim_tree=sim.traverse_tree(tree,'AAA')
             print(sim_tree)
