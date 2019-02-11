@@ -1,6 +1,5 @@
 # Calculate evolution rates across the sequence
 
-# The substitution rate matrix
 transition_score = -5
 transversion_score = -1
 synonymous_score = 5
@@ -16,6 +15,7 @@ rate_matrix = {
 }
 
 def get_frequency_rates(seq):
+    seq = list(seq)
     frequencies = {
         'A': 0,
         'C': 0,
@@ -23,8 +23,8 @@ def get_frequency_rates(seq):
         'G': 0,
     }
 
-    for nucleotide in seq:
-        frequencies[nucleotide] =+ 1
+    for nucleotide in frequencies:
+        frequencies[nucleotide] = seq.count(nucleotide)
 
     return { nucleotide: ocurrences/len(seq) for nucleotide, ocurrences in frequencies.items() }
 
@@ -41,7 +41,7 @@ def evol_rates(seq):
     mutation_rates = []
     # Step 1: Calculate frequency rate of nucleotides
     frequency_rates = get_frequency_rates(seq)
-
+    seq = list(seq)
     # Step 2: Calculate mutation rate for each nucleotide in the sequence
     for nucleotide in seq:
         mutation_rates.append({
@@ -50,9 +50,9 @@ def evol_rates(seq):
             'G': frequency_rates[nucleotide] * get_tt_score(nucleotide, 'G') * get_syn_nonsyn_score(),
             'T': frequency_rates[nucleotide] * get_tt_score(nucleotide, 'T') * get_syn_nonsyn_score(),
         })
-        
+
     # Map of nucleotides with their respective mutation rate
     return mutation_rates
 
-if __name__ == '__main__':
-    print(evol_rates(('A', 'T', 'G', 'C', 'A', 'A', 'A')))
+# if __name__ == '__main__':
+#     print(evol_rates(('AA')))
