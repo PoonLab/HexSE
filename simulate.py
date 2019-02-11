@@ -1,6 +1,7 @@
 from Bio import Phylo
 import random
 
+
 class Simulate:
     def __init__(self, rate, matrix, alphabet='ACGT'):
         self.rate = rate
@@ -8,14 +9,10 @@ class Simulate:
         self.alphabet = alphabet
         # should include some checks on matrix here (e.g., square)
 
-    # TODO: Ask the professor about the accuracy of this method
+    # Select a random latter according to the probabilities of each nucleotide
     def select_base(self, base_probabilities):
-        """
-        Select a random letter according to the probabilities of that nucleotide
-        Source: https://github.com/hplgit/scipro-primer/blob/master/src-3rd/random/mutate.py
-        """
-        # Method:
-        # http://en.wikipedia.org/wiki/Pseudo-random_number_sampling
+        # Source: https://github.com/hplgit/scipro-primer/blob/master/src-3rd/random/mutate.py
+        # Method: http://en.wikipedia.org/wiki/Pseudo-random_number_sampling
         limit = 0
         r = random.random()
         for value in base_probabilities:
@@ -23,14 +20,10 @@ class Simulate:
             if r < limit:
                 return value
 
+    # Simulate molecular evolution on the brancj given starting sequence
     def simulate_on_branch(self, seq0, evolution_time):
-        """
-        Simulate molecular evolution on the branch given starting sequence seq0
-        :param seq0:
-        :param evolution_time:
-        :return:
-        """
         seq_list = list(seq0)
+
         # Generate random waiting times to mutate while sum(t)<=branch_length
         times_sum = 0
         while True:
@@ -45,6 +38,7 @@ class Simulate:
 
         return ''.join(seq_list)
 
+
     def traverse_tree(self, tree, root_seq):
         """
         Post-order traversal of tree from the root.
@@ -52,8 +46,6 @@ class Simulate:
         the next call.
         @return Phylo tree with Clade objects annotated with sequences.
         """
-        # TODO: check if tree is rooted - if not, throw exception
-
         # assign root_seq to root Clade
         tree.root.sequence = root_seq
         print(tree)
