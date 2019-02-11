@@ -44,23 +44,15 @@ def evol_rates(seq):
 
     # Step 2: Calculate mutation rate for each nucleotide in the sequence
     for nucleotide in seq:
-        mutated = 'A' # TODO: How do I select this?
         mutation_rates.append({
-            nucleotide: frequency_rates[nucleotide] * get_tt_score(nucleotide, mutated) * get_syn_nonsyn_score()
+            'A': frequency_rates[nucleotide] * get_tt_score(nucleotide, 'A') * get_syn_nonsyn_score(),
+            'C': frequency_rates[nucleotide] * get_tt_score(nucleotide, 'C') * get_syn_nonsyn_score(),
+            'G': frequency_rates[nucleotide] * get_tt_score(nucleotide, 'G') * get_syn_nonsyn_score(),
+            'T': frequency_rates[nucleotide] * get_tt_score(nucleotide, 'T') * get_syn_nonsyn_score(),
         })
-
-
+        
     # Map of nucleotides with their respective mutation rate
     return mutation_rates
-
-    # A A A A A A
-
-
-    # Position nucleotide mutation_rate
-    # 1            A          0.2
-    # 2
-    # .
-    # .
 
 if __name__ == '__main__':
     print(evol_rates(('A', 'T', 'G', 'C', 'A', 'A', 'A')))
