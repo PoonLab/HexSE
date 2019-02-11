@@ -37,20 +37,33 @@ def get_tt_score(current, mutated):
     return 1
 
 
-def evol_rates(seq):
+def evol_rates(seq, mu, pi, bias, omega):
     """
     Generate rate vector from sequence given parameters.
-    @param seq: the nucleotide sequence of length <L>.
+    @param seq: the nucleotide sequence of length <L>.  Assumed to start and end in reading frame +0.
     @param mu: the global rate (substitutions/site/unit time).
     @param pi: <optional> a vector of stationary nucleotide frequencies.  If not specified, defaults
                to the empirical frequencies in <seq>.
-    @param rate_biases: <optional> a List of 6 rates [AC, AG, AT, CG, CT, GT] assuming time-reversibility.
+    @param bias: <optional> a List of 6 rates [AC, AG, AT, CG, CT, GT] assuming time-reversibility.
                     If not specified, defaults to 1's.
-    @param omegas: <optional> a List of dN/dS (omega) ratios for 6 reading frames [+0, +1, +2, -0, -1, -2].
-                   If not specified, defaults to 1's.
-    @return rates: a List of rates for every possible nucleotide substitution in <seq> (3xL).
+    @param omega: <optional> a List of dN/dS (omega) ratios along sequence length as {dict}.
+                  {dict} always contains key +0 (parent reading frame).  May contain omega for alternate
+                  reading frame as (+1, +2, -0, -1 or -2).  Codon position is determined by the nt's
+                  location relative to start of <seq>.
+    @return rates: a List of tuples for rates of 3 possible nucleotide substitution at each site
+                   in <seq> (3xL).
     """
-    mutation_rates = []
+    L = len(seq)
+    rates = [(mu, mu, mu) for i in range(L)]  # initialize our list with baseline rate
+    
+    # iterate over every nt in seq
+    
+    # 1. what is the current nucleotide X?
+    # 2. apply stationary frequencies (pi) to tuple given X
+    # 3. apply biases to tuple
+    # 4. apply omega in parent reading frame
+    # 5. if alternate reading frame(s) is present, apply other omega(s)
+    
     # Step 1: Calculate frequency rate of nucleotides
     frequency_rates = get_frequency_rates(seq)
     seq = list(seq)
