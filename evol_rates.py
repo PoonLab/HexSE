@@ -38,6 +38,18 @@ def get_tt_score(current, mutated):
 
 
 def evol_rates(seq):
+    """
+    Generate rate vector from sequence given parameters.
+    @param seq: the nucleotide sequence of length <L>.
+    @param mu: the global rate (substitutions/site/unit time).
+    @param pi: <optional> a vector of stationary nucleotide frequencies.  If not specified, defaults
+               to the empirical frequencies in <seq>.
+    @param rate_biases: <optional> a List of 6 rates [AC, AG, AT, CG, CT, GT] assuming time-reversibility.
+                    If not specified, defaults to 1's.
+    @param omegas: <optional> a List of dN/dS (omega) ratios for 6 reading frames [+0, +1, +2, -0, -1, -2].
+                   If not specified, defaults to 1's.
+    @return rates: a List of rates for every possible nucleotide substitution in <seq> (3xL).
+    """
     mutation_rates = []
     # Step 1: Calculate frequency rate of nucleotides
     frequency_rates = get_frequency_rates(seq)
