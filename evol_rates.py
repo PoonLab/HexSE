@@ -42,7 +42,6 @@ def get_tt_score(current, mutated):
 #          'T': [A,C,G],
 # }
 
-
 def evol_rates(seq, mu, pi, bias, omega):
     """
     Generate rate vector from sequence given parameters.
@@ -56,35 +55,27 @@ def evol_rates(seq, mu, pi, bias, omega):
                   {dict} always contains key +0 (parent reading frame).  May contain omega for alternate
                   reading frame as (+1, +2, -0, -1 or -2).  Codon position is determined by the nt's
                   location relative to start of <seq>.
-    @return rates: a List of tuples for rates of 3 possible nucleotide substitution at each site
+    @return seq_rates: a List of tuples for rates of 3 possible nucleotide substitution at each site
                    in <seq> (3xL).
     """
+
     L = len(seq)
-    rates = [(mu, mu, mu) for i in range(L)]  # initialize our list with baseline rate
+    seq_rates = [(mu, mu, mu) for i in range(L)]  # initialize our list with baseline rate
     frequency_rates = get_frequency_rates(seq)
     # iterate over every nt in seq
     for i in range(L):
     # 1. what is the current nucleotide X?
+        nucleotide = seq[i]
     # 2. apply stationary frequencies (pi) to tuple given X
-        pi = frequency_rates(seq[i])
-        rates[i] = tuple([pi*j for j in rates[i]])
+        pi = frequency_rates(nucleotide)
+        seq_rates[i] = tuple([pi*j for j in rates[i]])
     # 3. apply biases to tuple
-        if seq[i] == 'A':
-            for j in rates[i]:
-                rates[i][j] = rates[i][j] * bias['A'][j]
+        biased_rates = []
 
-        elif seq[i] == 'C':
-            for j in rates[i]:
-                rates[i][j] = rates[i][j] * bias['C'][j]
+        for j in range(3):
+            biased_rates.append(rates[i][j] * bias[nucleotide][j])
 
-        elif seq[i] == 'G':
-            for j in rates[i]:
-                rates[i][j] = rates[i][j] * bias['G'][j]
-
-        elif seq[i] == 'T':
-            for j in rates[i]:
-                rates[i][j] = rates[i][j] * bias['T'][j]
-
+        seq_rates[i] = tuple(biased_rates)
     # 4. apply omega in parent reading frame
     # 5. if alternate reading frame(s) is present, apply other omega(s)
     
