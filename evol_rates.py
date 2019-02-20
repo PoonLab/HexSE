@@ -36,6 +36,12 @@ def get_syn_nonsyn_score():
 def get_tt_score(current, mutated):
     return 1
 
+# bias = { 'A': [C,G,T],
+#          'C': [A,G,T],
+#          'G': [A,C,T],
+#          'T': [A,C,G],
+# }
+
 
 def evol_rates(seq, mu, pi, bias, omega):
     """
@@ -55,17 +61,34 @@ def evol_rates(seq, mu, pi, bias, omega):
     """
     L = len(seq)
     rates = [(mu, mu, mu) for i in range(L)]  # initialize our list with baseline rate
-    
+    frequency_rates = get_frequency_rates(seq)
     # iterate over every nt in seq
-    
+    for i in range(L):
     # 1. what is the current nucleotide X?
     # 2. apply stationary frequencies (pi) to tuple given X
+        pi = frequency_rates(seq[i])
+        rates[i] = tuple([pi*j for j in rates[i]])
     # 3. apply biases to tuple
+        if seq[i] == 'A':
+            for j in rates[i]:
+                rates[i][j] = rates[i][j] * bias['A'][j]
+
+        elif seq[i] == 'C':
+            for j in rates[i]:
+                rates[i][j] = rates[i][j] * bias['C'][j]
+
+        elif seq[i] == 'G':
+            for j in rates[i]:
+                rates[i][j] = rates[i][j] * bias['G'][j]
+
+        elif seq[i] == 'T':
+            for j in rates[i]:
+                rates[i][j] = rates[i][j] * bias['T'][j]
+
     # 4. apply omega in parent reading frame
     # 5. if alternate reading frame(s) is present, apply other omega(s)
     
     # Step 1: Calculate frequency rate of nucleotides
-    frequency_rates = get_frequency_rates(seq)
     seq = list(seq)
     # Step 2: Calculate mutation rate for each nucleotide in the sequence
     for nucleotide in seq:
