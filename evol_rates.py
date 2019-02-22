@@ -24,9 +24,10 @@ def get_frequency_rates(seq):
     }
 
     for nucleotide in frequencies:
-        frequencies[nucleotide] = seq.count(nucleotide)
+        frequencies[nucleotide] = round((float(seq.count(nucleotide))/(len(seq))),2)
 
-    return { nucleotide: ocurrences/len(seq) for nucleotide, ocurrences in frequencies.items() }
+
+    return frequencies
 
 
 def get_syn_nonsyn_score():
@@ -42,7 +43,7 @@ def get_tt_score(current, mutated):
 #          'T': [A,C,G],
 # }
 
-def evol_rates(seq, mu, pi, bias, omega):
+def evol_rates(seq, mu, bias, pi):
     """
     Generate rate vector from sequence given parameters.
     @param seq: the nucleotide sequence of length <L>.  Assumed to start and end in reading frame +0.
@@ -60,38 +61,33 @@ def evol_rates(seq, mu, pi, bias, omega):
     """
 
     L = len(seq)
-    seq_rates = [(mu, mu, mu) for i in range(L)]  # initialize our list with baseline rate
+    seq_rates = [(mu, mu, mu) for position in range(L)]  # initialize our list with baseline rate
     frequency_rates = get_frequency_rates(seq)
     # iterate over every nt in seq
-    for i in range(L):
-    # 1. what is the current nucleotide X?
-        nucleotide = seq[i]
-    # 2. apply stationary frequencies (pi) to tuple given X
-        pi = frequency_rates(nucleotide)
-        seq_rates[i] = tuple([pi*j for j in rates[i]])
-    # 3. apply biases to tuple
+    for position in range(L):
+        # 1. what is the current nucleotide X?
+        nucleotide = seq[position]
+
+        # 2. apply stationary frequencies (pi) to tuple given X
+        if pi is None:
+            pi = frequency_rates[nucleotide]
+
+        seq_rates[position] = tuple([pi*j for j in seq_rates[position]])
+        # 3. apply biases to tuple
         biased_rates = []
 
-        for j in range(3):
-            biased_rates.append(rates[i][j] * bias[nucleotide][j])
+        for rate in range(3):
+            local_rates = seq_rates[position][rate] * bias[nucleotide][rate]
+            biased_rates.append(local_rates)
 
-        seq_rates[i] = tuple(biased_rates)
+        formatted_biased_rates = [ '%.6f' % elem for elem in biased_rates]
+        seq_rates[position] = tuple(formatted_biased_rates)
+
     # 4. apply omega in parent reading frame
+
+
+
     # 5. if alternate reading frame(s) is present, apply other omega(s)
-    
-    # Step 1: Calculate frequency rate of nucleotides
-    seq = list(seq)
-    # Step 2: Calculate mutation rate for each nucleotide in the sequence
-    for nucleotide in seq:
-        mutation_rates.append({
-            'A': frequency_rates[nucleotide] * get_tt_score(nucleotide, 'A') * get_syn_nonsyn_score(),
-            'C': frequency_rates[nucleotide] * get_tt_score(nucleotide, 'C') * get_syn_nonsyn_score(),
-            'G': frequency_rates[nucleotide] * get_tt_score(nucleotide, 'G') * get_syn_nonsyn_score(),
-            'T': frequency_rates[nucleotide] * get_tt_score(nucleotide, 'T') * get_syn_nonsyn_score(),
-        })
 
-    # Map of nucleotides with their respective mutation rate
-    return mutation_rates
 
-# if __name__ == '__main__':
-#     print(evol_rates(('AA')))
+    return seq_rates
