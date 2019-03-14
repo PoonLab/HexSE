@@ -1,5 +1,7 @@
-# Calculate evolution rates across the sequence
+import scipy
+from scipy.stats import gamma
 
+# Calculate evolution rates across the sequence
 def get_frequency_rates(seq):
     seq = list(seq)
     frequencies = {
@@ -70,11 +72,38 @@ def evol_rates(seq, mu, bias, pi, omega):
     #return modified_rates2
     return seq_rates
 
-def get_omega(seq, sub_matrix):
-    """
-    Generate a dictionary with possible reading frames(RF) in seq. Every RF is a key to a list where every position contains
-    rates of dN/dS substitution from the current nucleotide to the three possible mutations
-    :param seq: nucleotide sequence
-    :param sub_matrix: substitution matrix
-    :return omega: dictionary with all possible reading frames and dN/dS ratios for seq
-    """
+# Create omega
+def get_omega(reading_frames):
+    omega = {}                  # dS/dN rates for the existing reading frames in seq
+    rf = reading_frames
+    a = 1                       # Shape parameter
+    for rf in seq:
+        omega[rf] = gamma.rvs(a, size = number_of_codons)
+
+    return omega
+
+
+# Get Reading frames
+start = 'ATG'
+stop = ['TAG' , 'TAA']
+def get_reading_frames(seq):
+    reading_frames = []
+
+    for frame in range(3):
+        for codon, position in codon_iterator(seq[frame:]):
+            if codon == start:
+                for codon_in_rf, position_in_rf in codon_iterator(seq[position:]):
+                    if codon_in_rf in stop:
+                        rf = (position, position_in_rf+position)
+                        reading_frames.append(rf)
+                        break
+                break
+    return reading_frames
+
+
+# Create an iterator to move every tree nucleotides
+def codon_iterator(list):
+    i = 0
+    while i < len(list):
+        yield list[i:i + 3], i+2
+        i += 3
