@@ -83,12 +83,15 @@ def get_omega(reading_frames):
     return omega
 
 
-# Get Reading frames
+# Get Reading frames (in the 5'-3' strand)
 start = 'ATG'
 stop = ['TAG' , 'TAA']
 def get_reading_frames(seq):
-    reading_frames = []
+    """
+    Creates a list with tuples containing the first and last position of the reading frames in seq
+    """
 
+    reading_frames = []
     for frame in range(3):
         for codon, position in codon_iterator(seq[frame:]):
             if codon == start:
@@ -101,8 +104,10 @@ def get_reading_frames(seq):
     return reading_frames
 
 
-# Create an iterator to move every tree nucleotides
 def codon_iterator(list):
+    """
+    Iterator to move every tree nucleotides (codon)
+    """
     i = 0
     while i < len(list):
         yield list[i:i + 3], i+2
