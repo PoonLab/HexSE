@@ -1,5 +1,6 @@
 from evol_rates import evol_rates
 from evol_rates import get_reading_frames
+from evol_rates import codon_iterator
 
 
 # Substitution bias (transition-transversion) AC:0.001, AG:0.065, AT:0.002, CG:0.00001, CT:0.064, GT:0.00001
@@ -32,10 +33,7 @@ omega = {'+0': [0.1, 0.13, 0.09, 1.5, 0.7, 0.12],
 #seq_rates = evol_rates(seq, mu, bias, pi = None)
 
 #Test get_reading_frames
-seq='AAATGBBBATGTAG***TAG**'
-print (len(seq))
-print(get_reading_frames(seq))
+seq='ATG*ATG*ATG***TAG*TAG*TAG'
 
-
-
-
+#Provided by the user
+reading_frames = get_reading_frames(seq)

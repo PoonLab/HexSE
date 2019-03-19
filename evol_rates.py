@@ -74,7 +74,12 @@ def evol_rates(seq, mu, bias, pi, omega):
 
 # Create omega
 def get_omega(reading_frames):
-    omega = {}                  # dS/dN rates for the existing reading frames in seq
+    """
+    Get omega for every reading frame from a a gamma distribution
+    :param reading_frames: User must indicate first and last nucleotide of every reading frame in seq
+    :return omega: dictionary with keys for every reading frame in seq and the dN/dS rates for each codon.
+     """
+    omega = {}
     rf = reading_frames
     a = 1                       # Shape parameter
     for rf in seq:
@@ -89,15 +94,18 @@ stop = ['TAG' , 'TAA']
 def get_reading_frames(seq):
     """
     Creates a list with tuples containing the first and last position of the reading frames in seq
+    according to start and stop codons
     """
 
     reading_frames = []
     for frame in range(3):
-        for codon, position in codon_iterator(seq[frame:]):
-            if codon == start:
-                for codon_in_rf, position_in_rf in codon_iterator(seq[position:]):
-                    if codon_in_rf in stop:
-                        rf = (position, position_in_rf+position)
+        for codon, position in codon_iterator(seq[frame:]): # Iterate over every codon in the RF
+            if codon == start:                              # Find a start codon
+                for codon_in_rf, position_in_rf in codon_iterator(seq[(position+frame):]):
+                    if codon_in_rf in stop:                 # Find a stop codon
+                        # Get the positions in the sequence for the first and last nt of the RF
+                        rf = (position+frame, position_in_rf+(position+frame)+3)
+                        #Use +3 to include the full stop codon
                         reading_frames.append(rf)
                         break
                 break
@@ -106,9 +114,12 @@ def get_reading_frames(seq):
 
 def codon_iterator(list):
     """
-    Iterator to move every tree nucleotides (codon)
+    Generator to move every tree nucleotides (codon)
+    Yield: codon and position of the first nucleotide of codon in seq (ex., ('GAA', 5))
     """
     i = 0
     while i < len(list):
-        yield list[i:i + 3], i+2
+        yield list[i:i + 3], i
         i += 3
+
+
