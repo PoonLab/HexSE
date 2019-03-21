@@ -1,5 +1,6 @@
 import scipy
 from scipy.stats import gamma
+import numpy as np
 
 # Calculate evolution rates across the sequence
 def get_frequency_rates(seq):
@@ -73,18 +74,17 @@ def evol_rates(seq, mu, bias, pi, omega):
     return seq_rates
 
 # Create omega
-def get_omega(reading_frames):
+def get_omega(rf):
     """
-    Get omega for every reading frame from a a gamma distribution
-    :param reading_frames: User must indicate first and last nucleotide of every reading frame in seq
+    Draw omega values for every reading frame in seq from a a gamma distribution
+    :param rfs: tuple indicated by user containing first and last nucleotide of every reading frame in seq
     :return omega: dictionary with keys for every reading frame in seq and the dN/dS rates for each codon.
      """
     omega = {}
-    rf = reading_frames
     a = 1                       # Shape parameter
-    for rf in seq:
-        omega[rf] = gamma.rvs(a, size = number_of_codons)
-
+    for i in rf:
+        number_of_codons = (i[1] - i[0])//3
+        omega[i] = gamma.rvs(a, size = number_of_codons)
     return omega
 
 

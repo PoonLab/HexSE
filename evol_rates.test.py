@@ -1,6 +1,7 @@
 from evol_rates import evol_rates
 from evol_rates import get_reading_frames
 from evol_rates import codon_iterator
+from evol_rates import get_omega
 
 
 # Substitution bias (transition-transversion) AC:0.001, AG:0.065, AT:0.002, CG:0.00001, CT:0.064, GT:0.00001
@@ -34,6 +35,11 @@ omega = {'+0': [0.1, 0.13, 0.09, 1.5, 0.7, 0.12],
 
 #Test get_reading_frames
 seq='ATG*ATG*ATG***TAG*TAG*TAG'
+seq='ATGTATGTATGTTTTAGTTAGTTAG'
 
 #Provided by the user
 reading_frames = get_reading_frames(seq)
+#print(reading_frames)
+
+
+print(get_omega(reading_frames))
