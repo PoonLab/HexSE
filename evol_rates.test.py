@@ -22,13 +22,13 @@ seq = 'AAA'
 pi = None
 
 # Hypothetical dictionary constructed for an 'AAA' (lys) sequence, where every mutation in first and second position are nonsyn
-omega = {'reading_frame0plus': [[ 0.001,  0.001, 0.001], [ 0.001,  0.001, 0.001],[ 0.001,  0.3, 0.001]],
-         'reading_frame1plus': [[ 0.001,  0.001, 0.001], [ 0.001,  0.001, 0.001],[ 0.001,  0.3, 0.001]]}
+# omega = {'reading_frame0plus': [[ 0.001,  0.001, 0.001], [ 0.001,  0.001, 0.001],[ 0.001,  0.3, 0.001]],
+#          'reading_frame1plus': [[ 0.001,  0.001, 0.001], [ 0.001,  0.001, 0.001],[ 0.001,  0.3, 0.001]]}
 
 # draw omega values from some probability distribution (e.g., gamma)
 #  or user-specified vectors
-omega = {'+0': [0.1, 0.13, 0.09, 1.5, 0.7, 0.12], 
-         '+1': [2.7, 0.2, 0.17, 0.56, 0.2, 0.3]}
+# omega = {'+0': [0.1, 0.13, 0.09, 1.5, 0.7, 0.12],
+#          '+1': [2.7, 0.2, 0.17, 0.56, 0.2, 0.3]}
 
 #print(evol_rates(seq, mu, bias, pi, omega))
 #seq_rates = evol_rates(seq, mu, bias, pi = None)
@@ -39,7 +39,11 @@ seq='ATGTATGTATGTTTTAGTTAGTTAG'
 
 #Provided by the user
 reading_frames = get_reading_frames(seq)
-#print(reading_frames)
+print(reading_frames)
 
 
-print(get_omega(reading_frames))
+#print(get_omega(reading_frames))
+
+omega = get_omega(reading_frames)
+#print(type(omega))
+print(evol_rates(seq, mu, bias, pi, reading_frames))

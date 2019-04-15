@@ -18,7 +18,7 @@ def get_frequency_rates(seq):
     return frequencies
 
 
-def evol_rates(seq, mu, bias, pi, omega):
+def evol_rates(seq, mu, bias, pi, orf):
     """
     Generate rate vector from sequence given parameters.
     @param seq: the nucleotide sequence of length <L>.  Assumed to start and end in reading frame +0.
@@ -31,6 +31,7 @@ def evol_rates(seq, mu, bias, pi, omega):
                   {dict} always contains key +0 (parent reading frame).  May contain omega for alternate
                   reading frame as (+1, +2, -0, -1 or -2).  Codon position is determined by the nt's
                   location relative to start of <seq>.
+    @param orf: tuple indicated by user containing first and last nucleotide of every reading frame in seq (ex. ((4,24),(6,17))
     @return seq_rates: a List of tuples for rates of 3 possible nucleotide substitution at each site
                    in <seq> (3xL).
     """
@@ -58,31 +59,28 @@ def evol_rates(seq, mu, bias, pi, omega):
 
         seq_rates[position] = tuple(biased_rates)                        # Update seq_rates
 
-    # 4. apply omega in parent reading frame
-    for position in range(L):
-        rf_0plus = omega['reading_frame0plus']                          # Omega values for parental reading frame
-        omega_rates = []
-        for rate in range(3):
-            modified_rates2 = seq_rates[position][rate] * rf_0plus[position][rate] #Apply omega values to seq_rates
-            omega_rates.append(modified_rates2)
+    # 4. apply omega according to ORFs
 
-        seq_rates[position] = tuple(omega_rates)                         # Update seq_rates with modified values
+    for nt in orf:
+        omega = get_omega(orf)
+        first_nt = nt[0]
+        last_nt = nt[1]
+        L = len(seq[first_nt:last_nt])
+        print (omega)
 
-    # 5. if alternate reading frame(s) is present, apply other omega(s)
-
-    #return modified_rates2
+        #Check. If for each codon if substitution is nonsynonymous. If true, apply omega (over the codon or the nt).
     return seq_rates
 
 # Create omega
-def get_omega(rf):
+def get_omega(orf):
     """
-    Draw omega values for every reading frame in seq from a a gamma distribution
-    :param rfs: tuple indicated by user containing first and last nucleotide of every reading frame in seq
-    :return omega: dictionary with keys for every reading frame in seq and the dN/dS rates for each codon.
+    Draw omega values for every reading frame in seq from a gamma distribution
+    @param orf: tuple indicated by user containing first and last nucleotide of every reading frame in seq (ex. ((4,24),(6,17))
+    @return omega: dictionary with keys as beginning and end of the RF in seq and the dN/dS rates for each codon.
      """
     omega = {}
     a = 1                       # Shape parameter
-    for i in rf:
+    for i in orf:
         number_of_codons = (i[1] - i[0])//3
         omega[i] = gamma.rvs(a, size = number_of_codons)
     return omega
@@ -104,9 +102,9 @@ def get_reading_frames(seq):
                 for codon_in_rf, position_in_rf in codon_iterator(seq[(position+frame):]):
                     if codon_in_rf in stop:                 # Find a stop codon
                         # Get the positions in the sequence for the first and last nt of the RF
-                        rf = (position+frame, position_in_rf+(position+frame)+3)
+                        orf = (position+frame, position_in_rf+(position+frame)+3)
                         #Use +3 to include the full stop codon
-                        reading_frames.append(rf)
+                        reading_frames.append(orf)
                         break
                 break
     return reading_frames
