@@ -2,7 +2,7 @@ from evol_rates import evol_rates
 from evol_rates import get_reading_frames
 from evol_rates import codon_iterator
 from evol_rates import get_omega
-
+from evol_rates import get_syn_codons
 
 # Substitution bias (transition-transversion) AC:0.001, AG:0.065, AT:0.002, CG:0.00001, CT:0.064, GT:0.00001
 # Values for this matrix were taken from: https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0070388
@@ -47,3 +47,4 @@ print(reading_frames)
 omega = get_omega(reading_frames)
 #print(type(omega))
 print(evol_rates(seq, mu, bias, pi, reading_frames))
+print(get_syn_codons('ATT'))

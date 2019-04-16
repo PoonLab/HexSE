@@ -14,7 +14,6 @@ def get_frequency_rates(seq):
 
     for nucleotide in frequencies:
         frequencies[nucleotide] = round((float(seq.count(nucleotide))/(len(seq))),2)
-
     return frequencies
 
 
@@ -61,17 +60,19 @@ def evol_rates(seq, mu, bias, pi, orf):
 
     # 4. apply omega according to ORFs
 
-    for nt in orf:
-        omega = get_omega(orf)
-        first_nt = nt[0]
-        last_nt = nt[1]
-        L = len(seq[first_nt:last_nt])
-        print (omega)
+#    for nt in orf:
+#        omega = get_omega(orf)
+#        first_nt = nt[0]
+#        last_nt = nt[1]
+#       L = len(seq[first_nt:last_nt])
+#        print (omega)
+#        for codon_in_orf, nt_in_codon in codon_iterator(seq[first_nt:last_nt]):
+
 
         #Check. If for each codon if substitution is nonsynonymous. If true, apply omega (over the codon or the nt).
     return seq_rates
 
-# Create omega
+
 def get_omega(orf):
     """
     Draw omega values for every reading frame in seq from a gamma distribution
@@ -86,15 +87,13 @@ def get_omega(orf):
     return omega
 
 
-# Get Reading frames (in the 5'-3' strand)
-start = 'ATG'
-stop = ['TAG' , 'TAA']
 def get_reading_frames(seq):
     """
     Creates a list with tuples containing the first and last position of the reading frames in seq
     according to start and stop codons
     """
-
+    start = 'ATG'
+    stop = ['TAG', 'TAA']
     reading_frames = []
     for frame in range(3):
         for codon, position in codon_iterator(seq[frame:]): # Iterate over every codon in the RF
@@ -121,3 +120,37 @@ def codon_iterator(list):
         i += 3
 
 
+
+codon_dict = {  'TTT':'F', 'TTC':'F', 'TTA':'L', 'TTG':'L',
+                'TCT':'S', 'TCC':'S', 'TCA':'S', 'TCG':'S',
+                'TAT':'Y', 'TAC':'Y', 'TAA':'*', 'TAG':'*',
+                'TGT':'C', 'TGC':'C', 'TGA':'*', 'TGG':'W',
+                'CTT':'L', 'CTC':'L', 'CTA':'L', 'CTG':'L',
+                'CCT':'P', 'CCC':'P', 'CCA':'P', 'CCG':'P',
+                'CAT':'H', 'CAC':'H', 'CAA':'Q', 'CAG':'Q',
+                'CGT':'R', 'CGC':'R', 'CGA':'R', 'CGG':'R',
+                'ATT':'I', 'ATC':'I', 'ATA':'I', 'ATG':'M',
+                'ACT':'T', 'ACC':'T', 'ACA':'T', 'ACG':'T',
+                'AAT':'N', 'AAC':'N', 'AAA':'K', 'AAG':'K',
+                'AGT':'S', 'AGC':'S', 'AGA':'R', 'AGG':'R',
+                'GTT':'V', 'GTC':'V', 'GTA':'V', 'GTG':'V',
+                'GCT':'A', 'GCC':'A', 'GCA':'A', 'GCG':'A',
+                'GAT':'D', 'GAC':'D', 'GAA':'E', 'GAG':'E',
+                'GGT':'G', 'GGC':'G', 'GGA':'G', 'GGG':'G',
+                '---':'-', 'XXX':'?'}
+
+
+def get_syn_codons(my_codon):
+    """
+    Create a list with the synonymous substitutions of a codon
+    @param codon: Three nucleotides in an ORF
+    """
+    my_aa = codon_dict[my_codon]
+    syn_codons = []
+    for codon, aa in codon_dict.items():
+        if codon_dict[codon] == my_aa:
+            syn_codons.append(codon)
+    return syn_codons
+
+
+def get_possible_mutations(my_codon, codon_dict):
