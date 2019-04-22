@@ -17,7 +17,7 @@ def get_frequency_rates(seq):
     return frequencies
 
 
-def evol_rates(seq, mu, bias, pi, orf):
+def evol_rates(seq, mu, bias, pi, orfs):
     """
     Generate rate vector from sequence given parameters.
     @param seq: the nucleotide sequence of length <L>.  Assumed to start and end in reading frame +0.
@@ -58,16 +58,7 @@ def evol_rates(seq, mu, bias, pi, orf):
 
         seq_rates[position] = tuple(biased_rates)                        # Update seq_rates
 
-    # 4. apply omega according to ORFs
-
-#    for nt in orf:
-#        omega = get_omega(orf)
-#        first_nt = nt[0]
-#        last_nt = nt[1]
-#       L = len(seq[first_nt:last_nt])
-#        print (omega)
-#        for codon_in_orf, nt_in_codon in codon_iterator(seq[first_nt:last_nt]):
-
+        # 4. Apply omega
 
         #Check. If for each codon if substitution is nonsynonymous. If true, apply omega (over the codon or the nt).
     return seq_rates
@@ -109,13 +100,14 @@ def get_reading_frames(seq):
     return reading_frames
 
 
-def codon_iterator(list):
+def codon_iterator(seq_in_orf):
     """
     Generator to move every tree nucleotides (codon)
+    @param seq_in_orf: nucleotide sequence in a given orf
     Yield: codon and position of the first nucleotide of codon in seq (ex., ('GAA', 5))
     """
     i = 0
-    while i < len(list):
+    while i < len(seq_in_orf):
         yield list[i:i + 3], i
         i += 3
 
@@ -142,7 +134,7 @@ codon_dict = {  'TTT':'F', 'TTC':'F', 'TTA':'L', 'TTG':'L',
 
 def get_syn_codons(my_codon):
     """
-    Create a list with the synonymous substitutions of a codon
+    Create a list with synonymous codons of a given codon
     @param codon: Three nucleotides in an ORF
     """
     my_aa = codon_dict[my_codon]
@@ -153,4 +145,39 @@ def get_syn_codons(my_codon):
     return syn_codons
 
 
-def get_possible_mutations(my_codon, codon_dict):
+def get_syn_subs(seq, orfs, codon_dict):
+    """
+    Get synonynous and non-synonymous substitutions for nucleotide in seq, given the open reading frames
+    @param seq: nucleotide sequence
+    @param orfs: tuple of open reading frames present in the sequence (ex: ([0,11],[1,6]))
+    @param codon_dict: dictionary with translated codons
+    @return: list of dictionaries with possible mutations. If mutation is syn, then value for that mutation is zero.
+             If the mutation is nonsyn, value is one.
+    """
+    L = len(seq)
+    nts = ['A', 'C', 'G', 'T']
+    seq_subs = []
+    for position in range(L):
+        nt_subs = {}
+        for to_nt in range(len(nts)):
+            is_syn = []
+            for orf in range(len(orfs)):
+                my_codon = get_codon(seq, position, orf)
+                # I need to get the position of the nucleotide in the codon too
+
+
+def get_codon(seq, position , orf):
+
+    my_orf = seq[orf[0]:orf[1]+1]
+    position_in_orf = position - orf[0]
+    # if position_in_orf < 0, then raise argument error
+    if position_in_orf % 3 == 0:
+        codon = my_orf[position_in_orf:position_in_orf+3]
+    elif position_in_orf %3 == 1:
+        codon = my_orf[position_in_orf-1:position_in_orf+2]
+    else:
+        codon = my_orf[position_in_orf-2:position_in_orf+1]
+
+    return codon
+
+

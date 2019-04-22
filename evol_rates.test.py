@@ -2,7 +2,7 @@ from evol_rates import evol_rates
 from evol_rates import get_reading_frames
 from evol_rates import codon_iterator
 from evol_rates import get_omega
-from evol_rates import get_syn_codons
+from evol_rates import get_codon
 
 # Substitution bias (transition-transversion) AC:0.001, AG:0.065, AT:0.002, CG:0.00001, CT:0.064, GT:0.00001
 # Values for this matrix were taken from: https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0070388
@@ -34,17 +34,19 @@ pi = None
 #seq_rates = evol_rates(seq, mu, bias, pi = None)
 
 #Test get_reading_frames
-seq='ATG*ATG*ATG***TAG*TAG*TAG'
-seq='ATGTATGTATGTTTTAGTTAGTTAG'
+#seq='ATG*ATG*ATG***TAG*TAG*TAG'
+seq='AT GTA TGT ATG TTT TAG TTAGTTAG'
 
 #Provided by the user
 reading_frames = get_reading_frames(seq)
 print(reading_frames)
 
 
-#print(get_omega(reading_frames))
+print(get_omega(reading_frames))
 
-omega = get_omega(reading_frames)
-#print(type(omega))
+omega = get_omega(reading_frames)0
+print(type(omega))
 print(evol_rates(seq, mu, bias, pi, reading_frames))
 print(get_syn_codons('ATT'))
+orf = [2,13]
+print (get_codon(seq, 9, orf))
