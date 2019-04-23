@@ -3,6 +3,7 @@ from evol_rates import get_reading_frames
 from evol_rates import codon_iterator
 from evol_rates import get_omega
 from evol_rates import get_codon
+from evol_rates import get_syn_subs
 
 # Substitution bias (transition-transversion) AC:0.001, AG:0.065, AT:0.002, CG:0.00001, CT:0.064, GT:0.00001
 # Values for this matrix were taken from: https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0070388
@@ -35,18 +36,49 @@ pi = None
 
 #Test get_reading_frames
 #seq='ATG*ATG*ATG***TAG*TAG*TAG'
-seq='AT GTA TGT ATG TTT TAG TTAGTTAG'
+seq='AT GTA TGT ATG TTTTAGTTAGTTAG'
+seq = 'AAAAAATTTTTAAAAGGGATATAGATAC'
 
 #Provided by the user
-reading_frames = get_reading_frames(seq)
-print(reading_frames)
+# reading_frames = get_reading_frames(seq)
+# print(reading_frames)
+#
+#
+# print(get_omega(reading_frames))
+#
+# omega = get_omega(reading_frames)0
+# print(type(omega))
+# print(evol_rates(seq, mu, bias, pi, reading_frames))
+# print(get_syn_codons('ATT'))
 
-
-print(get_omega(reading_frames))
-
-omega = get_omega(reading_frames)0
-print(type(omega))
-print(evol_rates(seq, mu, bias, pi, reading_frames))
-print(get_syn_codons('ATT'))
+# Testing get_codos
 orf = [2,13]
-print (get_codon(seq, 9, orf))
+info = get_codon(seq, 8, orf)
+#print(info[0])
+#print(info[1])
+
+# Testing get_syn_subs:
+
+codon_dict = {  'TTT':'F', 'TTC':'F', 'TTA':'L', 'TTG':'L',
+                'TCT':'S', 'TCC':'S', 'TCA':'S', 'TCG':'S',
+                'TAT':'Y', 'TAC':'Y', 'TAA':'*', 'TAG':'*',
+                'TGT':'C', 'TGC':'C', 'TGA':'*', 'TGG':'W',
+                'CTT':'L', 'CTC':'L', 'CTA':'L', 'CTG':'L',
+                'CCT':'P', 'CCC':'P', 'CCA':'P', 'CCG':'P',
+                'CAT':'H', 'CAC':'H', 'CAA':'Q', 'CAG':'Q',
+                'CGT':'R', 'CGC':'R', 'CGA':'R', 'CGG':'R',
+                'ATT':'I', 'ATC':'I', 'ATA':'I', 'ATG':'M',
+                'ACT':'T', 'ACC':'T', 'ACA':'T', 'ACG':'T',
+                'AAT':'N', 'AAC':'N', 'AAA':'K', 'AAG':'K',
+                'AGT':'S', 'AGC':'S', 'AGA':'R', 'AGG':'R',
+                'GTT':'V', 'GTC':'V', 'GTA':'V', 'GTG':'V',
+                'GCT':'A', 'GCC':'A', 'GCA':'A', 'GCG':'A',
+                'GAT':'D', 'GAC':'D', 'GAA':'E', 'GAG':'E',
+                'GGT':'G', 'GGC':'G', 'GGA':'G', 'GGG':'G',
+                '---':'-', 'XXX':'?'}
+
+seq = 'AAAAAAAAAAAA'
+orfs = [[0,8],[1,9],[2,7]]
+#print(len(orfs))
+
+print(get_syn_subs(seq,orfs,codon_dict))

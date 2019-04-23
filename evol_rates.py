@@ -111,27 +111,6 @@ def codon_iterator(seq_in_orf):
         yield list[i:i + 3], i
         i += 3
 
-
-
-codon_dict = {  'TTT':'F', 'TTC':'F', 'TTA':'L', 'TTG':'L',
-                'TCT':'S', 'TCC':'S', 'TCA':'S', 'TCG':'S',
-                'TAT':'Y', 'TAC':'Y', 'TAA':'*', 'TAG':'*',
-                'TGT':'C', 'TGC':'C', 'TGA':'*', 'TGG':'W',
-                'CTT':'L', 'CTC':'L', 'CTA':'L', 'CTG':'L',
-                'CCT':'P', 'CCC':'P', 'CCA':'P', 'CCG':'P',
-                'CAT':'H', 'CAC':'H', 'CAA':'Q', 'CAG':'Q',
-                'CGT':'R', 'CGC':'R', 'CGA':'R', 'CGG':'R',
-                'ATT':'I', 'ATC':'I', 'ATA':'I', 'ATG':'M',
-                'ACT':'T', 'ACC':'T', 'ACA':'T', 'ACG':'T',
-                'AAT':'N', 'AAC':'N', 'AAA':'K', 'AAG':'K',
-                'AGT':'S', 'AGC':'S', 'AGA':'R', 'AGG':'R',
-                'GTT':'V', 'GTC':'V', 'GTA':'V', 'GTG':'V',
-                'GCT':'A', 'GCC':'A', 'GCA':'A', 'GCG':'A',
-                'GAT':'D', 'GAC':'D', 'GAA':'E', 'GAG':'E',
-                'GGT':'G', 'GGC':'G', 'GGA':'G', 'GGG':'G',
-                '---':'-', 'XXX':'?'}
-
-
 def get_syn_codons(my_codon):
     """
     Create a list with synonymous codons of a given codon
@@ -144,7 +123,7 @@ def get_syn_codons(my_codon):
             syn_codons.append(codon)
     return syn_codons
 
-
+# Problem: it is only accounting for plus reading frames
 def get_syn_subs(seq, orfs, codon_dict):
     """
     Get synonynous and non-synonymous substitutions for nucleotide in seq, given the open reading frames
@@ -156,28 +135,57 @@ def get_syn_subs(seq, orfs, codon_dict):
     """
     L = len(seq)
     nts = ['A', 'C', 'G', 'T']
-    seq_subs = []
+    seq_subs = []                  # Possible substitution for the entire sequence
     for position in range(L):
-        nt_subs = {}
-        for to_nt in range(len(nts)):
-            is_syn = []
-            for orf in range(len(orfs)):
-                my_codon = get_codon(seq, position, orf)
-                # I need to get the position of the nucleotide in the codon too
+        nt_subs = {}               # Possible substitutions for the current nucleotide
+        for i in range(len(nts)):
+            is_syn = []            # Checking if the substitution is syn or nonsyn
+            to_nt = nts[i]
+            for j in range(len(orfs)):
+                orf = orfs[j]
+                if position in range(orf[0],orf[1]):  # is nt in orf?
+                    nt_info = get_codon(seq, position, orf)
+                    my_codon = nt_info[0]
+                    position_in_codon = nt_info[1]
+                    mutated_codon = list(my_codon)
+                    mutated_codon[position_in_codon] = to_nt # substitution step
+                    if codon_dict[''.join(mutated_codon)] == codon_dict[my_codon]:
+                        is_syn.append(0)
+                    else:
+                        is_syn.append(1)
+                else:
+                    is_syn.append(0)
+
+            nt_subs[to_nt] = is_syn
+
+        seq_subs.append(nt_subs)
+
+    return seq_subs
 
 
 def get_codon(seq, position , orf):
+    """
+    Get codon, and position in that codon of a nucleotide given an orf
+    @param seq: parental sequence
+    @param position: position of the nucleotide in <seq>
+    @param orf: tuple indicated by user containing first and last nucleotide of an open reading frame
+    @return position_in_codon: of the current nucleotide in the triplet
+    @return codon: to which the nucleotide belongs to
+    """
 
     my_orf = seq[orf[0]:orf[1]+1]
     position_in_orf = position - orf[0]
     # if position_in_orf < 0, then raise argument error
     if position_in_orf % 3 == 0:
+        position_in_codon = 0
         codon = my_orf[position_in_orf:position_in_orf+3]
     elif position_in_orf %3 == 1:
+        position_in_codon = 1
         codon = my_orf[position_in_orf-1:position_in_orf+2]
     else:
+        position_in_codon = 2
         codon = my_orf[position_in_orf-2:position_in_orf+1]
 
-    return codon
+    return codon, position_in_codon
 
 
