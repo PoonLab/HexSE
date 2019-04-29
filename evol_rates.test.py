@@ -40,11 +40,11 @@ seq='AT GTA TGT ATG TTTTAGTTAGTTAG'
 seq = 'AAAAAATTTTTAAAAGGGATATAGATAC'
 
 #Provided by the user
-# reading_frames = get_reading_frames(seq)
+#reading_frames = get_reading_frames(seq)
 # print(reading_frames)
 #
 #
-# print(get_omega(reading_frames))
+#print(get_omega(reading_frames))
 #
 # omega = get_omega(reading_frames)0
 # print(type(omega))
@@ -52,8 +52,8 @@ seq = 'AAAAAATTTTTAAAAGGGATATAGATAC'
 # print(get_syn_codons('ATT'))
 
 # Testing get_codos
-orf = [2,13]
-info = get_codon(seq, 8, orf)
+#orf = [2,13]
+#info = get_codon(seq, 8, orf)
 #print(info[0])
 #print(info[1])
 
@@ -80,5 +80,7 @@ codon_dict = {  'TTT':'F', 'TTC':'F', 'TTA':'L', 'TTG':'L',
 seq = 'AAAAAAAAAAAA'
 orfs = [[0,8],[1,9],[2,7]]
 #print(len(orfs))
-
-print(get_syn_subs(seq,orfs,codon_dict))
+orfs = ((0,8),(1,9))
+print("IS IT SIN:", get_syn_subs(seq,orfs,codon_dict), "\n")
+print("EVOL RATES:", evol_rates(seq, mu, bias, pi, orf), "\n")
+print("OMEGA:", (get_omega(orfs)), "\n")
