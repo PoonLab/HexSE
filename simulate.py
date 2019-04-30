@@ -3,6 +3,9 @@ import random
 
 
 class Simulate:
+    """
+    Simulate evolution within a sequence through a phylogeny
+    """
     def __init__(self, rate, matrix, alphabet='ACGT'):
         self.rate = rate
         self.matrix = matrix
@@ -20,7 +23,7 @@ class Simulate:
             if r < limit:
                 return value
 
-    # Simulate molecular evolution on the brancj given starting sequence
+    # Simulate molecular evolution on the branch given starting sequence
     def simulate_on_branch(self, seq0, evolution_time):
         seq_list = list(seq0)
 
@@ -83,3 +86,4 @@ class Simulate:
 # tree = Phylo.read('<some file>', 'newick')
 # tree = sim.traverse_tree(tree, 'ACGT')
 # result = sim.get_alignment(tree)
+

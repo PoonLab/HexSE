@@ -37,7 +37,7 @@ orfs = ((0,8),(1,9))
 #  or user-specified vectors
 # omega = {'+0': [0.1, 0.13, 0.09, 1.5, 0.7, 0.12],
 #          '+1': [2.7, 0.2, 0.17, 0.56, 0.2, 0.3]}
-(get_evol_rates(seq, mu, bias, pi, orfs))
+print(get_evol_rates(seq, mu, bias, pi, orfs))
 #print((get_evol_rates(seq, mu, bias, pi, orfs)))
 #seq_rates = evol_rates(seq, mu, bias, pi = None)
 

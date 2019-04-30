@@ -118,12 +118,12 @@ def get_syn_subs(seq, orfs, codon_dict):
 
 def get_codon(seq, position , orf):
     """
-    Get codon, and position in that codon of a nucleotide given an orf
+    Get codon sequence, and position of my_nt in the codon
     @param seq: parental sequence
     @param position: position of the nucleotide in <seq>
     @param orf: tuple indicated by user containing first and last nucleotide of an open reading frame
     @return position_in_codon: of the current nucleotide in the triplet
-    @return codon: to which the nucleotide belongs to and position of the nucleotide in the codon
+    @return codon: nucleotide triplet
     """
 
     my_orf = seq[orf[0]:orf[1]+1]
@@ -155,8 +155,8 @@ def get_evol_rates(seq, mu, bias, pi, orfs):
                   {dict} always contains key +0 (parent reading frame).  May contain omega for alternate
                   reading frame as (+1, +2, -0, -1 or -2).  Codon position is determined by the nt's
                   location relative to start of <seq>.
-    @param orf: tuple indicated by user containing first and last nucleotide of every reading frame in seq (ex. ((4,24),(6,17))
-    @return seq_rates: a List of tuples for rates of 3 possible nucleotide substitution at each site
+    @param orfs: tuple indicated by user containing first and last nucleotide of every reading frame in seq (ex. ((4,24),(6,17))
+    @return evol_rates: a List of dictionaries for rates of 3 possible nucleotide substitution at each site
                    in <seq> (3xL).
     """
 
