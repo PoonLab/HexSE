@@ -1,4 +1,5 @@
 from Bio import Phylo
+import numpy as np
 import random
 
 
@@ -6,22 +7,31 @@ class Simulate:
     """
     Simulate evolution within a sequence through a phylogeny
     """
-    def __init__(self, rate, matrix, alphabet='ACGT'):
-        self.rate = rate
+    def __init__(self, rates, matrix, alphabet='ACGT'):
+        self.rates = rates
         self.matrix = matrix
         self.alphabet = alphabet
         # should include some checks on matrix here (e.g., square)
 
     # Select a random latter according to the probabilities of each nucleotide
-    def select_base(self, base_probabilities):
-        # Source: https://github.com/hplgit/scipro-primer/blob/master/src-3rd/random/mutate.py
-        # Method: http://en.wikipedia.org/wiki/Pseudo-random_number_sampling
-        limit = 0
-        r = random.random()
-        for value in base_probabilities:
-            limit += base_probabilities[value]
-            if r < limit:
-                return value
+    def select_base(self, rates):
+        """
+        Select a nucleotide and a position from rates
+        @param rates: list of dictionaries with probabilities of mutations
+        @return: selected mutation as a dictionary. Key = to_nt, value = position in seq
+        """
+        nucleotides = []
+        probabilities = []
+        pos = 0
+        for mutation in rate:
+            for nucleotide, probability in mutation.items():
+                if probability is not None:
+                    nucleotides.append({nucleotide : pos})
+                    probabilities.append(probability)
+            pos += 1
+        mutation = np.random.choice(nucleotides,1,probabilities)
+        return mutation[0]
+
 
     # Simulate molecular evolution on the branch given starting sequence
     def simulate_on_branch(self, seq0, evolution_time):
@@ -86,4 +96,3 @@ class Simulate:
 # tree = Phylo.read('<some file>', 'newick')
 # tree = sim.traverse_tree(tree, 'ACGT')
 # result = sim.get_alignment(tree)
-
