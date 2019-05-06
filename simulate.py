@@ -8,11 +8,22 @@ class Simulate:
     Simulate evolution within a sequence through a phylogeny
     """
     def __init__(self, rates, matrix, alphabet='ACGT'):
-        self.rates = rates
+        self.rates = rates  # positional list of dictionaries keyed by nt storing rates
+        self.total_rate = self.sum_rates(rates)
         self.matrix = matrix
         self.alphabet = alphabet
         # should include some checks on matrix here (e.g., square)
 
+    def sum_rates(self):
+        """
+        Calculate the total rate by iterating over dictionaries in <rates>
+        """
+        res = 0
+        for pdict in rates:
+            for nt, rate in pdict.items():
+                res += rate
+        return res
+        
     # Select a random latter according to the probabilities of each nucleotide
     def select_base(self, rates):
         """
@@ -20,16 +31,18 @@ class Simulate:
         @param rates: list of dictionaries with probabilities of mutations
         @return: selected mutation as a dictionary. Key = to_nt, value = position in seq
         """
+        # draw a random uniform number (x) between 0 and 1
+        # cumulative sum of probabilites until (x) is less than cumulsum
         nucleotides = []
         probabilities = []
-        pos = 0
-        for mutation in rate:
-            for nucleotide, probability in mutation.items():
-                if probability is not None:
-                    nucleotides.append({nucleotide : pos})
-                    probabilities.append(probability)
-            pos += 1
-        mutation = np.random.choice(nucleotides,1,probabilities)
+        
+        for pos, pdict in enumerate(rates):
+            for nt, rate in pdict.items():
+                if rate is not None:
+                    nucleotides.append({nt: pos})
+                    probabilities.append(rate/self.total_rate)
+            
+        mutation = np.random.choice(nucleotides, 1, probabilities)
         return mutation[0]
 
 
