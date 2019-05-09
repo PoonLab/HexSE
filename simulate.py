@@ -1,11 +1,12 @@
 from Bio import Phylo
 import numpy as np
 import random
+from evol_rates import get_evol_rates
 
 
 class Simulate:
     """
-    Simulate evolution within a sequence through a phylogeny
+    Simulate evolution within a sequence throughout a phylogeny
     """
     def __init__(self, rates, matrix, alphabet='ACGT'):
         self.rates = rates  # positional list of dictionaries keyed by nt storing rates
@@ -14,36 +15,58 @@ class Simulate:
         self.alphabet = alphabet
         # should include some checks on matrix here (e.g., square)
 
+
     def sum_rates(self):
         """
         Calculate the total rate by iterating over dictionaries in <rates>
         """
         res = 0
-        for pdict in rates:
+        for pdict in self.rates:
             for nt, rate in pdict.items():
                 res += rate
         return res
-        
-    # Select a random latter according to the probabilities of each nucleotide
-    def select_base(self, rates):
+
+
+    def get_substitution(self):
         """
-        Select a nucleotide and a position from rates
-        @param rates: list of dictionaries with probabilities of mutations
-        @return: selected mutation as a dictionary. Key = to_nt, value = position in seq
+        Randomly select a position, and a nucleotide where a mutation in <seq> occurs, given substitution rates
+        @return: position and nucleotide to which <seq> will change
         """
-        # draw a random uniform number (x) between 0 and 1
-        # cumulative sum of probabilites until (x) is less than cumulsum
+        limit = random.uniform(0, self.sum_rates())
+        position = 0
+        total = 0
+        # draw position
+        while total < limit:
+            pdict = rates[position]
+            for to_nt, rate in pdict.items():
+                if rate is not None:
+                    total += rate
+            position += 1
+
+        # draw nucleotide
         nucleotides = []
         probabilities = []
-        
-        for pos, pdict in enumerate(rates):
-            for nt, rate in pdict.items():
-                if rate is not None:
-                    nucleotides.append({nt: pos})
-                    probabilities.append(rate/self.total_rate)
-            
-        mutation = np.random.choice(nucleotides, 1, probabilities)
-        return mutation[0]
+        for nt, rate in rates[position]:
+            if rate is not None:
+                nucleotides.append(nt)
+                probabilities.append(rate/sel.total_rate)
+        to_nt = np.random.choice(nucleotide, 1, probabilities)
+
+        return (position, to_nt[0])
+
+
+    def update_rates(self, seq, position, to_nt):
+        """
+        Update <rates> given a substitution
+        :param position:
+        :return: updated rates
+        """
+        sub_seq = seq[position-2:position+3]
+        sub_seq[position] = to_nt
+        # TODO: How to draw ORFs for sub_seq
+        sub_rates = get_evol_rates(sub_seq, mu, bias, pi, orfs)
+        updated_rates = seq[:position-2]+sub_rates+seq[position+3:]
+        return(updated_rates)
 
 
     # Simulate molecular evolution on the branch given starting sequence
