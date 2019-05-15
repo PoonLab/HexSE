@@ -55,14 +55,15 @@ class Simulate:
         return (position, to_nt[0])
 
 
-    def update_rates(self, seq, position, to_nt):
+    def update_rates(self, seq, position, to_nt , orfs):
         """
         Update <rates> given a substitution
         :param position:
         :return: updated rates
         """
-        sub_seq = seq[position-2:position+3]
-        sub_seq[position] = to_nt
+        temp = list(seq[position-2:position+3])
+        temp[position] = to_nt
+        sub_seq = ''.join(temp)
         # TODO: How to draw ORFs for sub_seq
         sub_rates = get_evol_rates(sub_seq, mu, bias, pi, orfs)
         updated_rates = seq[:position-2]+sub_rates+seq[position+3:]

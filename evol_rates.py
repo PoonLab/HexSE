@@ -76,7 +76,7 @@ def get_syn_codons(my_codon):
             syn_codons.append(codon)
     return syn_codons
 
-# TODO: it is only accounting for plus reading frames
+
 def get_syn_subs(seq, orfs, codon_dict):
     """
     Get synonynous and non-synonymous substitutions for nucleotide in seq, given the open reading frames
@@ -96,7 +96,7 @@ def get_syn_subs(seq, orfs, codon_dict):
             to_nt = nts[i]
             for j in range(len(orfs)):
                 orf = orfs[j]
-                if position in range(orf[0],orf[1]):  # is nt in orf?
+                if position in range(orf[0], orf[1]) or position in range(orf[0], orf[1], -1):  # is nt in orf?
                     nt_info = get_codon(seq, position, orf)
                     my_codon = nt_info[0]
                     position_in_codon = nt_info[1]
@@ -125,9 +125,13 @@ def get_codon(seq, position , orf):
     @return position_in_codon: of the current nucleotide in the triplet
     @return codon: nucleotide triplet
     """
-
-    my_orf = seq[orf[0]:orf[1]+1]
-    position_in_orf = position - orf[0]
+    if orf[1] > orf[0]:
+        my_orf = seq[orf[0]:orf[1]+1]
+        position_in_orf = position - orf[0]
+    else:
+        rseq = reverse_and_complement(seq)
+        my_orf = rseq[orf[1]:orf[0]+1]
+        position_in_orf = orf[0] - position
     # if position_in_orf < 0, then raise argument error
     if position_in_orf % 3 == 0:
         position_in_codon = 0
@@ -139,6 +143,7 @@ def get_codon(seq, position , orf):
         position_in_codon = 2
         codon = my_orf[position_in_orf-2:position_in_orf+1]
 
+    print (codon, position_in_codon, position_in_orf, "\n")
     return codon, position_in_codon
 
 
@@ -181,7 +186,7 @@ def get_evol_rates(seq, mu, bias, pi, orfs):
                     '---':'-', 'XXX':'?'}
 
 
-    # Defining parameters:
+    # Defining parameters:++
     if pi is None:
         pi = get_frequency_rates(seq)
 
@@ -212,3 +217,23 @@ def get_evol_rates(seq, mu, bias, pi, orfs):
                             evol_rates[position][to_nt] *= omega[orf][codon_in_orf]
 
     return evol_rates
+
+def reverse_and_complement(seq):
+    complement_dict = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A',
+                       'W': 'S', 'R': 'Y', 'K': 'M', 'Y': 'R', 'S': 'W', 'M': 'K',
+                       'B': 'V', 'D': 'H', 'H': 'D', 'V': 'B',
+                       '*': '*', 'N': 'N', '-': '-'}
+
+    rseq = seq[::-1]
+    rcseq = ''
+    for i in rseq:  # reverse order
+        rcseq += complement_dict[i]
+    return rcseq
+
+def update_rates(seq, position, to_nt):
+
+    temp = list(get_codon(seq, position, orf))
+    temp[position] = to_nt
+    my_codon = ''.join(temp)
+    orf = (0,2)
+    return(get_evol_rates(my_codon, mu, vias, pi, orf)[])
