@@ -55,21 +55,6 @@ class Simulate:
         return (position, to_nt[0])
 
 
-    def update_rates(self, seq, position, to_nt , orfs):
-        """
-        Update <rates> given a substitution
-        :param position:
-        :return: updated rates
-        """
-        temp = list(seq[position-2:position+3])
-        temp[position] = to_nt
-        sub_seq = ''.join(temp)
-        # TODO: How to draw ORFs for sub_seq
-        sub_rates = get_evol_rates(sub_seq, mu, bias, pi, orfs)
-        updated_rates = seq[:position-2]+sub_rates+seq[position+3:]
-        return(updated_rates)
-
-
     # Simulate molecular evolution on the branch given starting sequence
     def simulate_on_branch(self, seq0, evolution_time):
         seq_list = list(seq0)
