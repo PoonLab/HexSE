@@ -37,12 +37,8 @@ codon_dict = {  'TTT':'F', 'TTC':'F', 'TTA':'L', 'TTG':'L',
                 'GGT':'G', 'GGC':'G', 'GGA':'G', 'GGG':'G',
                 '---':'-', 'XXX':'?'}
 #
-seq = 'AAAAAAAAAA'
-#orfs = ((2,10),(10,2))
-
-#print(get_syn_subs(seq,orfs,codon_dict), "\n")
+seq = 'AAAAAAGAAAAA'
+orfs = [(2,10),(8,3)]
 rates = Rates(seq, mu, bias, pi, orfs)
-# print(rates)
-print(update_rates(rates, seq, 6, 'C', (2,10)))
-
-
+(update_rates(rates, seq, 8, 'C', orfs))
+#print(rates.pi)

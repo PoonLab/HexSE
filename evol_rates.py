@@ -12,7 +12,7 @@ class Rates(list):
     def __init__(self, seq, mu, bias, pi, orfs):
         """
         Generate rate vector from sequence given parameters.
-        @param seq: the nucleotide sequence of length <L>.  Assumed to start and end in reading frame +0.
+        @param seq: the nucleotide.
         @param mu: the global rate (substitutions/site/unit time).
         @param pi: <optional> a vector of stationary nucleotide frequencies.  If not specified, defaults
                    to the empirical frequencies in <seq>.
@@ -22,18 +22,18 @@ class Rates(list):
                       {dict} always contains key +0 (parent reading frame).  May contain omega for alternate
                       reading frame as (+1, +2, -0, -1 or -2).  Codon position is determined by the nt's
                       location relative to start of <seq>.
-        @param orfs: tuple indicated by user containing first and last nucleotide of every reading frame in seq (ex. ((4,24),(6,17))
+        @param orfs: list of tuples indicated by user containing first and last nucleotide of every reading frame in seq (ex. [(4,24),(6,17])
         @return evol_rates: a List of dictionaries for rates of 3 possible nucleotide substitution at each site
                        in <seq> (3xL).
         """
 
         super(Rates, self).__init__()
-
         self.seq = seq
         self.mu = mu
         self.bias = bias
         self.pi = pi
         self.orfs = orfs
+
 
         print(self.seq, self.mu, self.bias, self.pi, self.orfs, "\n")
 
@@ -56,10 +56,9 @@ class Rates(list):
                       'GGT': 'G', 'GGC': 'G', 'GGA': 'G', 'GGG': 'G',
                       '---': '-', 'XXX': '?'}
 
-        # Defining parameters:++
+        # Defining parameters:
         if self.pi is None:
             self.pi = get_frequency_rates(self.seq)
-            print(self.pi)
 
         omega = get_omega(self.orfs)
         syn_nonsyn = get_syn_subs(self.seq, self.orfs, codon_dict)
@@ -79,7 +78,7 @@ class Rates(list):
             # Apply omega
             for i in range(len(self.orfs)):
                 orf = self.orfs[i]
-                if position in range(orf[0], orf[1] + 1):
+                if position in range(orf[0], orf[1] + 1): # if nt in orf
                     position_in_orf = position - orf[0]
                     codon_in_orf = position_in_orf // 3
                     for to_nt in nts:
@@ -88,7 +87,7 @@ class Rates(list):
                                 self[position][to_nt] *= omega[orf][codon_in_orf]
 
 
-# Calculate evolution rates across the sequence
+# Frequency of nucleotides in <seq>
 def get_frequency_rates(seq):
     seq = list(seq)
     frequencies = {
@@ -105,14 +104,19 @@ def get_frequency_rates(seq):
 def get_omega(orfs):
     """
     Draw omega values for every reading frame in seq from a gamma distribution
-    @param orfs: tuple indicated by user containing first and last nucleotide of every reading frame in seq (ex. (4,24), (3,15))
+    @param orfs: List indicated by user containing first and last nucleotide of every reading frame in <seq> (ex. [(4,24), (3,15)])
     @return omega: dictionary with keys as beginning and end of the RF in seq and the dN/dS rates for each codon.
      """
     omega = {}
-    a = 1                       # Shape parameter
+    a = 1  # Shape parameter
     for i in orfs:
-        number_of_codons = (((i[1]+1) - i[0])//3)
+        if i[1] > i[0]:
+            number_of_codons = (((i[1]+1) - i[0])//3)
+        else:
+            number_of_codons = (((i[0]+1) - i[1])//3)
+        print(number_of_codons)
         omega[i] = gamma.rvs(a, size = number_of_codons)
+
     return omega
 
 
@@ -245,14 +249,33 @@ def reverse_and_complement(seq):
         rcseq += complement_dict[i]
     return rcseq
 
-def update_rates(rates, seq, position, to_nt, orfs):
-    temp = get_codon(seq, position, orfs) # Bring codon and position in codon
-    codon = list((temp)[0])
-    pos_in_codon = temp[1]
-    codon[pos_in_codon] = to_nt # substitution step
-    mutated_codon = ''.join(codon)
-    nt_rates = Rates(mutated_codon, rates.mu, rates.bias, rates.pi, [(0,2)])[pos_in_codon]
-    print(pos_in_codon)
+def update_rates(rates, position, nt):
+    """
+    @param rates: instance of Rates for <seq>.
+    @param position: position where the mutation occurs
+    @param nt: nucleotide to which seq[position] will change
+    @return: dictionary of updated rates for mutated nucleotide
+    """
+
+    complement_dict = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A',
+                       'W': 'S', 'R': 'Y', 'K': 'M', 'Y': 'R', 'S': 'W', 'M': 'K',
+                       'B': 'V', 'D': 'H', 'H': 'D', 'V': 'B',
+                       '*': '*', 'N': 'N', '-': '-'}
+
+    seq = rates.seq
+    orfs = rates.orfs
+    sub_seq = seq [position-2 : position+3]
+
+    for orf in orfs:
+        temp = get_codon(seq, position, orf) # get position and codon in which seq[position] is involved
+        codon = list((temp)[0])
+        pos_in_codon = temp[1]
+        if orf[1] > orf[0]: # Positive strand
+            to_nt = nt
+        else:
+            to_nt = complement_dict[nt]
+
+    nt_rates = Rates(mutated_codon, rates.mu, rates.bias, rates.pi, local_orfs)[pos_in_codon] # get new rates
     return(nt_rates)
 
 
