@@ -2,9 +2,10 @@ import scipy
 from scipy.stats import gamma
 import numpy as np
 
-
-
-
+COMPLEMENT_DICT = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A',
+                       'W': 'S', 'R': 'Y', 'K': 'M', 'Y': 'R', 'S': 'W', 'M': 'K',
+                       'B': 'V', 'D': 'H', 'H': 'D', 'V': 'B',
+                       '*': '*', 'N': 'N', '-': '-'}
 class Rates(list):
     """
     Define attributes of rates
@@ -101,29 +102,28 @@ def get_frequency_rates(seq):
         frequencies[nucleotide] = round((float(seq.count(nucleotide))/(len(seq))),2)
     return frequencies
 
-def get_omega(orfs):
+def draw_omega_values(orfs):
     """
     Draw omega values for every reading frame in seq from a gamma distribution
     @param orfs: List indicated by user containing first and last nucleotide of every reading frame in <seq> (ex. [(4,24), (3,15)])
     @return omega: dictionary with keys as beginning and end of the RF in seq and the dN/dS rates for each codon.
      """
-    omega = {}
+    omega_values = {}
     a = 1  # Shape parameter
     for i in orfs:
         if i[1] > i[0]:
             number_of_codons = (((i[1]+1) - i[0])//3)
         else:
             number_of_codons = (((i[0]+1) - i[1])//3)
-        print(number_of_codons)
-        omega[i] = gamma.rvs(a, size = number_of_codons)
+        omega_values[i] = gamma.rvs(a, size = number_of_codons)
 
-    return omega
+    return omega_values
 
 
 def get_reading_frames(seq):
     """
     Creates a list with tuples containing the first and last position of the reading frames in seq
-    according to start and stop codons
+    according to START and STOP codons
     """
     start = 'ATG'
     stop = ['TAG', 'TAA']
@@ -238,15 +238,11 @@ def get_codon(seq, position , orf):
 
 
 def reverse_and_complement(seq):
-    complement_dict = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A',
-                       'W': 'S', 'R': 'Y', 'K': 'M', 'Y': 'R', 'S': 'W', 'M': 'K',
-                       'B': 'V', 'D': 'H', 'H': 'D', 'V': 'B',
-                       '*': '*', 'N': 'N', '-': '-'}
 
     rseq = seq[::-1]
     rcseq = ''
     for i in rseq:  # reverse order
-        rcseq += complement_dict[i]
+        rcseq += COMPLEMENT_DICT[i]
     return rcseq
 
 def update_rates(rates, position, nt):
@@ -257,25 +253,32 @@ def update_rates(rates, position, nt):
     @return: dictionary of updated rates for mutated nucleotide
     """
 
-    complement_dict = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A',
-                       'W': 'S', 'R': 'Y', 'K': 'M', 'Y': 'R', 'S': 'W', 'M': 'K',
-                       'B': 'V', 'D': 'H', 'H': 'D', 'V': 'B',
-                       '*': '*', 'N': 'N', '-': '-'}
-
     seq = rates.seq
     orfs = rates.orfs
     sub_seq = seq [position-2 : position+3]
 
-    for orf in orfs:
-        temp = get_codon(seq, position, orf) # get position and codon in which seq[position] is involved
-        codon = list((temp)[0])
-        pos_in_codon = temp[1]
-        if orf[1] > orf[0]: # Positive strand
-            to_nt = nt
-        else:
-            to_nt = complement_dict[nt]
+    # for orf in orfs:
+    #     temp = get_codon(seq, position, orf) # get position and codon in which seq[position] is involved
+    #     codon = list((temp)[0])
+    #     pos_in_codon = temp[1]
+    #     if orf[1] > orf[0]: # Positive strand
+    #         to_nt = nt
+    #     else:
+    #         to_nt = complement_dict[nt]
+    #
+    # nt_rates = Rates(mutated_codon, rates.mu, rates.bias, rates.pi, local_orfs)[pos_in_codon] # get new rates
+    # return(nt_rates)
+    #
+    #
 
-    nt_rates = Rates(mutated_codon, rates.mu, rates.bias, rates.pi, local_orfs)[pos_in_codon] # get new rates
-    return(nt_rates)
 
+def store_orfs(seq, orfs):
+    """
+    Get orfs in which every nucleotide is involved
+    :param seq:
+    :param orfs: list of orfs for <seq> (ex. [(5,16),(11,0)])
+    :return: tuple associated to each nucleotide for ORFs (+0, -1, +2, -0, -1, -2)
+    """
+    parental_orf = orfs[0]
+    omega = (1,)*6
 
