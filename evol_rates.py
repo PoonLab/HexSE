@@ -272,13 +272,4 @@ def update_rates(rates, position, nt):
     #
 
 
-def store_orfs(seq, orfs):
-    """
-    Get orfs in which every nucleotide is involved
-    :param seq:
-    :param orfs: list of orfs for <seq> (ex. [(5,16),(11,0)])
-    :return: tuple associated to each nucleotide for ORFs (+0, -1, +2, -0, -1, -2)
-    """
-    parental_orf = orfs[0]
-    omega = (1,)*6
 

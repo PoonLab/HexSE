@@ -1,12 +1,12 @@
 from evol_rates import get_reading_frames
 from evol_rates import codon_iterator
-from evol_rates import get_omega
+#from evol_rates import get_omega
 from evol_rates import get_codon
 from evol_rates import get_syn_subs
 from evol_rates import Rates
-import numpy as np
 from evol_rates import reverse_and_complement
 from evol_rates import update_rates
+from sequence_info import sort_orfs, Nucleotide
 
 
 bias = { 'A': {'C':0.001, 'G':0.065 ,'T':0.002 },
@@ -38,7 +38,14 @@ codon_dict = {  'TTT':'F', 'TTC':'F', 'TTA':'L', 'TTG':'L',
                 '---':'-', 'XXX':'?'}
 #
 seq = 'AAAAAAGAAAAA'
-orfs = [(2,10),(8,3)]
-rates = Rates(seq, mu, bias, pi, orfs)
-(update_rates(rates, seq, 8, 'C', orfs))
+orfs = [(2,10), (4,15), (0,8), (9,4), (8,0), (10,2)]
+#rates = Rates(seq, mu, bias, pi, orfs)
+#(update_rates(rates, 6, 'C'))
 #print(rates.pi)
+#print(get_omega(orfs))
+
+print(store_orfs(orfs))
+
+n = Nucleotide('A')
+n.orfs = orfs
+print(n.orfs)
