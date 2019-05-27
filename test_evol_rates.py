@@ -138,6 +138,44 @@ class TestGetReadingFrames(unittest.TestCase):
         result = get_reading_frames("78979GTC")
         self.assertEqual(expected, result)
 
+    def testStopBeforeStart(self):
+        # Tests scenario when a stop codon precedes a start codon
+        expected = [(3, 11)]
+        result = get_reading_frames("TAGATGAAATAG")
+        self.assertEqual(expected, result)
+
+    def testBackToBackORFs1(self):
+        # Tests a scenario when there are 2 consecutive ORFs in the same reading frame
+        # ORF1: ATG TTT TAA
+        # ORF2: ATG CAC TAA
+        expected = [(0, 8), (9, 17)]
+        result = get_reading_frames("ATGTTTTAGATGCACTAA")
+        self.assertEqual(expected, result)
+
+    def testBackToBackORFs2(self):
+        # Tests a scenario when there are 2 consecutive ORFs, separated by 6 nucleotides
+        # ORF1: ATG TTT TGA
+        # ORF2: ATG CAC TAA
+        expected = [(0,8), (15, 23)]
+        result = get_reading_frames("ATGTTTTGACCCAAAATGCACTAA")
+        self.assertEqual(expected, result)
+
+    def testBackToBackORFs3(self):
+        # Tests a scenario when there are 2 consecutive ORFs, separated by 5 nucleotide
+        # ORF1: ATG TTT TGA
+        # ORF2: ATG CAC TAA
+        expected = [(0, 8), (14, 22)]
+        results = get_reading_frames("ATGTTTTGACCCAAATGCACTAA")
+        self.assertEqual(expected, results)
+
+    def testBackToBackORFs4(self):
+        # Tests a scenario when there are 2 ORFs in the same reading frame (+1), separated by 6 nucleotides
+        # ORF1: ATG GAG TGA
+        # ORF2: ATG GAG TGA
+        expected = [(1, 9), (16, 24)]
+        results = get_reading_frames("AATGGAGTGACCCGGGATGGAGTAG")
+        self.assertEqual(expected, results)
+
 
 class TestGetSynCodons(unittest.TestCase):
 
