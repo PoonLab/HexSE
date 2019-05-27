@@ -31,10 +31,10 @@ CODON_DICT = {'TTT': 'F', 'TTC': 'F', 'TTA': 'L', 'TTG': 'L',
 
 class Rates(list):
     """
-    Define attributes of rates
+    List of dictionaries for rates of 3 possible nucleotide substitution at each site in <seq> (3 x sequence_length)
     """
 
-    def __init__(self, seq, mu, orfs, bias=(1, 1, 1, 1, 1, 1), pi=None):
+    def __init__(self, seq, mu, orfs, bias = (1, 1, 1, 1, 1, 1), pi = None):
         """
         Generate rate vector from sequence given parameters.
         :param seq: the nucleotide.
@@ -49,9 +49,6 @@ class Rates(list):
                       {dict} always contains key +0 (parent reading frame).  May contain omega for alternate
                       reading frame as (+1, +2, -0, -1 or -2). Codon position is determined by the nt's
                       location relative to start of <seq>.
-
-        :return evol_rates: a List of dictionaries for rates of 3 possible nucleotide substitution at each site
-                       in <seq> (3 x sequence_length).
         """
 
         super(Rates, self).__init__()

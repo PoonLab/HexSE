@@ -6,7 +6,7 @@ from evol_rates import get_syn_subs
 from evol_rates import Rates
 from evol_rates import reverse_and_complement
 from evol_rates import update_rates
-from sequence_info import sort_orfs, Nucleotide
+from sequence_info import sort_orfs, Nucleotide, Sequence
 
 
 bias = { 'A': {'C':0.001, 'G':0.065 ,'T':0.002 },
@@ -37,15 +37,27 @@ codon_dict = {  'TTT':'F', 'TTC':'F', 'TTA':'L', 'TTG':'L',
                 'GGT':'G', 'GGC':'G', 'GGA':'G', 'GGG':'G',
                 '---':'-', 'XXX':'?'}
 #
-seq = 'AAAAAAGAAAAA'
+original_seq = 'AAAAAAGAAAAA'
 orfs = [(2,10), (4,15), (0,8), (9,4), (8,0), (10,2)]
+sorted_orfs = sort_orfs(orfs)
+# seq = []
+# for position in range(len(seq_original)):
+#     seq.append(Nucleotide(seq_original[position], position))
+# seq = Sequence(original_seq, sorted_orfs)
+# print(seq)
+# print(seq[3].orf_presence)
+
+
 #rates = Rates(seq, mu, bias, pi, orfs)
 #(update_rates(rates, 6, 'C'))
 #print(rates.pi)
 #print(get_omega(orfs))
 
-print(store_orfs(orfs))
 
-n = Nucleotide('A')
-n.orfs = orfs
-print(n.orfs)
+# print(sorted_orfs)
+# n = Nucleotide('A', 3, sorted_orfs)
+# print(n.orf_presence)
+#
+#
+#update_rates [{}]
+# Class Nuclotide: position, letra, tupla (TRUE, TRUE, FALSE, FALSE, FALSE)
