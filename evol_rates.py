@@ -1,6 +1,7 @@
 import scipy
 from scipy.stats import gamma
 import numpy as np
+from sequence_info import Sequence
 
 COMPLEMENT_DICT = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A',
                    'W': 'W', 'R': 'Y', 'K': 'M', 'Y': 'R',
@@ -34,13 +35,13 @@ class Rates(list):
     List of dictionaries for rates of 3 possible nucleotide substitution at each site in <seq> (3 x sequence_length)
     """
 
-    def __init__(self, seq, mu, orfs, bias = (1, 1, 1, 1, 1, 1), pi = None):
+    def __init__(self, seq, mu, sorted_orfs, bias, pi, omega):
         """
         Generate rate vector from sequence given parameters.
         :param seq: the nucleotide.
         :param mu: the global rate (substitutions/site/unit time).
         :param orfs: list of tuples indicated by user containing first and last nucleotide
-                        of every reading frame in seq (ex. [(4,24),(6,17])
+                        of every reading frame in seq (ex. [(4,24),(6,17]) if there is not orf in some possible reading frame, it will have a "1"
         :param bias: <optional> a List of 6 rates [AC, AG, AT, CG, CT, GT] assuming time-reversibility.
                         If not specified, defaults to 1's.
         :param pi: <optional> a vector of stationary nucleotide frequencies.  If not specified, defaults
@@ -52,43 +53,57 @@ class Rates(list):
         """
 
         super(Rates, self).__init__()
-        self.seq = seq
+        self.seq = Sequence(seq, sorted_orfs)
         self.mu = mu
         self.bias = bias
         self.pi = pi
-        self.orfs = orfs
+        self.orfs = sorted_orfs
+        self.omega = omega
 
-        print(self.seq, self.mu, self.bias, self.pi, self.orfs, "\n")
+        #print(self.seq, self.mu, self.bias, self.pi, self.orfs, "\n")
 
         # Defining parameters:
         if self.pi is None:
             self.pi = get_frequency_rates(self.seq)
 
-        omega = get_omega(self.orfs)
+        if self.omega is None: # user does not specify omega values
+            self.omega = draw_omega_values(self.orfs) # omega values for each orf drawn from gamma distribution
+
         syn_nonsyn = get_syn_subs(self.seq, self.orfs)
 
         for position in range(len(self.seq)):
             my_nt = self.seq[position]
-            mutation = {}
+            sub_rate = {} # Substitution rates
+
             # Apply mu, bias an pi
             for to_nt in NUCLEOTIDES:
                 if to_nt == my_nt:
-                    mutation[to_nt] = None
+                    sub_rate[to_nt] = None
                 else:
-                    mutation[to_nt] = self.mu * self.bias[my_nt][to_nt] * self.pi[my_nt]
-
-            self.append(mutation)
+                    sub_rate[to_nt] = self.mu * self.bias[my_nt][to_nt] * self.pi[my_nt]
+            self.append(sub_rate)
 
             # Apply omega
             for i in range(len(self.orfs)):
                 orf = self.orfs[i]
-                if position in range(orf[0], orf[1] + 1):  # if nt in orf
-                    position_in_orf = position - orf[0]
-                    codon_in_orf = position_in_orf // 3
-                    for to_nt in NUCLEOTIDES:
-                        if self[position][to_nt] is not None:
-                            if syn_nonsyn[position][to_nt][i] == 1:  # mutation is synonymous
-                                self[position][to_nt] *= omega[orf][codon_in_orf]
+                if type(orf) == tuple:
+                    omega_values = self.omega[orf]
+
+                    if position in range(orf[0], orf[1] + 1):  # if nt in orf (positive strand)
+                        position_in_orf = position - orf[0]
+                        codon_in_orf = position_in_orf // 3
+                        for to_nt in NUCLEOTIDES:
+                            if self[position][to_nt] is not None:  # There is a reading frame
+                                if syn_nonsyn[position][to_nt][i] == 1:  # mutation is Non-synonymous
+                                    self[position][to_nt] *= omega_values[codon_in_orf]  # Apply omega
+
+                    elif position in range(orf[0] + 1, orf[1], -1): # if nt in orf (negative strand)
+                        position_in_orf = orf[0] - position
+                        codon_in_orf = position_in_orf // 3
+                        for to_nt in NUCLEOTIDES:
+                            if self[position][to_nt] is not None:  # There is a reading frame
+                                if syn_nonsyn[position][to_nt][i] == 1:  # mutation is Non-synonymous
+                                    self[position][to_nt] *= omega_values[codon_in_orf]  # Apply omega
 
 
 def get_frequency_rates(seq):
@@ -114,18 +129,20 @@ def get_frequency_rates(seq):
 def draw_omega_values(orfs):
     """
     Draw omega values for every reading frame in seq from a gamma distribution
-    :param orfs: List indicated by user containing first and last nucleotide of
+    :param orfs: List of tuples indicated by user containing first and last nucleotide of
                 every reading frame in <seq> (ex. [(4,24), (3,15)])
     :return omega: dictionary with keys as beginning and end of the RF in seq and the dN/dS rates for each codon.
      """
     omega_values = {}
     a = 1  # Shape parameter
     for i in orfs:
-        if i[1] > i[0]:
-            number_of_codons = (((i[1] + 1) - i[0]) // 3)
-        else:
-            number_of_codons = (((i[0] + 1) - i[1]) // 3)
-        omega_values[i] = gamma.rvs(a, size=number_of_codons)
+        if type(i) == tuple: # from sorted_orfs, if there is no orf in some position, skip it
+            if i[1] > i[0]:
+                number_of_codons = (((i[1] + 1) - i[0]) // 3)
+            else:
+                number_of_codons = (((i[0] + 1) - i[1]) // 3)
+
+            omega_values[i] = gamma.rvs(a, size = number_of_codons)
 
     return omega_values
 
@@ -202,17 +219,20 @@ def get_syn_subs(seq, orfs):
             to_nt = nts[i]
             for j in range(len(orfs)):
                 orf = orfs[j]
-                if position in range(orf[0], orf[1]) or position in range(orf[0], orf[1], -1):  # is nt in orf?
-                    nt_info = get_codon(seq, position, orf)
-                    my_codon = nt_info[0]
-                    position_in_codon = nt_info[1]
-                    mutated_codon = list(my_codon)
-                    mutated_codon[position_in_codon] = to_nt  # substitution step
-                    if CODON_DICT[''.join(mutated_codon)] == CODON_DICT[my_codon]:
-                        is_syn.append(0)
+                if type(orf) == tuple: # does it exist?
+                    if position in range(orf[0], orf[1]) or position in range(orf[0], orf[1], -1):  # is nt in orf?
+                        nt_info = get_codon(seq, position, orf)
+                        my_codon = nt_info[0]
+                        position_in_codon = nt_info[1]
+                        mutated_codon = list(my_codon)
+                        mutated_codon[position_in_codon] = to_nt  # substitution step
+                        if CODON_DICT[''.join(mutated_codon)] == CODON_DICT[my_codon]:
+                            is_syn.append(0)
+                        else:
+                            is_syn.append(1)
                     else:
-                        is_syn.append(1)
-                else:
+                        is_syn.append(0)
+                else: # there is no reading frame
                     is_syn.append(0)
 
             nt_subs[to_nt] = is_syn
@@ -225,16 +245,15 @@ def get_syn_subs(seq, orfs):
 def get_codon(seq, position, orf):
     """
     Get codon sequence, and position of my_nt in the codon
-    :param seq: parental sequence
+    :param seq: parental sequence as list of nucleotides
     :param position: position of the nucleotide in <seq>
-    :param orf: tuple indicated by user containing first and last nucleotide of an open reading frame
-    :return position_in_codon: of the current nucleotide in the triplet
-    :return codon: nucleotide triplet
+    :param orf: tuple indicating first and last nucleotide of an open reading frame
+    :return codon: tuple with nucleotide triplet and position of the nucleotide in the codon
     """
-    if orf[1] > orf[0]:
-        my_orf = seq[orf[0]:orf[1] + 1]
+    if orf[1] > orf[0]: # positive strand
+        my_orf = ''.join(seq[orf[0]:orf[1] + 1])
         position_in_orf = position - orf[0]
-    else:
+    else: # negative strand
         rseq = reverse_and_complement(seq)
         my_orf = rseq[orf[1]:orf[0] + 1]
         position_in_orf = orf[0] - position
@@ -260,7 +279,7 @@ def reverse_and_complement(seq):
     :param seq: the DNA sequence
     :return: the reverse complement of the sequence
     """
-    rseq = seq.upper()[::-1]
+    rseq = seq[::-1]
     rcseq = ''
     for i in rseq:  # reverse order
         try:
@@ -279,9 +298,17 @@ def update_rates(rates, position, nt):
     :return: dictionary of updated rates for mutated nucleotide
     """
 
-    seq = rates.seq
+    new_seq = rates.seq[(position - 2):(position + 3)]
     orfs = rates.orfs
-    sub_seq = seq[position - 2: position + 3]
+    orfs_for_position = new_seq[2].in_orf
+    print(orfs, orfs_for_position)
+    new_rates = rates[(position - 2):(position + 3)]
+    print(new_rates)
+
+
+
+
+
 
     # for orf in orfs:
     #     temp = get_codon(seq, position, orf) # get position and codon in which seq[position] is involved
