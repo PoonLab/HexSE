@@ -43,7 +43,7 @@ def get_frequency_rates(seq):
         'A': 0,
         'C': 0,
         'T': 0,
-        'G': 0,
+        'G': 0
     }
 
     for nucleotide in frequencies:

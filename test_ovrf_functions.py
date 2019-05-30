@@ -1,14 +1,14 @@
 import unittest
 
-from evol_rates import get_frequency_rates
-from evol_rates import draw_omega_values
-from evol_rates import get_reading_frames
-from evol_rates import codon_iterator
-from evol_rates import get_syn_codons
-from evol_rates import get_syn_subs
-from evol_rates import get_codon
-from evol_rates import reverse_and_complement
-from evol_rates import update_rates
+from ovrf_functions import get_frequency_rates
+from ovrf_functions import draw_omega_values
+from ovrf_functions import get_reading_frames
+from ovrf_functions import codon_iterator
+from ovrf_functions import get_syn_codons
+from ovrf_functions import get_syn_subs
+from ovrf_functions import get_codon
+from ovrf_functions import reverse_and_complement
+from ovrf_functions import sort_orfs
 
 
 class TestGetFrequencyRates(unittest.TestCase):
@@ -16,8 +16,39 @@ class TestGetFrequencyRates(unittest.TestCase):
     Tests get_frequency_rates
     """
 
-    def testEmptyString(self):
-       return None
+    def testEmptySeq(self):
+        expected = {'A': 0, 'C': 0, 'T': 0, 'G': 0}
+        result = get_frequency_rates("")
+        self.assertRaises(ZeroDivisionError, get_frequency_rates(""))
+
+    def testSimpleUse(self):
+        expected = {'A': 1, 'C': 0, 'T': 0, 'G': 0}
+        result = get_frequency_rates("AAAAAAAAA")
+        self.assertEqual(expected, result)
+
+    def testSimpleUse1(self):
+        expected = {'A': 0.24, 'C': 0.24, 'T': 0.24, 'G': 0.29}
+        result = get_frequency_rates("GTACGATCGATCGATGCTAGC")
+        self.assertEqual(expected, result)
+
+    def testSimpleUse2(self):
+        seq = "tggaagggctaattcactcccaacgaagacaagatatccttgatctgtgg" \
+              "atctaccacacacaaggctacttccctgattagcagaactacacaccagg" \
+              "gccagggatcagatatccactgacctttggatggtgctacaagctagtac" \
+              "cagttgagccagagaagttagaagaagccaacaaaggagagaacaccagc" \
+              "ttgttacaccctgtgagcctgcatggaatggatgacccggagagagaagt" \
+              "gttagagtggaggtttgacagccgcctagcatttcatcacatggcccgag" \
+              "agctgcatccggagtacttcaagaactgctgacatcgagcttgctacaag" \
+              "ggactttccgctggggactttccagggaggcgtggcctgggcgggactgg" \
+              "ggagtggcgagccctcagatcctgcatataagcagctgctttttgcctgt" \
+              "actgggtctctctggttagaccagatctgagcctgggagctctctggcta" \
+              "actagggaacccactgcttaagcctcaataaagcttgccttgagtgcttc" \
+              "aagtagtgtgtgcccgtctgttgtgtgactctggtaactagagatccctc" \
+              "agacccttttagtcagtgtggaaaatctctagcagtggcgcccgaacagg" \
+              "gacctgaaagcgaaagggaaaccagaggagctctctcgacgcaggactcg"
+        expected = {'A': 0.25, 'C': 0.25, 'T': 0.22, 'G': 0.28}
+        result = get_frequency_rates(seq.upper())
+        self.assertEqual(expected, result)
 
 
 class TestDrawOmegaValues(unittest.TestCase):
@@ -238,6 +269,8 @@ class TestGetSynSubs(unittest.TestCase):
 
     def testSimpleUse(self):
         result = get_syn_subs("ATGGGGTAA", ([0, 8]))
+        # expected = {}
+        # self.assertEqual(expected, result)
 
 
 class TestGetCodon(unittest.TestCase):
@@ -276,10 +309,11 @@ class TestReverseAndComplement(unittest.TestCase):
             reverse_and_complement(seq)
 
 
-class TestUpdateRates(unittest.TestCase):
+class TestSortOrfs(unittest.TestCase):
     """
-    Tests update_rates
+    Tests sort_orfs
     """
 
     def testEmptyString(self):
         return None
+

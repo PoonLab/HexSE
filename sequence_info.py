@@ -1,18 +1,18 @@
 # Store information of sequence
 from ovrf_functions import sort_orfs
 from ovrf_functions import get_codon
+from evol_rates import NUCLEOTIDES
+
 
 class Sequence(list):
     """
     List of nucleotides in seq and its orfs.
     :param original_seq: Nucleotide sequence as string
-    :param sorted_orfs: list of ORFs classified according to their reading frame shift relative to the first orf (+0, +1, +2, -0, -1, -2)
-                        (output of sort_orfs)
+    :param sorted_orfs: list of ORFs classified according to their reading frame shift relative
+                        to the first orf (+0, +1, +2, -0, -1, -2) (output of sort_orfs)
     :param self.codon: for each nucleotide, list of tuples (for each ORF) indicating:
                         - the codon the nucleotide is part of
                         - the nucleotide's specific position within the codon
-
-
     """
 
     def __init__(self, original_seq, sorted_orfs):
@@ -26,7 +26,7 @@ class Sequence(list):
 
             sequence = list(original_seq)
             local_codon = []
-            #Get codon for every nucleotide given reading frames
+            # Get codon for every nucleotide given reading frames
             for orf in self.orfs:
                 if type(orf) == tuple:
                     out = get_codon(sequence, position, orf)
@@ -53,15 +53,16 @@ class Nucleotide(str):
         :param position: position in <seq>
         :param sorted_orfs: list of orf as tuples defined by user
         """
+        super(Nucleotide, self).__init__()
         self.position = position
         in_orf = [False,] * 6
         for i in range(len(sorted_orfs)):
             orf = sorted_orfs[i]
             if type(orf) == tuple:
-                if orf[0] < orf[1]: # positive strand
-                    if self.position in range(orf[0],orf[1]+1):
+                if orf[0] < orf[1]:  # positive strand
+                    if self.position in range(orf[0], orf[1]+1):
                         in_orf[i] = True
-                elif orf[0] > orf[1]: # negative strand
-                    if self.position in range(orf[1],orf[0]+1):
+                elif orf[0] > orf[1]:  # negative strand
+                    if self.position in range(orf[1], orf[0]+1):
                         in_orf[i] = True
         self.in_orf = in_orf

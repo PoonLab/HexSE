@@ -2,19 +2,20 @@ from Bio import Phylo
 import numpy as np
 import random
 from evol_rates import get_evol_rates
+from evol_rates import NUCLEOTIDES
 
 
 class Simulate:
     """
     Simulate evolution within a sequence throughout a phylogeny
     """
-    def __init__(self, rates, matrix, alphabet='ACGT'):
+
+    def __init__(self, rates, matrix, alphabet=NUCLEOTIDES):
         self.rates = rates  # positional list of dictionaries keyed by nt storing rates
         self.total_rate = self.sum_rates(rates)
         self.matrix = matrix
         self.alphabet = alphabet
         # should include some checks on matrix here (e.g., square)
-
 
     def sum_rates(self):
         """
@@ -25,7 +26,6 @@ class Simulate:
             for nt, rate in pdict.items():
                 res += rate
         return res
-
 
     def get_substitution(self):
         """
@@ -49,11 +49,10 @@ class Simulate:
         for nt, rate in rates[position]:
             if rate is not None:
                 nucleotides.append(nt)
-                probabilities.append(rate/sel.total_rate)
-        to_nt = np.random.choice(nucleotide, 1, probabilities)
+                probabilities.append(rate / self.total_rate)
+        to_nt = np.random.choice(NUCLEOTIDES, 1, probabilities)
 
-        return (position, to_nt[0])
-
+        return(position, to_nt[0])
 
     # Simulate molecular evolution on the branch given starting sequence
     def simulate_on_branch(self, seq0, evolution_time):
@@ -67,12 +66,11 @@ class Simulate:
             if round(times_sum, 10) > evolution_time:
                 break
             # Mutate sequence
-            mutation_site = random.randint(0, len(seq_list)-1)
+            mutation_site = random.randint(0, len(seq_list) - 1)
             nucleotide = seq_list[mutation_site]
             seq_list[mutation_site] = self.select_base(self.matrix[nucleotide])
 
         return ''.join(seq_list)
-
 
     def traverse_tree(self, tree, root_seq):
         """
@@ -93,8 +91,8 @@ class Simulate:
         for node in tree.find_clades(order='level'):
             # TODO: skip the root (sequence already assigned)
             print("--", node)
-            if hasattr(node, 'sequence') == False:
-                #print("second loop", node, node.parent, node.parent.sequence)
+            if not hasattr(node, 'sequence'):
+                # print("second loop", node, node.parent, node.parent.sequence)
                 node.sequence = self.simulate_on_branch(node.parent.sequence, node.branch_length)
                 print('*', node.sequence)
 
@@ -112,7 +110,6 @@ class Simulate:
         :param tree:
         :return:
         """
-
 
 # sim = Sim()  # create an instance of object class Sim
 # tree = Phylo.read('<some file>', 'newick')
