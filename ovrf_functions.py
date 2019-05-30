@@ -1,16 +1,17 @@
-# Script with the necesary functions to calculate evolution rates and extract sequence information
+# Script with the necessary functions to calculate evolution rates and extract sequence information
 # Prepare input for the simulation script
 
+import re
+
+import numpy as np
 import scipy
 from scipy.stats import gamma
-import numpy as np
 
 COMPLEMENT_DICT = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A',
                    'W': 'W', 'R': 'Y', 'K': 'M', 'Y': 'R',
                    'S': 'S', 'M': 'K', 'B': 'V', 'D': 'H',
                    'H': 'D', 'V': 'B', '*': '*', 'N': 'N',
                    '-': '-'}
-
 
 CODON_DICT = {'TTT': 'F', 'TTC': 'F', 'TTA': 'L', 'TTG': 'L',
               'TCT': 'S', 'TCC': 'S', 'TCA': 'S', 'TCG': 'S',
@@ -61,13 +62,13 @@ def draw_omega_values(orfs):
     omega_values = {}
     a = 1  # Shape parameter
     for i in orfs:
-        if type(i) == tuple: # from sorted_orfs, if there is no orf in some position, skip it
+        if type(i) == tuple:  # from sorted_orfs, if there is no orf in some position, skip it
             if i[1] > i[0]:
                 number_of_codons = (((i[1] + 1) - i[0]) // 3)
             else:
                 number_of_codons = (((i[0] + 1) - i[1]) // 3)
 
-            omega_values[i] = gamma.rvs(a, size = number_of_codons)
+            omega_values[i] = gamma.rvs(a, size=number_of_codons)
 
     return omega_values
 
@@ -80,21 +81,41 @@ def get_reading_frames(seq):
     :return: a list of tuples containing the index of the first nucleotide of
                 the START codon and the index of the last nucleotide of the STOP codon
     """
-    start = 'ATG'
-    stop = ['TAG', 'TAA', 'TGA']
+    start_codon = re.compile('ATG', flags=re.IGNORECASE)
+    stop = re.compile('(TAG)|(TAA)|(TGA)', flags=re.IGNORECASE)
     reading_frames = []
-    # Make an if in case that no stop or start are found
-    for frame in range(3):
-        for codon, position in codon_iterator(seq[frame:]):  # Iterate over every codon in the RF
-            if codon.upper() == start:  # Find a start codon
-                for codon_in_rf, position_in_rf in codon_iterator(seq[(position + frame):]):
-                    if codon_in_rf.upper() in stop:  # Find a stop codon
-                        # Get the positions in the sequence for the first and last nt of the RF
-                        orf = (position + frame, position_in_rf + (position + frame) + 2)
-                        # Use +3 to include the full stop codon
-                        reading_frames.append(orf)
-                        break
+
+    # Record positions of all potential START codons
+    start_positions = [match.start() for match in start_codon.finditer(seq)]
+
+    for position in start_positions:
+        frame = position % 3
+
+        internal_met = False
+        # If the ATG codon is an internal methionine and not an initiation codon
+        for orf in reversed(reading_frames):
+
+            # If the START codon and the potential START codon are in the same reading frame
+            # and the existing ORF ends before the potential ORF, stop searching
+            if orf[0] % 3 == frame and orf[1] < position:
                 break
+
+            # If the potential START codon is between the range of the START and STOP codons,
+            # and it is in the same frame, the codon is an internal methionine
+            if orf[0] < position < orf[1] and orf[0] % 3 == frame:
+                internal_met = True
+                break
+
+        # If the ATG is a START codon and not simply methionine
+        if not internal_met:
+            for match in stop.finditer(seq, position):
+                orf_length = match.end() - position
+                # Find a stop codon and ensure ORF length is sufficient
+                if match.start() % 3 == frame and orf_length >= 8:
+                    # Get the positions in the sequence for the first and last nt of the RF
+                    orf = (position, match.end() - 1)
+                    reading_frames.append(orf)
+                    break
 
     return reading_frames
 
@@ -117,7 +138,11 @@ def get_syn_codons(my_codon):
     :param my_codon: Three nucleotides in an ORF
     :return: a list of synonomous codons
     """
-    my_aa = CODON_DICT[my_codon.upper()]
+    try:
+        my_aa = CODON_DICT[my_codon.upper()]
+    except KeyError as e:
+        raise KeyError("Invalid codon {}".format(my_codon))
+
     syn_codons = []
     for codon, aa in CODON_DICT.items():
         if CODON_DICT[codon] == my_aa:
@@ -128,7 +153,7 @@ def get_syn_codons(my_codon):
 
 def get_syn_subs(seq, orfs):
     """
-    Get synonynous and non-synonymous substitutions for nucleotide in seq, given the open reading frames
+    Get synonymous and non-synonymous substitutions for nucleotide in seq, given the open reading frames
     :param seq: nucleotide sequence
     :param orfs: tuple of open reading frames present in the sequence (ex: ([0,11],[1,6]))
     :return: list of dictionaries with possible mutations. If mutation is syn, then value for that mutation is zero.
@@ -144,7 +169,7 @@ def get_syn_subs(seq, orfs):
             to_nt = nts[i]
             for j in range(len(orfs)):
                 orf = orfs[j]
-                if type(orf) == tuple: # does it exist?
+                if type(orf) == tuple:  # does it exist?
                     if position in range(orf[0], orf[1]) or position in range(orf[0], orf[1], -1):  # is nt in orf?
                         nt_info = get_codon(seq, position, orf)
                         my_codon = nt_info[0]
@@ -157,7 +182,7 @@ def get_syn_subs(seq, orfs):
                             is_syn.append(1)
                     else:
                         is_syn.append(0)
-                else: # there is no reading frame
+                else:  # there is no reading frame
                     is_syn.append(0)
 
             nt_subs[to_nt] = is_syn
@@ -175,10 +200,10 @@ def get_codon(seq, position, orf):
     :param orf: tuple indicating first and last nucleotide of an open reading frame
     :return codon: tuple with nucleotide triplet and position of the nucleotide in the codon
     """
-    if orf[1] > orf[0]: # positive strand
+    if orf[1] > orf[0]:  # positive strand
         my_orf = ''.join(seq[orf[0]:orf[1] + 1])
         position_in_orf = position - orf[0]
-    else: # negative strand
+    else:  # negative strand
         rseq = reverse_and_complement(seq)
         my_orf = rseq[orf[1]:orf[0] + 1]
         position_in_orf = orf[0] - position
@@ -210,39 +235,37 @@ def reverse_and_complement(seq):
         try:
             rcseq += COMPLEMENT_DICT[i]
         except KeyError as e:
-            raise KeyError("Inval id character '{}' in sequence".format(i))
+            raise KeyError("Invalid character '{}' in sequence".format(i))
 
     return rcseq
 
+
 def sort_orfs(orfs):
     """
-    Store orfs in position according to plus zero orf (first of the list). They will be classified as (+0, +1, +2, -0, -1, -2)
+    Store orfs in position according to plus zero orf (first of the list).
+    They will be classified as (+0, +1, +2, -0, -1, -2)
     :param orfs: list of orfs as tuples for <seq> (ex. [(5,16),(11,0)])
     :return: list of ORFs classified according to their shift regarding to the plus zero one (+0, +1, +2, -0, -1, -2)
     """
-
     plus_cero_orf = orfs[0]
     orf_position = [1] * 6
     orf_position[0] = plus_cero_orf
 
-
     for orf in orfs[1:]:
         if type(orf) == tuple:
-            if orf[0] < orf[1]: # positive strand
+            if orf[0] < orf[1]:  # positive strand
                 difference = (orf[0] - plus_cero_orf[0]) % 3
-                if difference == 1: # plus one
+                if difference == 1:  # plus one
                     orf_position[1] = orf
-                elif difference == 2: # plus two
+                elif difference == 2:  # plus two
                     orf_position[2] = orf
-            elif orf[0] > orf[1]: # negative strand
+            elif orf[0] > orf[1]:  # negative strand
                 difference = (plus_cero_orf[1] - orf[0]) % 3
                 if difference == 0:
-                    orf_position[3] = orf # minus zero
+                    orf_position[3] = orf  # minus zero
                 elif difference == 1:
-                    orf_position[4] = orf # minus one
+                    orf_position[4] = orf  # minus one
                 elif difference == 2:
-                    orf_position[5] = orf # minus two
+                    orf_position[5] = orf  # minus two
 
     return orf_position
-
-

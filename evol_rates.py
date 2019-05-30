@@ -10,7 +10,7 @@ class Rates(list):
     List of dictionaries for rates of 3 possible nucleotide substitution at each site in <seq> (3 x sequence_length)
     """
 
-    def __init__(self, seq, mu, bias, pi, omega):
+    def __init__(self, seq, mu, bias=(1, 1, 1, 1, 1, 1), pi=None, omega=None):
         """
         Generate rate vector from sequence given parameters.
         :param seq: the nucleotide.
