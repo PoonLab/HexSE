@@ -1,8 +1,5 @@
 # Store information of sequence
-from ovrf_functions import sort_orfs
 from ovrf_functions import get_codon
-from evol_rates import NUCLEOTIDES
-
 
 class Sequence(list):
     """

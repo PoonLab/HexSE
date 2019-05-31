@@ -31,6 +31,7 @@ CODON_DICT = {'TTT': 'F', 'TTC': 'F', 'TTA': 'L', 'TTG': 'L',
               'GGT': 'G', 'GGC': 'G', 'GGA': 'G', 'GGG': 'G',
               '---': '-', 'XXX': '?'}
 
+NUCLEOTIDES = ['A', 'C', 'G', 'T']
 
 def get_frequency_rates(seq):
     """
