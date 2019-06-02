@@ -103,8 +103,6 @@ def update_rates(rates, position, nt):
     all_codons_info = rates.seq.codon[position]
     omega = rates.omega
     orfs = rates.seq.orfs
-    print(rates_before_omega)
-    print(rates.seq.codon[position])
 
     # Change codons in which nt is involved for new mutated nucleotide
     mutated_codons_info = []
@@ -121,7 +119,6 @@ def update_rates(rates, position, nt):
             else:
                 # negative strand
                 mutated_nt = COMPLEMENT_DICT[nt]
-                print(mutated_nt)
                 codon[position_in_codon] = mutated_nt
 
             mutated_codon = ''.join(codon)
@@ -134,13 +131,12 @@ def update_rates(rates, position, nt):
 
         for to_nt in NUCLEOTIDES:
             if rates_before_omega[to_nt] == None:
-                print(rates.mu, rates.bias[nt][to_nt], rates.pi[nt])
+                #print(rates.mu, rates.bias[nt][to_nt], rates.pi[nt])
                 rates_before_omega[to_nt] = rates.mu * rates.bias[nt][to_nt] * rates.pi[nt]
 
     rates_before_omega[nt] = None
 
-
-
+    # Apply omega
 
     for i in range(6):
         specific_orf = rates.orfs[i]
@@ -158,18 +154,23 @@ def update_rates(rates, position, nt):
                     position_in_orf = specific_orf[0] - position
 
                 codon_in_orf = position_in_orf // 3
+
                 for to_nt in NUCLEOTIDES:
-                    if rates[position][to_nt] is not None:
-                        # access the rate, and modify if non-synonymous
+                    if rates_before_omega[to_nt] is not None:
+                        # access the rate to nt different to itself
 
                         codon_for_rates = list(mutated_codons_info[i][0])
-                        position_in_codon_rates = all_codons_info[i][1]
+                        position_in_codon_rates = mutated_codons_info[i][1]
 
                         codon_for_rates[position_in_codon_rates] = to_nt
                         string_codon = ''.join(codon_for_rates)
 
                         if CODON_DICT[mutated_codons_info[i][0]] == CODON_DICT[string_codon]:
+                            # Is a non-synonymoys mutation
                             new_rates[to_nt] = rates_before_omega[to_nt] * omega_values[codon_in_orf]
-    print(rates_before_omega)
-    print(mutated_codons_info)
-    print(new_rates)
+
+                        else:
+                            new_rates[to_nt] = rates_before_omega[to_nt]
+
+                    else:
+                        new_rates[to_nt] = None

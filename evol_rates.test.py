@@ -26,4 +26,4 @@ rates = Rates(seq, mu, bias, pi, omega)
 n = update_rates(rates, 5, "T")
 
 #print(get_syn_subs(list(original_seq), orfs))
-print(rates.mu , rates.bias["T"]["A"] , rates.pi["A"])
+#print(rates.mu , rates.bias["T"]["A"] , rates.pi["A"])
