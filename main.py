@@ -7,21 +7,6 @@ from sequence_info import Nucleotide
 import argparse
 
 
-def valid_sequence(seq):
-    """
-    Verifies that the length of the input sequence is valid and the sequence is composed of only nucleotides.
-    Note: Assumes a valid sequence is composed of a START codon, at least one amino acid codon, and a STOP codon.
-    :param seq: the input sequence
-    :return valid: true if the sequence is valid, false otherwise
-    """
-    is_valid = len(seq) >= 9 and all(pos in NUCLEOTIDES for pos in seq)
-
-    if not is_valid:
-        raise ValueError("Invalid sequence: {}".format(seq))
-
-    return is_valid
-
-
 def get_args(parser):
     parser.add_argument(
         'infile',
@@ -30,6 +15,15 @@ def get_args(parser):
     parser.add_argument(
         'outfile',
         help='Path to the output file'
+    )
+    parser.add_argument(
+        '-pi',
+        help='A vector of stationary nucleotide frequencies'
+    )
+    parser.add_argument(
+        '-bias',
+        help='List of 6 mutation rates [AC, AG, AT, CG, CT, GT] assuming time-reversibility.',
+        default=[1, 1, 1, 1, 1, 1]
     )
 
     return parser.parse_args()
@@ -45,12 +39,6 @@ def main():
         # Skip header if the file is a FASTA file
         if in_handle.readline().startswith(">") or in_handle.readline().startswith("#"):
             s = in_handle.readline().strip().upper()
-
-    if valid_sequence(s):
-        orf_positions = get_reading_frames(s)
-
-        if orf_positions:
-            orfs = sort_orfs(orf_positions)
 
 
 if __name__ == '__main__':

@@ -33,6 +33,7 @@ CODON_DICT = {'TTT': 'F', 'TTC': 'F', 'TTA': 'L', 'TTG': 'L',
 
 NUCLEOTIDES = ['A', 'C', 'G', 'T']
 
+
 def get_frequency_rates(seq):
     """
     Frequency of nucleotides in the DNA sequence
@@ -137,7 +138,7 @@ def get_syn_codons(my_codon):
     """
     Create a list with synonymous codons of a given codon
     :param my_codon: Three nucleotides in an ORF
-    :return: a list of synonomous codons
+    :return: a list of synonymous codons
     """
     try:
         my_aa = CODON_DICT[my_codon.upper()]
@@ -156,38 +157,34 @@ def get_syn_subs(seq, orfs):
     """
     Get synonymous and non-synonymous substitutions for nucleotide in seq, given the open reading frames
     :param seq: nucleotide sequence
-    :param orfs: tuple of open reading frames present in the sequence (ex: ([0,11],[1,6]))
+    :param orfs: tuple of open reading frames present in the sequence (ex: [(0,11),(1, 6)])
     :return: list of dictionaries with possible mutations. If mutation is syn, then value for that mutation is zero.
              If the mutation is nonsyn, value is one.
     """
-    sequence_length = len(seq)
-    nts = ['A', 'C', 'G', 'T']
-    seq_subs = []  # Possible substitution for the entire sequence
-    for position in range(sequence_length):
-        nt_subs = {}  # Possible substitutions for the current nucleotide
-        for i in range(len(nts)):
+
+    seq_subs = []       # Possible substitution for the entire sequence
+
+    for pos, nucl in enumerate(seq):
+        nt_subs = {}    # Possible substitutions for the current nucleotide
+        for nt in NUCLEOTIDES:
             is_syn = []  # Checking if the substitution is syn or nonsyn
-            to_nt = nts[i]
-            for j in range(len(orfs)):
-                orf = orfs[j]
-                if type(orf) == tuple:  # does it exist?
-                    if position in range(orf[0], orf[1]) or position in range(orf[0], orf[1], -1):  # is nt in orf?
-                        nt_info = get_codon(seq, position, orf)
+            for orf in orfs:
+                if type(orf) == tuple:
+                    if orf[0] <= pos <= orf[1] or orf[0] >= pos >= orf[1]:
+                        nt_info = get_codon(seq, pos, orf)
                         my_codon = nt_info[0]
                         position_in_codon = nt_info[1]
                         mutated_codon = list(my_codon)
-                        mutated_codon[position_in_codon] = to_nt  # substitution step
-                        if CODON_DICT[''.join(mutated_codon)] == CODON_DICT[my_codon]:
-                            is_syn.append(0)
-                        else:
-                            is_syn.append(1)
+                        mutated_codon[position_in_codon] = nt  # substitution step
+
+                        is_syn.append(0) if CODON_DICT[''.join(mutated_codon)] == CODON_DICT[my_codon] \
+                            else is_syn.append(1)
                     else:
                         is_syn.append(0)
-                else:  # there is no reading frame
+                else:
                     is_syn.append(0)
 
-            nt_subs[to_nt] = is_syn
-
+            nt_subs[nt] = is_syn
         seq_subs.append(nt_subs)
 
     return seq_subs
@@ -201,6 +198,7 @@ def get_codon(seq, position, orf):
     :param orf: tuple indicating first and last nucleotide of an open reading frame
     :return codon: tuple with nucleotide triplet and position of the nucleotide in the codon
     """
+
     if orf[1] > orf[0]:  # positive strand
         my_orf = ''.join(seq[orf[0]:orf[1] + 1])
         position_in_orf = position - orf[0]
@@ -209,7 +207,11 @@ def get_codon(seq, position, orf):
         my_orf = rseq[orf[1]:orf[0] + 1]
         position_in_orf = orf[0] - position
 
-    # if position_in_orf < 0, then raise argument error
+    try:
+        position_in_orf < 0
+    except ValueError as e:
+        raise ValueError("Invalid position: {}".format(position_in_orf))
+
     if position_in_orf % 3 == 0:
         position_in_codon = 0
         codon = my_orf[position_in_orf:position_in_orf + 3]
@@ -220,7 +222,6 @@ def get_codon(seq, position, orf):
         position_in_codon = 2
         codon = my_orf[position_in_orf - 2:position_in_orf + 1]
 
-    # print (codon, position_in_codon, position_in_orf, "\n")
     return codon, position_in_codon
 
 
@@ -230,7 +231,7 @@ def reverse_and_complement(seq):
     :param seq: the DNA sequence
     :return: the reverse complement of the sequence
     """
-    rseq = seq[::-1]
+    rseq = reversed(seq.upper())
     rcseq = ''
     for i in rseq:  # reverse order
         try:
@@ -248,20 +249,20 @@ def sort_orfs(orfs):
     :param orfs: list of orfs as tuples for <seq> (ex. [(5,16),(11,0)])
     :return: list of ORFs classified according to their shift regarding to the plus zero one (+0, +1, +2, -0, -1, -2)
     """
-    plus_cero_orf = orfs[0]
+    plus_zero_orf = orfs[0]
     orf_position = [1] * 6
-    orf_position[0] = plus_cero_orf
+    orf_position[0] = plus_zero_orf
 
     for orf in orfs[1:]:
         if type(orf) == tuple:
             if orf[0] < orf[1]:  # positive strand
-                difference = (orf[0] - plus_cero_orf[0]) % 3
+                difference = (orf[0] - plus_zero_orf[0]) % 3
                 if difference == 1:  # plus one
                     orf_position[1] = orf
                 elif difference == 2:  # plus two
                     orf_position[2] = orf
             elif orf[0] > orf[1]:  # negative strand
-                difference = (plus_cero_orf[1] - orf[0]) % 3
+                difference = (plus_zero_orf[1] - orf[0]) % 3
                 if difference == 0:
                     orf_position[3] = orf  # minus zero
                 elif difference == 1:

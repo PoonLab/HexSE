@@ -7,7 +7,6 @@ from ovrf_functions import COMPLEMENT_DICT
 from ovrf_functions import CODON_DICT
 
 
-
 class Rates(list):
     """
     List of dictionaries for rates of 3 possible nucleotide substitution at each site in <seq> (3 x sequence_length)
@@ -19,7 +18,8 @@ class Rates(list):
         :param seq: the nucleotide.
         :param mu: the global rate (substitutions/site/unit time).
         :param orfs: list of tuples indicated by user containing first and last nucleotide
-                        of every reading frame in seq (ex. [(4,24),(6,17]) if there is not orf in some possible reading frame, it will have a "1"
+                        of every reading frame in seq (ex. [(4,24),(6,17])
+                        if there is not orf in some possible reading frame, it will have a "1"
         :param bias: <optional> a List of 6 rates [AC, AG, AT, CG, CT, GT] assuming time-reversibility.
                         If not specified, defaults to 1's.
         :param pi: <optional> a vector of stationary nucleotide frequencies.  If not specified, defaults
@@ -37,7 +37,6 @@ class Rates(list):
         self.pi = pi
         self.orfs = self.seq.orfs
         self.omega = omega
-
 
         #print(self.seq, self.mu, self.bias, self.pi, self.orfs, "\n")
 
@@ -87,7 +86,6 @@ class Rates(list):
                                 # access the rate, and modify if non-synonymous
                                 if syn_nonsyn[position][to_nt][i] == 1:
                                     self[position][to_nt] *= omega_values[codon_in_orf]
-
 
 
 def update_rates(rates, position, nt):
@@ -166,7 +164,7 @@ def update_rates(rates, position, nt):
                         string_codon = ''.join(codon_for_rates)
 
                         if CODON_DICT[mutated_codons_info[i][0]] == CODON_DICT[string_codon]:
-                            # Is a non-synonymoys mutation
+                            # Is a non-synonymous mutation
                             new_rates[to_nt] = rates_before_omega[to_nt] * omega_values[codon_in_orf]
 
                         else:

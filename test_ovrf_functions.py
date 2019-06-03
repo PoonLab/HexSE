@@ -15,12 +15,6 @@ class TestGetFrequencyRates(unittest.TestCase):
     """
     Tests get_frequency_rates
     """
-
-    def testEmptySeq(self):
-        expected = {'A': 0, 'C': 0, 'T': 0, 'G': 0}
-        result = get_frequency_rates("")
-        self.assertRaises(ZeroDivisionError, get_frequency_rates(""))
-
     def testSimpleUse(self):
         expected = {'A': 1, 'C': 0, 'T': 0, 'G': 0}
         result = get_frequency_rates("AAAAAAAAA")
@@ -55,7 +49,6 @@ class TestDrawOmegaValues(unittest.TestCase):
     """
     Tests draw_omega_values
     """
-
     def testEmptyString(self):
         return None
 
@@ -64,7 +57,6 @@ class TestGetReadingFrames(unittest.TestCase):
     """
     Tests get_reading_frames
     """
-
     def testEmptyString(self):
         expected = []
         result = get_reading_frames("")
@@ -123,12 +115,6 @@ class TestGetReadingFrames(unittest.TestCase):
     def testLowerCaseInput(self):
         expected = [(0, 8)]
         result = get_reading_frames("atgaaatag")
-        self.assertEqual(expected, result)
-
-    def testStartBadInputStop(self):
-        # Tests scenario when a start and stop codon are separated by some invalid characters
-        expected = []
-        result = get_reading_frames("ATG#A>GGGTAA")
         self.assertEqual(expected, result)
 
     def testBadInput(self):
@@ -193,7 +179,6 @@ class TestCodonIterator(unittest.TestCase):
     """
     Tests codon_iterator
     """
-
     def testEmptyString(self):
         expected = []
         result = [i for i in codon_iterator("")]
@@ -219,7 +204,6 @@ class TestGetSynCodons(unittest.TestCase):
     """
     Tests get_syn_codons
     """
-
     def testSimpleUse1(self):
         expected = ["AAA", "AAG"]
         result = get_syn_codons("AAA")
@@ -251,7 +235,7 @@ class TestGetSynSubs(unittest.TestCase):
     """
     Tests get_syn_subs
     """
-
+    maxDiff = None
     def testNoSeqNoORFs(self):
         expected = []
         result = get_syn_subs("", [])
@@ -263,30 +247,120 @@ class TestGetSynSubs(unittest.TestCase):
         self.assertEqual(expected, result)
 
     def testNoORFs(self):
-        expected = []
+        expected = [{'A': [], 'C': [], 'G': [], 'T': []},
+                    {'A': [], 'C': [], 'G': [], 'T': []},
+                    {'A': [], 'C': [], 'G': [], 'T': []},
+
+                    {'A': [], 'C': [], 'G': [], 'T': []},
+                    {'A': [], 'C': [], 'G': [], 'T': []},
+                    {'A': [], 'C': [], 'G': [], 'T': []},
+
+                    {'A': [], 'C': [], 'G': [], 'T': []},
+                    {'A': [], 'C': [], 'G': [], 'T': []},
+                    {'A': [], 'C': [], 'G': [], 'T': []}]
         result = get_syn_subs("ATGTTTCCC", [])
         self.assertEqual(expected, result)
 
+    def testStartCodon(self):
+        expected = [{'A': [0], 'C': [1], 'G': [1], 'T': [1]},   # A
+                    {'A': [1], 'C': [1], 'G': [1], 'T': [0]},   # T
+                    {'A': [1], 'C': [1], 'G': [0], 'T': [1]}]   # G
+        result = get_syn_subs("ATG", [(0, 2)])
+        self.assertEqual(expected, result)
+
     def testSimpleUse(self):
-        result = get_syn_subs("ATGGGGTAA", ([0, 8]))
-        # expected = {}
-        # self.assertEqual(expected, result)
+        expected = [{'A': [0], 'C': [1], 'G': [1], 'T': [1]},   # A
+                    {'A': [1], 'C': [1], 'G': [1], 'T': [0]},   # T
+                    {'A': [1], 'C': [1], 'G': [0], 'T': [1]},   # G
+
+                    {'A': [1], 'C': [1], 'G': [0], 'T': [1]},   # G
+                    {'A': [1], 'C': [1], 'G': [0], 'T': [1]},   # G
+                    {'A': [0], 'C': [0], 'G': [0], 'T': [0]},   # G
+
+                    {'A': [1], 'C': [1], 'G': [1], 'T': [0]},   # T
+                    {'A': [0], 'C': [1], 'G': [1], 'T': [1]},   # A
+                    {'A': [0], 'C': [1], 'G': [0], 'T': [1]}]   # G
+        result = get_syn_subs("ATGGGGTAG", [(0, 8)])
+        self.assertEqual(expected, result)
+
+    def testMultipleORFs(self):
+        expected = [
+                                                                    # ORF (0, 23)           # ORF (5, 19)
+            {'A': [0, 0], 'C': [1, 0], 'G': [1, 0], 'T': [1, 0]},   # A
+            {'A': [1, 0], 'C': [1, 0], 'G': [1, 0], 'T': [0, 0]},   # T
+            {'A': [1, 0], 'C': [1, 0], 'G': [0, 0], 'T': [1, 0]},   # G
+
+            {'A': [0, 0], 'C': [0, 0], 'G': [1, 0], 'T': [1, 0]},   # A
+            {'A': [1, 0], 'C': [1, 0], 'G': [0, 0], 'T': [1, 0]},   # G
+            {'A': [0, 0], 'C': [1, 1], 'G': [0, 1], 'T': [1, 1]},   # A                     A   5
+
+            {'A': [1, 1], 'C': [1, 1], 'G': [1, 1], 'T': [0, 0]},   # T                     T
+            {'A': [1, 1], 'C': [1, 1], 'G': [0, 0], 'T': [1, 1]},   # G                     G
+            {'A': [1, 1], 'C': [1, 1], 'G': [0, 0], 'T': [1, 1]},   # G                     G   8
+
+            {'A': [1, 1], 'C': [0, 0], 'G': [1, 1], 'T': [1, 1]},   # C                     C
+            {'A': [0, 0], 'C': [1, 0], 'G': [1, 0], 'T': [1, 0]},   # A                     A
+            {'A': [1, 1], 'C': [0, 0], 'G': [1, 1], 'T': [0, 1]},   # C                     C   11
+
+            {'A': [0, 0], 'C': [1, 1], 'G': [1, 1], 'T': [1, 1]},   # A                     A
+            {'A': [0, 0], 'C': [1, 1], 'G': [1, 0], 'T': [1, 1]},   # A                     A
+            {'A': [0, 1], 'C': [1, 1], 'G': [0, 0], 'T': [1, 1]},   # G                     G   14
+
+            {'A': [1, 1], 'C': [1, 1], 'G': [1, 1], 'T': [0, 0]},   # T                     T
+            {'A': [1, 0], 'C': [1, 0], 'G': [0, 0], 'T': [1, 0]},   # G                     G
+            {'A': [1, 1], 'C': [0, 1], 'G': [1, 1], 'T': [0, 0]},   # T                     T   17
+
+            {'A': [0, 0], 'C': [1, 1], 'G': [1, 1], 'T': [1, 1]},   # A                     A
+            {'A': [0, 0], 'C': [1, 1], 'G': [1, 0], 'T': [1, 1]},   # A                     A
+            {'A': [1, 0], 'C': [0, 0], 'G': [1, 0], 'T': [0, 0]},   # C
+
+            {'A': [1, 0], 'C': [1, 0], 'G': [1, 0], 'T': [0, 0]},   # T
+            {'A': [0, 0], 'C': [1, 0], 'G': [1, 0], 'T': [1, 0]},   # A
+            {'A': [0, 0], 'C': [1, 0], 'G': [0, 0], 'T': [1, 0]}]   # G
+
+        result = get_syn_subs("ATGAGATGGCACAAGTGTAACTAG", [(0, 23), (5, 19)])
+        self.assertEqual(expected, result)
 
 
 class TestGetCodon(unittest.TestCase):
     """
     Tests get_codon
     """
+    def testSimpleUse(self):
+        expected = ("ATG", 0)
+        result = get_codon("ATGAAAGGGTAA", 0, (0, 11))
+        self.assertEqual(expected, result)
 
-    def testEmptyString(self):
-        return None
+    def testSimpleUse2(self):
+        expected = ("ATG", 1)
+        result = get_codon("ATGAAAGGGTAA", 1, (0, 11))
+        self.assertEqual(expected, result)
+
+    def testSimpleUse3(self):
+        expected = ("GGG", 2)
+        result = get_codon("ATGAAAGGGTAA", 8, (0, 11))
+        self.assertEqual(expected, result)
+
+    def testSamePositionMultipleOrfs1(self):
+        expected = ("CAT", 1)
+        result = get_codon("ATGAAAGTGCAACATGGGTAAATAG", 13, (0, 20))
+        self.assertEqual(expected, result)
+
+    def testSamePositionMultipleOrfs2(self):
+        expected = ("ATG", 0)
+        result = get_codon("ATGAAAGTGCAACATGGGTAAATAG", 13, (13, 24))
+        self.assertEqual(expected, result)
+
+    def testFindStopCodon(self):
+        expected = ("TAA", 2)
+        result = get_codon("ATGAAAGGGTAA", 11, (0, 11))
+        self.assertEqual(expected, result)
 
 
 class TestReverseAndComplement(unittest.TestCase):
     """
     Tests reverse_and_complement
     """
-
     def testEmptyString(self):
         expected = ""
         result = reverse_and_complement("")
@@ -313,7 +387,6 @@ class TestSortOrfs(unittest.TestCase):
     """
     Tests sort_orfs
     """
-
     def testEmptyString(self):
         return None
 
