@@ -231,7 +231,8 @@ def reverse_and_complement(seq):
     :param seq: the DNA sequence
     :return: the reverse complement of the sequence
     """
-    rseq = reversed(seq.upper())
+    string_seq = ''.join(seq)
+    rseq = reversed(string_seq.upper())
     rcseq = ''
     for i in rseq:  # reverse order
         try:

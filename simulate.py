@@ -1,8 +1,7 @@
 from Bio import Phylo
 import numpy as np
 import random
-from evol_rates import get_evol_rates
-from evol_rates import NUCLEOTIDES
+from ovrf_functions import NUCLEOTIDES
 
 
 class Simulate:
@@ -10,12 +9,10 @@ class Simulate:
     Simulate evolution within a sequence throughout a phylogeny
     """
 
-    def __init__(self, rates, matrix, alphabet=NUCLEOTIDES):
+    def __init__(self, rates):
         self.rates = rates  # positional list of dictionaries keyed by nt storing rates
-        self.total_rate = self.sum_rates(rates)
-        self.matrix = matrix
-        self.alphabet = alphabet
-        # should include some checks on matrix here (e.g., square)
+        self.total_rate = self.sum_rates()
+        self.seq = rates.seq
 
     def sum_rates(self):
         """
@@ -24,7 +21,8 @@ class Simulate:
         res = 0
         for pdict in self.rates:
             for nt, rate in pdict.items():
-                res += rate
+                if rate != None:
+                    res += rate
         return res
 
     def get_substitution(self):
@@ -32,31 +30,38 @@ class Simulate:
         Randomly select a position, and a nucleotide where a mutation in <seq> occurs, given substitution rates
         @return: position and nucleotide to which <seq> will change
         """
+        # Draw a random limit where to reach te mutation given rates
         limit = random.uniform(0, self.sum_rates())
-        position = 0
+
+        print(limit)
+        position = -1 # Should include position zero and can only go to len(seq)-1
         total = 0
         # draw position
         while total < limit:
-            pdict = rates[position]
+            pdict = self.rates[position]
             for to_nt, rate in pdict.items():
                 if rate is not None:
                     total += rate
             position += 1
 
+
         # draw nucleotide
+        local_rates = self.rates[position]
         nucleotides = []
         probabilities = []
-        for nt, rate in rates[position]:
+        for nt, rate in local_rates.items():
             if rate is not None:
                 nucleotides.append(nt)
                 probabilities.append(rate / self.total_rate)
+
         to_nt = np.random.choice(NUCLEOTIDES, 1, probabilities)
 
         return(position, to_nt[0])
 
-    # Simulate molecular evolution on the branch given starting sequence
-    def simulate_on_branch(self, seq0, evolution_time):
-        seq_list = list(seq0)
+    def simulate_on_branch(self, evolution_time):
+        """
+        Simulate molecular evolution on the branch given starting sequence
+        """
 
         # Generate random waiting times to mutate while sum(t)<=branch_length
         times_sum = 0
@@ -66,13 +71,13 @@ class Simulate:
             if round(times_sum, 10) > evolution_time:
                 break
             # Mutate sequence
-            mutation_site = random.randint(0, len(seq_list) - 1)
-            nucleotide = seq_list[mutation_site]
-            seq_list[mutation_site] = self.select_base(self.matrix[nucleotide])
+            mutation_site = self.get_substitution()[0]
+            nucleotide = self.get_substitution()[1]
+            self.seq[mutation_site] = nucleotide
 
-        return ''.join(seq_list)
+        return ''.join(self.seq)
 
-    def traverse_tree(self, tree, root_seq):
+    def traverse_tree(self, tree):
         """
         Post-order traversal of tree from the root.
         Call simulate_on_branch on each branch and feed the resulting sequence to initialize
@@ -80,7 +85,7 @@ class Simulate:
         @return Phylo tree with Clade objects annotated with sequences.
         """
         # assign root_seq to root Clade
-        tree.root.sequence = root_seq
+        tree.root.sequence = ''.join(self.seq)
         print(tree)
         # annotate Clades with parents
         for clade in tree.find_clades(order='level'):
@@ -93,7 +98,7 @@ class Simulate:
             print("--", node)
             if not hasattr(node, 'sequence'):
                 # print("second loop", node, node.parent, node.parent.sequence)
-                node.sequence = self.simulate_on_branch(node.parent.sequence, node.branch_length)
+                node.sequence = self.simulate_on_branch(node.branch_length)
                 print('*', node.sequence)
 
         # Cleanup to avoid RecursionError when printing the tree
@@ -110,8 +115,3 @@ class Simulate:
         :param tree:
         :return:
         """
-
-# sim = Sim()  # create an instance of object class Sim
-# tree = Phylo.read('<some file>', 'newick')
-# tree = sim.traverse_tree(tree, 'ACGT')
-# result = sim.get_alignment(tree)

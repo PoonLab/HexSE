@@ -1,10 +1,8 @@
 from sequence_info import Sequence
-from ovrf_functions import get_frequency_rates
-from ovrf_functions import draw_omega_values
-from ovrf_functions import get_syn_subs
 from ovrf_functions import NUCLEOTIDES
 from ovrf_functions import COMPLEMENT_DICT
 from ovrf_functions import CODON_DICT
+from scipy.stats import gamma
 
 
 class Rates(list):
@@ -42,12 +40,12 @@ class Rates(list):
 
         # Defining parameters:
         if self.pi is None:
-            self.pi = get_frequency_rates(self.seq)
+            self.pi = self.get_frequency_rates(self.seq)
 
         if self.omega is None: # user does not specify omega values
-            self.omega = draw_omega_values(self.orfs) # omega values for each orf drawn from gamma distribution
+            self.omega = self.draw_omega_values(self.orfs) # omega values for each orf drawn from gamma distribution
 
-        syn_nonsyn = get_syn_subs(self.seq, self.orfs)
+        syn_nonsyn = self.get_syn_subs(self.seq, self.orfs)
 
         self.before_omega = []
         for position in range(len(self.seq)):
@@ -87,6 +85,85 @@ class Rates(list):
                                 if syn_nonsyn[position][to_nt][i] == 1:
                                     self[position][to_nt] *= omega_values[codon_in_orf]
 
+    def draw_omega_values(self, orfs):
+        """
+        Draw omega values for every reading frame in seq from a gamma distribution
+        :param orfs: List of tuples indicated by user containing first and last nucleotide of
+                    every reading frame in <seq> (ex. [(4,24), (3,15)])
+        :return omega: dictionary with keys as beginning and end of the RF in seq and the dN/dS rates for each codon.
+         """
+        omega_values = {}
+        a = 1  # Shape parameter
+        for i in orfs:
+            if type(i) == tuple:  # from sorted_orfs, if there is no orf in some position, skip it
+                if i[1] > i[0]:
+                    number_of_codons = (((i[1] + 1) - i[0]) // 3)
+                else:
+                    number_of_codons = (((i[0] + 1) - i[1]) // 3)
+
+                omega_values[i] = gamma.rvs(a, size=number_of_codons)
+
+        return omega_values
+
+    def get_syn_subs(self, seq, orfs):
+        """
+        Get synonymous and non-synonymous substitutions for nucleotide in seq, given the open reading frames
+        :param seq: nucleotide sequence
+        :param orfs: tuple of open reading frames present in the sequence (ex: [(0,11),(1, 6)])
+        :return: list of dictionaries with possible mutations. If mutation is syn, then value for that mutation is zero.
+                 If the mutation is nonsyn, value is one.
+        """
+
+        seq_subs = []  # Possible substitution for the entire sequence
+
+        for pos, nucl in enumerate(seq):
+            nt_subs = {}
+            # Possible substitutions for the current nucleotide
+            string_seq = ''.join(seq)
+            for nt in NUCLEOTIDES:
+                is_syn = []  # Checking if the substitution is syn or nonsyn
+                for i in range(6):
+                    orf = orfs[i]
+                    if type(orf) == tuple:
+                        if orf[0] <= pos <= orf[1] or orf[0] >= pos >= orf[1]:
+                            nt_info = seq.codon[pos][i]
+                            my_codon = nt_info[0]
+                            position_in_codon = nt_info[1]
+                            mutated_codon = list(my_codon)
+                            mutated_codon[position_in_codon] = nt  # substitution step
+
+                            is_syn.append(0) if CODON_DICT[''.join(mutated_codon)] == CODON_DICT[my_codon] \
+                                else is_syn.append(1)
+                        else:
+                            is_syn.append(0)
+                    else:
+                        is_syn.append(0)
+
+                nt_subs[nt] = is_syn
+            seq_subs.append(nt_subs)
+
+        return seq_subs
+
+    def get_frequency_rates(self, seq):
+        """
+        Frequency of nucleotides in the DNA sequence
+        :param seq: the DNA sequence
+        :return: a dictionary frequencies where the key is the nucleotide and the value is the frequency
+        """
+        seq = list(seq)
+        frequencies = {
+            'A': 0,
+            'C': 0,
+            'T': 0,
+            'G': 0
+        }
+
+        for nucleotide in frequencies:
+            frequencies[nucleotide] = round((float(seq.count(nucleotide)) / (len(seq))), 2)
+
+        return frequencies
+
+
 
 def update_rates(rates, position, nt):
     """
@@ -98,9 +175,7 @@ def update_rates(rates, position, nt):
 
     rates_before_omega = rates.before_omega[position]
     new_rates = {}
-    all_codons_info = rates.seq.codon[position]
-    omega = rates.omega
-    orfs = rates.seq.orfs
+    all_codons_info = rates.seq.codon[position] # Every codon in which nucleotide is involved given ORFs
 
     # Change codons in which nt is involved for new mutated nucleotide
     mutated_codons_info = []
@@ -135,7 +210,6 @@ def update_rates(rates, position, nt):
     rates_before_omega[nt] = None
 
     # Apply omega
-
     for i in range(6):
         specific_orf = rates.orfs[i]
 
@@ -172,3 +246,5 @@ def update_rates(rates, position, nt):
 
                     else:
                         new_rates[to_nt] = None
+
+    return new_rates
