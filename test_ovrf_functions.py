@@ -236,6 +236,7 @@ class TestGetSynSubs(unittest.TestCase):
     Tests get_syn_subs
     """
     maxDiff = None
+
     def testNoSeqNoORFs(self):
         expected = []
         result = get_syn_subs("", [])
@@ -310,7 +311,7 @@ class TestGetSynSubs(unittest.TestCase):
             {'A': [1, 0], 'C': [1, 0], 'G': [0, 0], 'T': [1, 0]},   # G                     G
             {'A': [1, 1], 'C': [0, 1], 'G': [1, 1], 'T': [0, 0]},   # T                     T   17
 
-            {'A': [0, 0], 'C': [1, 1], 'G': [1, 1], 'T': [1, 1]},   # A                     A
+            {'A': [0, 0], 'C': [1, 1], 'G': [1, 0], 'T': [1, 1]},   # A                     A
             {'A': [0, 0], 'C': [1, 1], 'G': [1, 0], 'T': [1, 1]},   # A                     A
             {'A': [1, 0], 'C': [0, 0], 'G': [1, 0], 'T': [0, 0]},   # C
 
