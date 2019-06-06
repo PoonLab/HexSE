@@ -18,6 +18,7 @@ class Sequence(list):
         self.original_seq = original_seq
         self.orfs = sorted_orfs
         self.codon = []
+        self.in_orfs = []
 
         for position in range(len(original_seq)):
             self.append(Nucleotide(original_seq[position], position, sorted_orfs))
@@ -36,7 +37,11 @@ class Sequence(list):
 
                 else:
                     local_codon.append(0)
+
+            # Get orfs that nt is part of
+            is_in = self.nt_in_orfs(position)
             self.codon.append(local_codon)
+            self.in_orfs.append(is_in)
 
     def get_codon(self, seq, position, orf):
         """
@@ -88,6 +93,23 @@ class Sequence(list):
                 raise KeyError("Invalid character '{}' in sequence".format(i))
 
         return rcseq
+
+    def nt_in_orfs(self, position):
+        """
+        List of True or False containing information about to which orfs does each nucleotide belongs to
+        :return:
+        """
+        in_orf = [False, ] * 6
+        for i in range(6):
+            orf = self.orfs[i]
+            if type(orf) == tuple:
+                if orf[0] < orf[1]:  # positive strand
+                    if position in range(orf[0], orf[1] + 1):
+                        in_orf[i] = True
+                elif orf[0] > orf[1]:  # negative strand
+                    if position in range(orf[1], orf[0] + 1):
+                        in_orf[i] = True
+        return(in_orf)
 
 
 class Nucleotide(str):

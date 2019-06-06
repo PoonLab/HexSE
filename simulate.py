@@ -13,7 +13,6 @@ class Simulate:
 
     def __init__(self, rates, tree):
         self.rates = rates  # positional list of dictionaries keyed by nt storing rates
-        self.total_rate = self.sum_rates()
         self.seq = rates.seq
         self.tree = tree
 
@@ -50,22 +49,13 @@ class Simulate:
         local_rates = self.rates[position]
         nucleotides = []
         probabilities = []
+        total_rate = self.sum_rates()
         for nt, rate in local_rates.items():
             if rate is not None:
                 nucleotides.append(nt)
-                probabilities.append(rate / self.total_rate)
+                probabilities.append(rate / total_rate)
 
         to_nt = np.random.choice(NUCLEOTIDES, 1, probabilities)
-
-        # update rates if position is in at least in one reading frame
-        total = []
-        for orf in self.rates.orfs:
-            if type(orf) == tuple:
-                total.append(orf[1])
-                total.append(orf[0])
-
-        if position in range(min(total), max(total)):
-            self.rates[position] = self.get_new_rates(position, to_nt[0])
 
         return(position, to_nt[0])
 
@@ -85,6 +75,11 @@ class Simulate:
             # Mutate sequence
             mutation_site = self.get_substitution()[0]
             nucleotide = self.get_substitution()[1]
+
+            # update rates if position is in at least in one reading frame
+            self.rates[mutation_site] = self.get_new_rates(mutation_site, nucleotide)
+
+            # Update sequence with the new selected nucleotide
             self.seq[mutation_site] = nucleotide
 
         return ''.join(self.seq)
@@ -118,19 +113,7 @@ class Simulate:
             for child in clade:
                 del child.parent
 
-        self.final_tree = self.tree
-        return self.final_tree
-
-    def get_alignment(self):
-        """
-        Iterates over tips (terminal nodes) of tree and returns sequence
-        attributes as list.
-        :param tree:
-        :return:
-        """
-        for node in self.final_tree.find_clades(order='level'):
-            print(node.sequence)
-
+        return self.tree
 
     def get_new_rates(self, position, nt):
         """
@@ -141,21 +124,24 @@ class Simulate:
         :return: dictionary of updated rates for mutated nucleotide
         """
 
-        print("Running get_reading_frames")
-        print(position, nt)
-        # print(self.rates[position])
         rates_before_omega = self.rates.before_omega[position]
         all_codons_info = self.rates.seq.codon[position]  # Every codon in which nucleotide is involved given ORFs
-        # print("this are the codons")
-        # print(all_codons_info)
-        # print("this are the orfs")
-        # print(self.rates.orfs)
         new_rates = {}
 
-        # Change codons in which nt is involved for new mutated nucleotide
+        # In the dictionary that is rates_before_omega, create the values for the nucleotide that use to be empty
+        for to_nt in NUCLEOTIDES:
+            if rates_before_omega[to_nt] == None:
+                if to_nt == nt:
+                    # Rate of nt mutating to itself is None
+                    rates_before_omega[nt] = None
+                else:
+                    rates_before_omega[to_nt] = self.rates.mu * self.rates.bias[nt][to_nt] * self.rates.pi[nt]
+
+        rates_before_omega[nt] = None
+
+        # Get new codons (in which nt is involved) with the new nt
         mutated_codons_info = []
         for i in range(6):
-
             if all_codons_info[i] != 0:
                 # if there is a codon for the orf, extract codon information
                 codon = list(all_codons_info[i][0])
@@ -177,55 +163,62 @@ class Simulate:
 
             mutated_codons_info.append(new_codon_info)
 
-            for to_nt in NUCLEOTIDES:
-                if rates_before_omega[to_nt] == None:
-                    # print(rates.mu, rates.bias[nt][to_nt], rates.pi[nt])
-                    rates_before_omega[to_nt] = self.rates.mu * self.rates.bias[nt][to_nt] * self.rates.pi[nt]
 
-        rates_before_omega[nt] = None
+        if True in self.seq.in_orfs[position]:
+            # If position is at leas in one orf
+            for i in range(6):
+                # Apply omega if posible mutations are non-syn
+                specific_orf = self.rates.orfs[i]
 
-        # Apply omega
-        for i in range(6):
-            specific_orf = self.rates.orfs[i]
+                if type(specific_orf) == tuple:
+                    # means that this is an ORF, otherwise no shift in the seq
+                    omega_values = self.rates.omega[specific_orf]
 
-            if type(specific_orf) == tuple:
-                # means that this is an ORF, otherwise no shift in the seq
-                omega_values = self.rates.omega[specific_orf]
+                    if self.rates.seq.in_orfs[position][i]: # if nt in orf
+                        if i < 3:
+                            # positive strand
+                            position_in_orf = position - specific_orf[0]
+                        else:
+                            # negative strand
+                            position_in_orf = specific_orf[0] - position
 
-                if self.rates.seq[position].in_orf[i]: # if nt in orf
-                    if i < 3:
-                        # positive strand
-                        position_in_orf = position - specific_orf[0]
-                    else:
-                        # negative strand
-                        position_in_orf = specific_orf[0] - position
+                        codon_in_orf = position_in_orf // 3
 
-                    codon_in_orf = position_in_orf // 3
+                        for to_nt in NUCLEOTIDES:
 
-                    for to_nt in NUCLEOTIDES:
+                            if rates_before_omega[to_nt] is not None:
+                                # access the rate to nt different to itself
 
-                        if rates_before_omega[to_nt] is not None:
-                            # access the rate to nt different to itself
+                                codon_for_rates = list(mutated_codons_info[i][0])
+                                position_in_codon_rates = mutated_codons_info[i][1]
 
-                            codon_for_rates = list(mutated_codons_info[i][0])
-                            position_in_codon_rates = mutated_codons_info[i][1]
+                                # Replace the nucleotide in the codon with posible substitution
+                                codon_for_rates[position_in_codon_rates] = to_nt
+                                string_codon = ''.join(codon_for_rates)
 
-                            codon_for_rates[position_in_codon_rates] = to_nt
-                            string_codon = ''.join(codon_for_rates)
+                                if CODON_DICT[mutated_codons_info[i][0]] == CODON_DICT[string_codon]:
+                                    # Is a non-synonymous mutation, apply omega
+                                    new_rates[to_nt] = rates_before_omega[to_nt] * omega_values[codon_in_orf]
 
-                            if CODON_DICT[mutated_codons_info[i][0]] == CODON_DICT[string_codon]:
-                                # Is a non-synonymous mutation
-                                new_rates[to_nt] = rates_before_omega[to_nt] * omega_values[codon_in_orf]
+                                else:
+                                    # Mutation is synonymous, keep value before omega
+                                    new_rates[to_nt] = rates_before_omega[to_nt]
 
                             else:
-                                new_rates[to_nt] = rates_before_omega[to_nt]
-
-                        else:
-                            new_rates[to_nt] = None
+                                new_rates[to_nt] = None
+        else:
+            # nt is not part of any orf
+            new_rates = rates_before_omega
 
         # Update mutated codons
         self.seq.codon[position] = mutated_codons_info
 
         return new_rates
 
-
+    def get_alignment(self):
+        """
+        Iterates over tips (terminal nodes) of tree and returns sequence
+        """
+        final_tree = self.traverse_tree()
+        for node in final_tree.find_clades(order='level'):
+            print(node.sequence)

@@ -26,9 +26,4 @@ rates = Rates(seq, mu, bias, pi, omega)
 tree = Phylo.read("test_tree.txt", "newick", rooted = True)
 s = Simulate(rates, tree)
 
-#print("traversed tree")
-
-print(s.traverse_tree())
-#print(s.get_new_rates(2,'C'))
-#print(s.get_alignment())
-
+print(s.get_alignment())
