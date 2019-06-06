@@ -27,9 +27,13 @@ class Sequence(list):
             # Get codon for every nucleotide given reading frames
             for orf in self.orfs:
                 if type(orf) == tuple:
-                    out = self.get_codon(sequence, position, orf)
-                    # Note: if nt is not in orf, then codon will be an empty string
-                    local_codon.append(out)
+                    if position in range(min(orf[0], orf[1]), max(orf[0], orf[1])+1):
+                    # if there is and orf and nucleotide is in that orf
+                        out = self.get_codon(sequence, position, orf)
+                        local_codon.append(out)
+                    else:
+                        local_codon.append(0)
+
                 else:
                     local_codon.append(0)
             self.codon.append(local_codon)
@@ -47,8 +51,8 @@ class Sequence(list):
             my_orf = ''.join(seq[orf[0]:orf[1] + 1])
             position_in_orf = position - orf[0]
         else:  # negative strand
-            rseq = self.reverse_and_complement(seq)
-            my_orf = rseq[orf[1]:orf[0] + 1]
+            sub_seq = seq[orf[1]:orf[0] + 1]
+            my_orf = self.reverse_and_complement(sub_seq)
             position_in_orf = orf[0] - position
 
         try:

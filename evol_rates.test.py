@@ -2,7 +2,6 @@ from ovrf_functions import reverse_and_complement
 from ovrf_functions import sort_orfs
 from sequence_info import Sequence
 from evol_rates import Rates
-from evol_rates import update_rates
 from simulate import Simulate
 from Bio import Phylo
 
@@ -16,16 +15,20 @@ pi = None
 omega = None
 
 # Inputs
-original_seq = 'AAAAAAAAAAAAAAATTTTA'
-orfs = [(2,10), (4,15), (8,0), (10,2)] #, (0,5), (9,3)
+original_seq = 'AAAAAATTTTTGG'
+orfs = [(2,10), (4,9), (8,0), (10,2)] #, (0,5), (9,3)
 
 
 sorted_orfs = sort_orfs(orfs)
 seq = Sequence(original_seq, sorted_orfs)
 rates = Rates(seq, mu, bias, pi, omega)
 
-n = update_rates(rates, 8, "T")
-
-s = Simulate(rates)
 tree = Phylo.read("test_tree.txt", "newick", rooted = True)
-print(s.traverse_tree(tree))
+s = Simulate(rates, tree)
+
+#print("traversed tree")
+
+print(s.traverse_tree())
+#print(s.get_new_rates(2,'C'))
+#print(s.get_alignment())
+

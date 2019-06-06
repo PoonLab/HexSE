@@ -119,13 +119,12 @@ class Rates(list):
         for pos, nucl in enumerate(seq):
             nt_subs = {}
             # Possible substitutions for the current nucleotide
-            string_seq = ''.join(seq)
             for nt in NUCLEOTIDES:
                 is_syn = []  # Checking if the substitution is syn or nonsyn
                 for i in range(6):
                     orf = orfs[i]
-                    if type(orf) == tuple:
-                        if orf[0] <= pos <= orf[1] or orf[0] >= pos >= orf[1]:
+                    if type(orf) == tuple: # if orf exists
+                        if orf[0] <= pos <= orf[1] or orf[0] >= pos >= orf[1]: # if position in orf
                             nt_info = seq.codon[pos][i]
                             my_codon = nt_info[0]
                             position_in_codon = nt_info[1]
@@ -163,88 +162,3 @@ class Rates(list):
 
         return frequencies
 
-
-
-def update_rates(rates, position, nt):
-    """
-    :param rates: instance of Rates for <seq>.
-    :param position: position where the mutation occurs
-    :param nt: nucleotide to which seq[position] will change (mutation)
-    :return: dictionary of updated rates for mutated nucleotide
-    """
-
-    rates_before_omega = rates.before_omega[position]
-    new_rates = {}
-    all_codons_info = rates.seq.codon[position] # Every codon in which nucleotide is involved given ORFs
-
-    # Change codons in which nt is involved for new mutated nucleotide
-    mutated_codons_info = []
-    for i in range(6):
-
-        if all_codons_info[i] != 0:
-            # extract codon information
-            codon = list(all_codons_info[i][0])
-            position_in_codon = all_codons_info[i][1]
-
-            if i < 3:
-                # positive strand
-                codon[position_in_codon] = nt
-            else:
-                # negative strand
-                mutated_nt = COMPLEMENT_DICT[nt]
-                codon[position_in_codon] = mutated_nt
-
-            mutated_codon = ''.join(codon)
-            new_codon_info = (mutated_codon, position_in_codon)
-
-        else:
-            new_codon_info = 0
-
-        mutated_codons_info.append(new_codon_info)
-
-        for to_nt in NUCLEOTIDES:
-            if rates_before_omega[to_nt] == None:
-                #print(rates.mu, rates.bias[nt][to_nt], rates.pi[nt])
-                rates_before_omega[to_nt] = rates.mu * rates.bias[nt][to_nt] * rates.pi[nt]
-
-    rates_before_omega[nt] = None
-
-    # Apply omega
-    for i in range(6):
-        specific_orf = rates.orfs[i]
-
-        if type(specific_orf) == tuple:
-            # means that this is an ORF, otherwise no shift in the seq
-            omega_values = rates.omega[specific_orf]
-
-            if rates.seq[position].in_orf[i]:
-                if i < 3:
-                    # positive strand
-                    position_in_orf = position - specific_orf[0]
-                else:
-                    # negative strand
-                    position_in_orf = specific_orf[0] - position
-
-                codon_in_orf = position_in_orf // 3
-
-                for to_nt in NUCLEOTIDES:
-                    if rates_before_omega[to_nt] is not None:
-                        # access the rate to nt different to itself
-
-                        codon_for_rates = list(mutated_codons_info[i][0])
-                        position_in_codon_rates = mutated_codons_info[i][1]
-
-                        codon_for_rates[position_in_codon_rates] = to_nt
-                        string_codon = ''.join(codon_for_rates)
-
-                        if CODON_DICT[mutated_codons_info[i][0]] == CODON_DICT[string_codon]:
-                            # Is a non-synonymous mutation
-                            new_rates[to_nt] = rates_before_omega[to_nt] * omega_values[codon_in_orf]
-
-                        else:
-                            new_rates[to_nt] = rates_before_omega[to_nt]
-
-                    else:
-                        new_rates[to_nt] = None
-
-    return new_rates
