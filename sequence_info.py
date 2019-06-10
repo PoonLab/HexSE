@@ -51,23 +51,25 @@ class Sequence:
             raise ValueError("Invalid sequence: {}".format(original_seq))
 
         self.original_seq = original_seq
+        self.orfs = {}
+        self.codons = []
 
-        if orfs is not None and Sequence.valid_orfs(orfs):
+        if orfs is not None and Sequence.valid_orfs(self, orfs):
             self.orfs = orfs
+
         else:
             unsorted_orfs = self.get_reading_frames()
-            self.orfs = self.sort_orfs(unsorted_orfs)
+            if unsorted_orfs:
+                self.orfs = self.sort_orfs(unsorted_orfs)
 
-        # Set codons based on the ORFs in the original sequence
-        self.codons = []
-        for pos, nt in enumerate(self.original_seq):
-            local_codon = []
-
-            # Get the codon each nucleotide in the ORF belongs to
-            for orf in self.orfs:
-                out = self.get_codon(pos, orf)
-                local_codon.append(out)
-            self.codons.append(local_codon)
+                # Set codons based on the ORFs in the original sequence
+                for pos, nt in enumerate(self.original_seq):
+                    local_codon = []
+                    # Get the codon each nucleotide in the ORF belongs to
+                    for orf in self.orfs:
+                        out = self.get_codon(pos, orf)
+                        local_codon.append(out)
+                    self.codons.append(local_codon)
 
     @staticmethod
     def valid_sequence(seq):
@@ -80,18 +82,54 @@ class Sequence:
         return is_valid
 
     @staticmethod
-    def valid_orfs(orfs):
+    def valid_orfs(self, orfs):
         """
         Verifies that the input orfs are a list of tuples containing the start and end positions of orfs.
         Example of valid input: [(1, 9), (27, 13)]
         Example of invalid input: (1, 9), (27, 13) is not valid
+        :param orfs: the list of open reading frames
         :return: true if the orfs are valid, false otherwise
         """
-        is_valid = type(orfs) == list and type(orfs[0]) == tuple
-        if not is_valid:
-            print("Invalid input. Open reading frames must of the following format: (0, 8) where 0  "
-                  "is the start position of the orf, and 8 is the end position.")
-        return is_valid
+
+        if not type(orfs) == list:
+            print("Invalid format: {} \nOpen reading frames must of the following format: [(0, 8), ...] where 0  "
+                  "is the start position of the orf, and 8 is the end position.".format(orfs))
+            return False
+
+        for orf in orfs:
+            # Check that each orfs is a tuple of length 2
+            if type(orf) is not tuple or len(orf) is not 2:
+                print("Invalid orf: {} \nOpen reading frames must of the following format: [(0, 8), ...] where 0  "
+                      "is the start position of the orf, and 8 is the end position.".format(orf))
+                return False
+
+            # Check that the orf range is valid
+            if orf[0] == orf[1]:
+                print("Invalid orf: {}".format(orf))
+                return False
+
+            # Check that the start and end positions are integers
+            if type(orf[0]) is not int or type(orf[1]) is not int:
+                print("Invalid orf: {} \nStart and end positions must be integers.".format(orf))
+                return False
+
+            # Check that the start and stop positions are in te range of the sequence
+            if 0 > orf[0] or len(self.original_seq) < orf[0] or 0 > orf[1] or len(self.original_seq) < orf[1]:
+                print("Invalid orf: {} \nPositions must be between 0 and {}".format(orf, len(self.original_seq)))
+                return False
+
+        return True
+
+    def reverse_and_complement(self):
+        """
+        Generates the reverse complement of a DNA sequence
+        :return rcseq: the reverse complement of the sequence
+        """
+        rseq = reversed(self.original_seq.upper())
+        rcseq = ''
+        for i in rseq:  # reverse order
+            rcseq += COMPLEMENT_DICT[i]
+        return rcseq
 
     def get_reading_frames(self):
         """
@@ -184,39 +222,28 @@ class Sequence:
         :return orf_position: list of ORFs classified according to their shift relative to
                     the plus zero reading frame  (+0, +1, +2, -0, -1, -2)
         """
-        plus_zero_orf = unsorted_orfs[0]
-        orf_position = [1] * 6
-        orf_position[0] = plus_zero_orf
+        sorted_orfs = {}
+        if unsorted_orfs:
+            plus_zero_orf = unsorted_orfs[0]
 
-        for orf in unsorted_orfs[1:]:
-            if type(orf) == tuple:
-                if orf[0] < orf[1]:  # positive strand
-                    difference = (orf[0] - plus_zero_orf[0]) % 3
-                    if difference == 1:  # plus one
-                        orf_position[1] = orf
-                    elif difference == 2:  # plus two
-                        orf_position[2] = orf
-                elif orf[0] > orf[1]:  # negative strand
-                    difference = (plus_zero_orf[1] - orf[0]) % 3
+            for orf in unsorted_orfs:
+                difference = abs(orf[0] - plus_zero_orf[0]) % 3
+                if orf[0] < orf[1]:     # positive strand
                     if difference == 0:
-                        orf_position[3] = orf  # minus zero
+                        sorted_orfs[orf] = '+0'
+                    elif difference == 1:     # plus one
+                        sorted_orfs[orf] = '+1'
+                    elif difference == 2:   # plus two
+                        sorted_orfs[orf] = '+2'
+
+                elif orf[0] > orf[1]:   # negative strand
+                    if difference == 0 or difference == plus_zero_orf[0] % 3:
+                        sorted_orfs[orf] = '-0'
                     elif difference == 1:
-                        orf_position[4] = orf  # minus one
+                        sorted_orfs[orf] = '-1'
                     elif difference == 2:
-                        orf_position[5] = orf  # minus two
-
-        return orf_position
-
-    def reverse_and_complement(self):
-        """
-        Generates the reverse complement of a DNA sequence
-        :return rcseq: the reverse complement of the sequence
-        """
-        rseq = reversed(self.original_seq.upper())
-        rcseq = ''
-        for i in rseq:  # reverse order
-            rcseq += COMPLEMENT_DICT[i]
-        return rcseq
+                        sorted_orfs[orf] = '-2'
+        return sorted_orfs
 
     def get_codon(self, position, orf):
         """
@@ -226,7 +253,7 @@ class Sequence:
         :return codon, position_in_codon: tuple with nucleotide triplet and position of the nucleotide in the codon
         """
         if orf[1] > orf[0]:  # positive strand
-            my_orf = ''.join(self.original_seq[orf[0]:orf[1] + 1])
+            my_orf = self.original_seq[orf[0]:orf[1] + 1]
             position_in_orf = position - orf[0]
         else:  # negative strand
             rseq = self.reverse_and_complement()
@@ -252,18 +279,18 @@ class Sequence:
 
     def nt_in_orfs(self, position):
         """
-        List of True or False containing information about to which orfs does each nucleotide belongs to
-        :return:
+        Checks which open reading frames the nucleotide is part of
+        :return: True if the nucleotide is part of the orf, False otherwise
         """
-        in_orf = [False, ] * 6
-        for i in range(6):
-            orf = self.orfs[i]
-            if type(orf) == tuple:
-                if orf[0] < orf[1]:  # positive strand
-                    if position in range(orf[0], orf[1] + 1):
-                        in_orf[i] = True
-                elif orf[0] > orf[1]:  # negative strand
-                    if position in range(orf[1], orf[0] + 1):
-                        in_orf[i] = True
-
+        if 0 > position or len(self.original_seq) < position:
+            raise ValueError("Invalid position {} \n "
+                             "Position must be between 0 and {}".format(position, len(self.original_seq)))
+        in_orf = []
+        for orf in self.orfs:
+            if orf[0] < orf[1]:  # positive strand
+                if orf[0] <= position <= orf[1]:
+                    in_orf.append(orf)
+            elif orf[0] > orf[1]:  # negative strand
+                if orf[0] >= position >= orf[0]:
+                    in_orf.append(orf)
         return in_orf
