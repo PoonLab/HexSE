@@ -54,11 +54,16 @@ class Sequence:
         self.orfs = {}
         self.codons = []
 
-        if orfs is not None and Sequence.valid_orfs(self, orfs):
-            self.orfs = orfs
+        if orfs is not None:
+            if not Sequence.valid_orfs(self, orfs):
+                raise ValueError("Invalid orf: {} "
+                                 "\nOpen reading frames must of the following format: [(0, 8), ...] where 0  "
+                                 "is the start position of the orf, and 8 is the end position.".format(orfs))
+            else:
+                self.orfs = self.sort_orfs(orfs)
 
         else:
-            unsorted_orfs = self.get_reading_frames()
+            unsorted_orfs = self.get_open_reading_frames()
             if unsorted_orfs:
                 self.orfs = self.sort_orfs(unsorted_orfs)
 
@@ -90,32 +95,20 @@ class Sequence:
         :param orfs: the list of open reading frames
         :return: true if the orfs are valid, false otherwise
         """
-
         if not type(orfs) == list:
-            print("Invalid format: {} \nOpen reading frames must of the following format: [(0, 8), ...] where 0  "
-                  "is the start position of the orf, and 8 is the end position.".format(orfs))
             return False
-
         for orf in orfs:
             # Check that each orfs is a tuple of length 2
             if type(orf) is not tuple or len(orf) is not 2:
-                print("Invalid orf: {} \nOpen reading frames must of the following format: [(0, 8), ...] where 0  "
-                      "is the start position of the orf, and 8 is the end position.".format(orf))
                 return False
-
             # Check that the orf range is valid
             if orf[0] == orf[1]:
-                print("Invalid orf: {}".format(orf))
                 return False
-
             # Check that the start and end positions are integers
             if type(orf[0]) is not int or type(orf[1]) is not int:
-                print("Invalid orf: {} \nStart and end positions must be integers.".format(orf))
                 return False
-
             # Check that the start and stop positions are in te range of the sequence
             if 0 > orf[0] or len(self.original_seq) < orf[0] or 0 > orf[1] or len(self.original_seq) < orf[1]:
-                print("Invalid orf: {} \nPositions must be between 0 and {}".format(orf, len(self.original_seq)))
                 return False
 
         return True
@@ -131,7 +124,7 @@ class Sequence:
             rcseq += COMPLEMENT_DICT[i]
         return rcseq
 
-    def get_reading_frames(self):
+    def get_open_reading_frames(self):
         """
         Creates a list with tuples containing the first and last position
         of forwards are reverse reading frames in sequence according to START and STOP codons.
@@ -141,7 +134,7 @@ class Sequence:
         """
         start_codon = re.compile('ATG', flags=re.IGNORECASE)
         stop = re.compile('(TAG)|(TAA)|(TGA)', flags=re.IGNORECASE)
-        reading_frames = []
+        fwd_reading_frames = []
 
         # Record positions of all potential START codons in the forward (positive) reading frame
         fwd_start_positions = [match.start() for match in start_codon.finditer(self.original_seq)]
@@ -152,7 +145,7 @@ class Sequence:
 
             internal_met = False
             # If the ATG codon is an internal methionine and not an initiation codon
-            for orf in reversed(reading_frames):
+            for orf in reversed(fwd_reading_frames):
 
                 # If the START codon and the potential START codon are in the same reading frame
                 # and the existing ORF ends before the potential ORF, stop searching
@@ -173,12 +166,13 @@ class Sequence:
                     if match.start() % 3 == frame and orf_length >= 8:
                         # Get the positions in the sequence for the first and last nt of the RF
                         orf = (position, match.end() - 1)
-                        reading_frames.append(orf)
+                        fwd_reading_frames.append(orf)
                         break
 
         # Forward (positive) reading frames of the reverse complement of the original
         # sequence is equivalent to reverse (negative) reading frames of the original sequence
         rcseq = self.reverse_and_complement()
+        rev_reading_frames = []
 
         # Record positions of all potential START codons in the reverse (negative) reading frame
         rev_start_positions = [match.start() for match in start_codon.finditer(rcseq)]
@@ -189,7 +183,7 @@ class Sequence:
 
             internal_met = False
             # If the ATG codon is an internal methionine and not an initiation codon
-            for orf in reversed(reading_frames):
+            for orf in reversed(rev_reading_frames):
 
                 # If the START codon and the potential START codon are in the same reading frame
                 # and the existing ORF ends before the potential ORF, stop searching
@@ -210,10 +204,10 @@ class Sequence:
                     if match.start() % 3 == frame and orf_length >= 8:
                         # Get the positions in the sequence for the first and last nt of the RF
                         orf = (len(rcseq) - 1 - position, len(rcseq) - match.end())
-                        reading_frames.append(orf)
+                        rev_reading_frames.append(orf)
                         break
 
-        return reading_frames
+        return fwd_reading_frames + rev_reading_frames
 
     def sort_orfs(self, unsorted_orfs):
         """
