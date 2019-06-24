@@ -219,6 +219,11 @@ class Simulate:
         """
         Iterates over tips (terminal nodes) of tree and returns sequence
         """
+        aln = open("simulation_out.txt", "w+")
+
         final_tree = self.traverse_tree()
-        for node in final_tree.find_clades(order='level'):
-            print(node.sequence)
+        for clade in final_tree.get_terminals():
+            seq = clade.sequence
+            aln.write(">Sequence {} \n{}\n".format(clade, seq) )
+
+        aln.close()
