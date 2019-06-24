@@ -63,11 +63,18 @@ class Simulate:
         """
         Simulate molecular evolution on the branch given starting sequence
         """
-
+        # Probability that a mutation occurs
         # Generate random waiting times to mutate while sum(t)<=branch_length
         times_sum = 0
         while True:
+            # Probability density function: f(x) = (1/mu)*numpy.exp((-1/mu)*x)
             random_time = random.uniform(0, evolution_time)
+
+            #P = self.sum_rates() # Probability of any event happening
+            print(self.sum_rates())
+
+
+            print(evolution_time, random_time)
             #random_time = np.random.exponential(scale=1, size = None)
             times_sum += random_time
             if round(times_sum, 10) > evolution_time:
@@ -219,7 +226,7 @@ class Simulate:
         """
         Iterates over tips (terminal nodes) of tree and returns sequence
         """
-        aln = open("simulation_out.txt", "w+")
+        aln = open("simulation_out2.txt", "w+")
 
         final_tree = self.traverse_tree()
         for clade in final_tree.get_terminals():

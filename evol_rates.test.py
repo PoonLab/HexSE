@@ -23,6 +23,10 @@ orfs = [(2,10), (4,9), (8,0), (10,2)] #, (0,5), (9,3)
 sorted_orfs = sort_orfs(orfs)
 seq = Sequence(original_seq, sorted_orfs)
 rates = Rates(seq, mu, bias, pi, omega)
+#print(rates.mu)
 tree = Phylo.read("abayomi_tree.nwk", "newick", rooted = True)
 s = Simulate(rates, tree)
+
+
 print(s.get_alignment())
+
