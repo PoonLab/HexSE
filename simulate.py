@@ -63,19 +63,10 @@ class Simulate:
         """
         Simulate molecular evolution on the branch given starting sequence
         """
-        # Probability that a mutation occurs
         # Generate random waiting times to mutate while sum(t)<=branch_length
         times_sum = 0
         while True:
-            # Probability density function: f(x) = (1/mu)*numpy.exp((-1/mu)*x)
             random_time = random.uniform(0, evolution_time)
-
-            #P = self.sum_rates() # Probability of any event happening
-            print(self.sum_rates())
-
-
-            print(evolution_time, random_time)
-            #random_time = np.random.exponential(scale=1, size = None)
             times_sum += random_time
             if round(times_sum, 10) > evolution_time:
                 break
@@ -83,7 +74,7 @@ class Simulate:
             mutation_site = self.get_substitution()[0]
             nucleotide = self.get_substitution()[1]
 
-            # update rates if position is in at least in one reading frame
+            # update rates if position is in at least one reading frame
             self.rates[mutation_site] = self.get_new_rates(mutation_site, nucleotide)
 
             # Update sequence with the new selected nucleotide
