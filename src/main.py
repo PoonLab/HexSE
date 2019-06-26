@@ -9,21 +9,25 @@ import argparse
 
 def get_args(parser):
     parser.add_argument(
-        'infile',
+        'sequence',
         help='Path to the file containing the query sequence.'
     )
     parser.add_argument(
+        'tree',
+        help='Path to file containing phylogenetic tree in Newick format.'
+    )
+    parser.add_argument(
+        'rates',
+        help='File containing substitution biases to calculate substitution rates'
+    )
+    parser.add_argument(
         'outfile',
-        help='Path to the output file'
+        help='Path to the alignment file.'
     )
     parser.add_argument(
-        '-pi',
-        help='A vector of stationary nucleotide frequencies'
-    )
-    parser.add_argument(
-        '-bias',
-        help='List of 6 mutation rates [AC, AG, AT, CG, CT, GT] assuming time-reversibility.',
-        default=[1, 1, 1, 1, 1, 1]
+        '-orfs',
+        help='List containing open reading frames as tuples ex:[(2,10), (4,9), (8,0)]',
+        default=[(0,100)]
     )
 
     return parser.parse_args()

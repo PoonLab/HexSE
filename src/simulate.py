@@ -59,17 +59,28 @@ class Simulate:
 
         return(position, to_nt[0])
 
-    def simulate_on_branch(self, evolution_time):
+
+    def draw_waiting_time(self):
+        """
+        Draw a time at which mutation occurs according to mutation rates.
+        :return:
+        """
+        instant_rate = self.sum_rates()
+        time = np.random.exponential(scale=instant_rate)
+        return time
+
+
+    def simulate_on_branch(self, branch_length):
         """
         Simulate molecular evolution on the branch given starting sequence
         """
-        # Generate random waiting times to mutate while sum(t)<=branch_length
         times_sum = 0
         while True:
-            random_time = random.uniform(0, evolution_time)
+            random_time = self.draw_waiting_time()
             times_sum += random_time
-            if round(times_sum, 10) > evolution_time:
+            if times_sum > branch_length:
                 break
+
             # Mutate sequence
             mutation_site = self.get_substitution()[0]
             nucleotide = self.get_substitution()[1]
@@ -217,11 +228,11 @@ class Simulate:
         """
         Iterates over tips (terminal nodes) of tree and returns sequence
         """
-        aln = open("simulation_out2.txt", "w+")
+        aln = open("/home/lmunoz/Projects/ovrf/HBV/simulation_out2.txt", "w+")
 
         final_tree = self.traverse_tree()
         for clade in final_tree.get_terminals():
             seq = clade.sequence
-            aln.write(">Sequence {} \n{}\n".format(clade, seq) )
+            aln.write(">Sequence_{} \n{}\n".format(clade, seq) )
 
         aln.close()
