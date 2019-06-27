@@ -108,25 +108,25 @@ class TestGetReadingFrames(unittest.TestCase):
         # Tests one ORF (ATG AAA TAG)
         s = Sequence("ATGAAATAG")
         expected = [(0, 8)]
-        result = Sequence.get_reading_frames(s)
+        result = s.get_reading_frames()
         self.assertEqual(expected, result)
 
     def testNoStartNoStop(self):
         s = Sequence("TTTTTTTTTTTTT")
         expected = []
-        result = Sequence.get_reading_frames(s)
+        result = s.get_reading_frames()
         self.assertEqual(expected, result)
 
     def testOnlyStartCodon(self):
         s = Sequence("ATGCCTCTCTCTCTTCTCTC")
         expected = []
-        result = Sequence.get_reading_frames(s)
+        result = s.get_reading_frames()
         self.assertEqual(expected, result)
 
     def testOnlyStopCodon(self):
         s = Sequence("AGAACGTAA")
         expected = []
-        result = Sequence.get_reading_frames(s)
+        result = s.get_reading_frames()
         self.assertEqual(expected, result)
 
     def testSimpleUse2(self):
@@ -135,7 +135,7 @@ class TestGetReadingFrames(unittest.TestCase):
         # ORF (reverse direction): ATG AAG CGA ACA GAT TTT CGT TCA TGA
         s = Sequence("AATTCATGAACGAAAATCTGTTCGCTTCATTCATTGCCCCCACAATCTAGGCCTACCC")
         expected = [(5, 49), (29, 3)]
-        result = Sequence.get_reading_frames(s)
+        result = s.get_reading_frames()
         self.assertEqual(expected, result)
 
     def testSimpleUse3(self):
@@ -143,7 +143,7 @@ class TestGetReadingFrames(unittest.TestCase):
         # ATG AAC GAA AAT CTG TTC GCT TCA TTC ATT GCC CCC ACA ATT AG...
         s = Sequence("AAATGAACGAAAATCTGTTCGCTTCATTCATTGCCCCCACAATTAGGCCTACCC")
         expected = []
-        result = Sequence.get_reading_frames(s)
+        result = s.get_reading_frames()
         self.assertEqual(expected, result)
 
     def testTwoStartSameFrame(self):
@@ -151,7 +151,7 @@ class TestGetReadingFrames(unittest.TestCase):
         # ORF: ATG CCC ATG CCC TAA TAA
         s = Sequence("ATGCCCATGCCCTAATAA")
         expected = [(0, 14)]
-        result = Sequence.get_reading_frames(s)
+        result = s.get_reading_frames()
         self.assertEqual(expected, result)
 
     def testMultipleORFs(self):
@@ -160,20 +160,20 @@ class TestGetReadingFrames(unittest.TestCase):
         # ORF2: ATG GGT AAA TA
         s = Sequence("ATGAAAGTGCAACATGGGTAAATAG")
         expected = [(0, 20), (13, 24)]
-        result = Sequence.get_reading_frames(s)
+        result = s.get_reading_frames()
         self.assertEqual(expected, result)
 
     def testLowerCaseInput(self):
         s = Sequence("atgaaatag")
         expected = [(0, 8)]
-        result = Sequence.get_reading_frames(s)
+        result = s.get_reading_frames()
         self.assertEqual(expected, result)
 
     def testStopBeforeStart(self):
         # Tests scenario when a stop codon precedes a start codon
         s = Sequence("TAGATGAAATAG")
         expected = [(3, 11)]
-        result = Sequence.get_reading_frames(s)
+        result = s.get_reading_frames()
         self.assertEqual(expected, result)
 
     def testBackToBackORFs1(self):
@@ -182,7 +182,7 @@ class TestGetReadingFrames(unittest.TestCase):
         # ORF2: ATG CAC TAA
         s = Sequence("ATGTTTTAGATGCACTAA")
         expected = [(0, 8), (9, 17)]
-        result = Sequence.get_reading_frames(s)
+        result = s.get_reading_frames()
         self.assertEqual(expected, result)
 
     def testBackToBackORFs2(self):
@@ -191,7 +191,7 @@ class TestGetReadingFrames(unittest.TestCase):
         # ORF2: ATG CAC TAA
         s = Sequence("ATGTTTTGACCCAAAATGCACTAA")
         expected = [(0, 8), (15, 23)]
-        result = Sequence.get_reading_frames(s)
+        result = s.get_reading_frames()
         self.assertEqual(expected, result)
 
     def testBackToBackORFs3(self):
@@ -200,7 +200,7 @@ class TestGetReadingFrames(unittest.TestCase):
         # ORF2: ATG CAC TAA
         s = Sequence("ATGTTTTGACCCAAATGCACTAA")
         expected = [(0, 8), (14, 22)]
-        result = Sequence.get_reading_frames(s)
+        result = s.get_reading_frames()
         self.assertEqual(expected, result)
 
     def testBackToBackORFs4(self):
@@ -209,7 +209,7 @@ class TestGetReadingFrames(unittest.TestCase):
         # ORF2: ATG GAG TGA
         s = Sequence("AATGGAGTGACCCGGGATGGAGTAG")
         expected = [(1, 9), (16, 24)]
-        result = Sequence.get_reading_frames(s)
+        result = s.get_reading_frames()
         self.assertEqual(expected, result)
 
     def testInternalORF(self):
@@ -218,7 +218,7 @@ class TestGetReadingFrames(unittest.TestCase):
         # ORF2: ATG GCA CAA GTG TAA
         s = Sequence("ATGAGATGGCACAAGTGTAACTAG")
         expected = [(0, 23), (5, 19)]
-        result = Sequence.get_reading_frames(s)
+        result = s.get_reading_frames()
         self.assertEqual(expected, result)
 
 
@@ -229,25 +229,25 @@ class TestSortOrfs(unittest.TestCase):
     def testSimpleUse(self):
         s = Sequence("ATGAAAGGGTAA", [(0, 11)])
         expected = {(0, 11): '+0'}
-        result = Sequence.sort_orfs(s, [(0, 11)])
+        result = s.sort_orfs([(0, 11)])
         self.assertEqual(expected, result)
 
     def testMultipleOrfs(self):
         s = Sequence("ATGAGATGGCACAAGTGTAACTAG", [(0, 23), (5, 19)])
         expected = {(0, 23): '+0', (5, 19): '+2'}
-        result = Sequence.sort_orfs(s, [(0, 23), (5, 19)])
+        result = s.sort_orfs([(0, 23), (5, 19)])
         self.assertEqual(expected, result)
 
     def testBacktoBackOrfs(self):
         s = Sequence("AATGGAGTGACCCGGGATGGAGTAG", [(1, 9), (16, 24)])
         expected = {(1, 9): '+0', (16, 24): '+0'}
-        result = Sequence.sort_orfs(s, [(1, 9), (16, 24)])
+        result = s.sort_orfs([(1, 9), (16, 24)])
         self.assertEqual(expected, result)
 
     def testFwdReverseOrfs(self):
         s = Sequence("AATTCATGAACGAAAATCTGTTCGCTTCATTCATTGCCCCCACAATCTAGGCCTACCC", [(5, 49), (29, 3)])
         expected = {(5, 49): '+0', (29, 3): '-0'}
-        result = Sequence.sort_orfs(s, [(5, 49), (29, 3)])
+        result = s.sort_orfs([(5, 49), (29, 3)])
         self.assertEqual(expected, result)
 
     def testAllSixOrfs(self):
@@ -259,7 +259,7 @@ class TestSortOrfs(unittest.TestCase):
                     (9, 1): '-0',
                     (2, 10): '+2',
                     (10, 2): '-1'}
-        result = Sequence.sort_orfs(s, [(0, 8), (8, 0), (1, 9), (9, 1), (2, 10), (10, 2)])
+        result = s.sort_orfs([(0, 8), (8, 0), (1, 9), (9, 1), (2, 10), (10, 2)])
         self.assertEqual(expected, result)
 
 
@@ -270,37 +270,37 @@ class TestGetCodon(unittest.TestCase):
     def testSimpleUse(self):
         s = Sequence("ATGAAAGGGTAA", [(0, 11)])
         expected = ("ATG", 0)
-        result = Sequence.get_codon(s, 0, (0, 11))
+        result = s.get_codon(0, (0, 11))
         self.assertEqual(expected, result)
 
     def testSimpleUse2(self):
         s = Sequence("ATGAAAGGGTAA", [(0, 11)])
         expected = ("ATG", 1)
-        result = Sequence.get_codon(s, 1, (0, 11))
+        result = s.get_codon(1, (0, 11))
         self.assertEqual(expected, result)
 
     def testSimpleUse3(self):
         s = Sequence("ATGAAAGGGTAA", [(0, 11)])
         expected = ("GGG", 2)
-        result = Sequence.get_codon(s, 8, (0, 11))
+        result = s.get_codon(8, (0, 11))
         self.assertEqual(expected, result)
 
     def testSamePositionMultipleOrfs1(self):
         s = Sequence("ATGAAAGTGCAACATGGGTAAATAG", [(0, 20)])
         expected = ("CAT", 1)
-        result = Sequence.get_codon(s, 13, (0, 20))
+        result = s.get_codon(13, (0, 20))
         self.assertEqual(expected, result)
 
     def testSamePositionMultipleOrfs2(self):
         s = Sequence("ATGAAAGTGCAACATGGGTAAATAG", [(13, 24)])
         expected = ("ATG", 0)
-        result = Sequence.get_codon(s, 13, (13, 24))
+        result = s.get_codon(13, (13, 24))
         self.assertEqual(expected, result)
 
     def testFindStopCodon(self):
         s = Sequence("ATGAAAGGGTAA")
         expected = ("TAA", 2)
-        result = Sequence.get_codon(s, 11, (0, 11))
+        result = s.get_codon(11, (0, 11))
         self.assertEqual(expected, result)
 
 
@@ -309,31 +309,27 @@ class TestNtInORFs(unittest.TestCase):
     def testSimpleUse(self):
         s = Sequence("ATGGGGTAA")
         expected = [(0, 8)]
-        result = Sequence.nt_in_orfs(s, 7)
+        result = s.nt_in_orfs(7)
         self.assertEqual(expected, result)
 
     def testBadInput(self):
         s = Sequence("ATGCCCGGTAA")
         with self.assertRaises(ValueError):
-            Sequence.nt_in_orfs(s, -1)
+            s.nt_in_orfs(-1)
 
     def testBadInput2(self):
         s = Sequence("ATGCCGAGTAG")
         with self.assertRaises(ValueError):
-            Sequence.nt_in_orfs(s, 500)
+            s.nt_in_orfs(500)
 
     def testNoOrfs(self):
         s = Sequence("ATGCGCGCACGGATAA")
         expected = []
-        result = Sequence.nt_in_orfs(s, 0)
+        result = s.nt_in_orfs(0)
         self.assertEqual(expected, result)
 
     def testInternalORF(self):
         s = Sequence("ATGAGATGGCACAAGTGTAACTAG")
         expected = [(0, 23), (5, 19)]
-        result = Sequence.nt_in_orfs(s, 6)
+        result = s.nt_in_orfs(6)
         self.assertEqual(expected, result)
-
-
-
-
