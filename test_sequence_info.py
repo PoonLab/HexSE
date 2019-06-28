@@ -1,5 +1,5 @@
 import unittest
-from sequence_info import Sequence
+from src.sequence_info import Sequence
 
 
 class TestValidSequence(unittest.TestCase):

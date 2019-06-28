@@ -1,9 +1,9 @@
 from Bio import Phylo
 import numpy as np
 import random
-from ovrf_functions import NUCLEOTIDES
-from ovrf_functions import COMPLEMENT_DICT
-from ovrf_functions import CODON_DICT
+from src.sequence_info import NUCLEOTIDES
+from src.sequence_info import COMPLEMENT_DICT
+from src.sequence_info import CODON_DICT
 
 
 class Simulate:

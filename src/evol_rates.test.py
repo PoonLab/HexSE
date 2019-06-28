@@ -1,8 +1,8 @@
-from ovrf_functions import reverse_and_complement
-from ovrf_functions import sort_orfs
-from sequence_info import Sequence
-from evol_rates import Rates
-from simulate import Simulate
+from src.ovrf_functions import reverse_and_complement
+from src.ovrf_functions import sort_orfs
+from src.sequence_info import Sequence
+from src.evol_rates import Rates
+from src.simulate import Simulate
 from Bio import Phylo, SeqIO
 
 bias = { 'A': {'C':0.001, 'G':0.065 ,'T':0.002 },

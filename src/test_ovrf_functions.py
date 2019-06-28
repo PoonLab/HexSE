@@ -1,14 +1,14 @@
 import unittest
 
-from ovrf_functions import get_frequency_rates
-from ovrf_functions import draw_omega_values
-from ovrf_functions import get_reading_frames
-from ovrf_functions import codon_iterator
-from ovrf_functions import get_syn_codons
-from ovrf_functions import get_syn_subs
-from ovrf_functions import get_codon
-from ovrf_functions import reverse_and_complement
-from ovrf_functions import sort_orfs
+from src.ovrf_functions import get_frequency_rates
+from src.ovrf_functions import draw_omega_values
+from src.ovrf_functions import get_reading_frames
+from src.ovrf_functions import codon_iterator
+from src.ovrf_functions import get_syn_codons
+from src.ovrf_functions import get_syn_subs
+from src.ovrf_functions import get_codon
+from src.ovrf_functions import reverse_and_complement
+from src.ovrf_functions import sort_orfs
 
 
 class TestGetFrequencyRates(unittest.TestCase):

@@ -1,8 +1,8 @@
 import unittest
 from unittest.mock import patch
-from simulate import Simulate
+from src.simulate import Simulate
 from Bio import Phylo
-from evol_rates import get_evol_rates
+from src.evol_rates import get_evol_rates
 
 class TestSimulate(unittest.TestCase):
     # def test_simulate_on_branch_generic(self):

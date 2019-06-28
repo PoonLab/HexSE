@@ -1,6 +1,6 @@
 import unittest
-from evol_rates import Rates
-from sequence_info import Sequence
+from src.evol_rates import Rates
+from src.sequence_info import Sequence
 
 
 class TestDrawOmegaValues(unittest.TestCase):
