@@ -1,8 +1,7 @@
-from ovrf_functions import get_reading_frames
-from ovrf_functions import sort_orfs
-from evol_rates import NUCLEOTIDES
-from sequence_info import Sequence
-from sequence_info import Nucleotide
+from src.ovrf_functions import get_reading_frames
+from src.ovrf_functions import sort_orfs
+from src.sequence_info import NUCLEOTIDES
+from src.sequence_info import Sequence
 
 import argparse
 
