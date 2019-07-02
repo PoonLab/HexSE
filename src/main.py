@@ -27,7 +27,7 @@ def get_args(parser):
     parser.add_argument(
         '-orfs',
         help='List containing open reading frames as tuples ex:[(2,10), (4,9), (8,0)]',
-        default=[(0,100)]
+        default=[(0,len(seq))]
     )
 
     return parser.parse_args()
