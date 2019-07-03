@@ -4,8 +4,8 @@ from src.sequence_info import Sequence
 from src.evol_rates import Rates
 from src.simulate import Simulate
 from Bio import Phylo, SeqIO
-from orfs_from_genbank import orfs_from_gb
-from orfs_from_genbank import sq_from_gb
+from src.orfs_from_genbank import orfs_from_gb
+from src.orfs_from_genbank import sq_from_gb
 
 bias = { 'A': {'C':0.001, 'G':0.065 ,'T':0.002 },
          'C': {'A':0.001, 'G':0.00001 ,'T':0.064 },
