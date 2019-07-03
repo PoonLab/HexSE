@@ -130,6 +130,9 @@ class Rates(list):
                             position_in_codon = nt_info[1]
                             mutated_codon = list(my_codon)
                             mutated_codon[position_in_codon] = nt  # substitution step
+                            print(mutated_codon)
+                            print(pos, orf)
+                            print(my_codon, "\n")
 
                             is_syn.append(0) if CODON_DICT[''.join(mutated_codon)] == CODON_DICT[my_codon] \
                                 else is_syn.append(1)

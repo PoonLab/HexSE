@@ -272,3 +272,22 @@ def sort_orfs(orfs):
                     orf_position[5] = orf  # minus two
 
     return orf_position
+
+def check_orfs(sorted_orfs):
+    """
+    Check if given orfs are multiples of three (all of them are composed by codons)
+    :return:
+    """
+    new_orfs = []
+    for orf in sorted_orfs:
+        if type(orf) == tuple:
+            mode = (orf[1]-orf[0]) % 3  # If amount of nt in the reading frame is divisible ny three
+            if mode == 0:
+                new_orfs.append(orf)
+            else:
+                new_tuple = (orf[0], orf[1]-mode)
+                new_orfs.append(new_tuple)
+
+        else:
+            new_orfs.append(orf)
+    return new_orfs

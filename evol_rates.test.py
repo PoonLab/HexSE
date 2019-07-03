@@ -1,5 +1,5 @@
 from src.ovrf_functions import reverse_and_complement
-from src.ovrf_functions import sort_orfs
+from src.ovrf_functions import sort_orfs, check_orfs
 from src.sequence_info import Sequence
 from src.evol_rates import Rates
 from src.simulate import Simulate
@@ -24,7 +24,7 @@ print(orfs)
 #orfs = [(2,10), (4,9), (8,0), (10,2)] #, (0,5), (9,3)
 
 
-sorted_orfs = sort_orfs(orfs)
+sorted_orfs = check_orfs(sort_orfs(orfs))
 print(sorted_orfs)
 
 seq = Sequence(original_seq, sorted_orfs)
