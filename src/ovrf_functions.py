@@ -281,12 +281,15 @@ def check_orfs(sorted_orfs):
     new_orfs = []
     for orf in sorted_orfs:
         if type(orf) == tuple:
-            mode = (orf[1]-orf[0]) % 3  # If amount of nt in the reading frame is divisible ny three
-            if mode == 0:
+            # positive strand
+            mode = (orf[1]-orf[0]) % 3   # If amount of nt in the reading frame is divisible ny three
+            if mode == 2:
                 new_orfs.append(orf)
-            else:
-                new_tuple = (orf[0], orf[1]-mode)
+            elif mode == 0:
+                new_tuple = (orf[0], orf[1] - 1)
                 new_orfs.append(new_tuple)
+            else:
+                new_orfs.append(orf[0], orf[1] - 2)
 
         else:
             new_orfs.append(orf)
