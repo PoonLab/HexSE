@@ -228,37 +228,37 @@ class TestSortOrfs(unittest.TestCase):
     """
     def testSimpleUse(self):
         s = Sequence("ATGAAAGGGTAA", [(0, 11)])
-        expected = {(0, 11): '+0'}
+        expected = {'+0': [(0, 11)], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
         result = s.sort_orfs([(0, 11)])
         self.assertEqual(expected, result)
 
     def testMultipleOrfs(self):
         s = Sequence("ATGAGATGGCACAAGTGTAACTAG", [(0, 23), (5, 19)])
-        expected = {(0, 23): '+0', (5, 19): '+2'}
+        expected = {'+0': [(0, 23)], '+1': [], '+2': [(5, 19)], '-0': [], '-1': [], '-2': []}
         result = s.sort_orfs([(0, 23), (5, 19)])
         self.assertEqual(expected, result)
 
     def testBacktoBackOrfs(self):
         s = Sequence("AATGGAGTGACCCGGGATGGAGTAG", [(1, 9), (16, 24)])
-        expected = {(1, 9): '+0', (16, 24): '+0'}
+        expected = {'+0': [(1, 9), (16, 24)], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
         result = s.sort_orfs([(1, 9), (16, 24)])
         self.assertEqual(expected, result)
 
     def testFwdReverseOrfs(self):
         s = Sequence("AATTCATGAACGAAAATCTGTTCGCTTCATTCATTGCCCCCACAATCTAGGCCTACCC", [(5, 49), (29, 3)])
-        expected = {(5, 49): '+0', (29, 3): '-0'}
+        expected = {'+0': [(5, 49)], '+1': [], '+2': [], '-0': [(29, 3)], '-1': [], '-2': []}
         result = s.sort_orfs([(5, 49), (29, 3)])
         self.assertEqual(expected, result)
 
     def testAllSixOrfs(self):
         s = Sequence("AATTCATGAACGAAAATCTGTTCGCTTCATTCATTGCCCCCACAATCTAGGCCTACCC",
                      [(0, 8), (8, 0), (1, 9), (9, 1), (2, 10), (10, 2)])
-        expected = {(0, 8): '+0',
-                    (8, 0): '-2',
-                    (1, 9): '+1',
-                    (9, 1): '-0',
-                    (2, 10): '+2',
-                    (10, 2): '-1'}
+        expected = {'+0': [(0, 8)],
+                    '+1': [(1, 9)],
+                    '+2': [(2, 10)],
+                    '-0': [(9, 1)],
+                    '-1': [(10, 2)],
+                    '-2': [(8, 0)]}
         result = s.sort_orfs([(0, 8), (8, 0), (1, 9), (9, 1), (2, 10), (10, 2)])
         self.assertEqual(expected, result)
 
