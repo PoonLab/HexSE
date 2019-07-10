@@ -1,5 +1,6 @@
 import unittest
 from src.sequence_info import Sequence
+from src.sequence_info import Nucleotide
 
 
 class TestValidSequence(unittest.TestCase):
@@ -307,29 +308,27 @@ class TestGetCodon(unittest.TestCase):
 class TestNtInORFs(unittest.TestCase):
 
     def testSimpleUse(self):
-        s = Sequence("ATGGGGTAA")
-        expected = [(0, 8)]
-        result = s.nt_in_orfs(7)
+        n = Nucleotide('A', 0, {'+0': [(0, 8)], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []})
+        expected = [True, False, False, False, False, False]
+        result = n.nt_in_orfs({'+0': [(0, 8)], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []})
         self.assertEqual(expected, result)
 
-    def testBadInput(self):
-        s = Sequence("ATGCCCGGTAA")
-        with self.assertRaises(ValueError):
-            s.nt_in_orfs(-1)
-
-    def testBadInput2(self):
-        s = Sequence("ATGCCGAGTAG")
-        with self.assertRaises(ValueError):
-            s.nt_in_orfs(500)
+    def testSimpleUse2(self):
+        n = Nucleotide('T', 9, {'+0': [], '+1': [(1, 11)], '+2': [], '-0': [], '-1': [], '-2': []})
+        expected = [False, True, False, False, False, False]
+        result = n.nt_in_orfs({'+0': [], '+1': [(1, 11)], '+2': [], '-0': [], '-1': [], '-2': []})
+        self.assertEqual(expected, result)
 
     def testNoOrfs(self):
-        s = Sequence("ATGCGCGCACGGATAA")
-        expected = []
-        result = s.nt_in_orfs(0)
+        n = Nucleotide('A', 15, {'+0': [], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []})
+        expected = [False, False, False, False, False, False]
+        result = n.nt_in_orfs({'+0': [], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []})
         self.assertEqual(expected, result)
 
-    def testInternalORF(self):
-        s = Sequence("ATGAGATGGCACAAGTGTAACTAG")
-        expected = [(0, 23), (5, 19)]
-        result = s.nt_in_orfs(6)
+    def testInAllORFs(self):
+        n = Nucleotide('G', 6, {'+0': [(0, 11)], '+1': [(1, 12)], '+2': [(2, 13)],
+                                '-0': [(11, 0)], '-1': [(12, 1)], '-2': [(13, 2)]})
+        expected = [True, True, True, True, True, True]
+        result = n.nt_in_orfs({'+0': [(0, 11)], '+1': [(1, 12)], '+2': [(2, 13)],
+                               '-0': [(11, 0)], '-1': [(12, 1)], '-2': [(13, 2)]})
         self.assertEqual(expected, result)
