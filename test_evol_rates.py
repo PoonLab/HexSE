@@ -1,6 +1,7 @@
 import unittest
 from src.evol_rates import Rates
 from src.sequence_info import Sequence
+from src.sequence_info import Nucleotide
 
 
 class TestDrawOmegaValues(unittest.TestCase):
@@ -12,10 +13,10 @@ class TestGetFrequencyRates(unittest.TestCase):
     Tests get_frequency_rates
     """
     def testSimpleUse(self):
-        s = Sequence("AAAAAAAAA")
-        r1 = Rates(s.original_seq, "", "")
+        s = Sequence('AAAAAAAAA', [])
+        r = Rates(s, 0.5, None, None, None)
         expected = {'A': 1, 'C': 0, 'T': 0, 'G': 0}
-        result = Rates.get_frequency_rates(r1)
+        result = r.get_frequency_rates()
         self.assertEqual(expected, result)
 
     def testSimpleUse1(self):
@@ -39,7 +40,7 @@ class TestGetFrequencyRates(unittest.TestCase):
               "agacccttttagtcagtgtggaaaatctctagcagtggcgcccgaacagg" \
               "gacctgaaagcgaaagggaaaccagaggagctctctcgacgcaggactcg"
         expected = {'A': 0.25, 'C': 0.25, 'T': 0.22, 'G': 0.28}
-        result = Rates.get_frequency_rates(seq.upper())
+        result = Rates.get_frequency_rates(seq.upper(), seq)
         self.assertEqual(expected, result)
 
 
