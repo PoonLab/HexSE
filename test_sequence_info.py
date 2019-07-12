@@ -228,32 +228,31 @@ class TestSortOrfs(unittest.TestCase):
     Tests sort_orfs
     """
     def testSimpleUse(self):
-        s = Sequence("ATGAAAGGGTAA", [(0, 11)])
+        s = Sequence("ATGAAAGGGTAA")
         expected = {'+0': [(0, 11)], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
         result = s.sort_orfs([(0, 11)])
         self.assertEqual(expected, result)
 
     def testMultipleOrfs(self):
-        s = Sequence("ATGAGATGGCACAAGTGTAACTAG", [(0, 23), (5, 19)])
+        s = Sequence("ATGAGATGGCACAAGTGTAACTAG")
         expected = {'+0': [(0, 23)], '+1': [], '+2': [(5, 19)], '-0': [], '-1': [], '-2': []}
         result = s.sort_orfs([(0, 23), (5, 19)])
         self.assertEqual(expected, result)
 
     def testBacktoBackOrfs(self):
-        s = Sequence("AATGGAGTGACCCGGGATGGAGTAG", [(1, 9), (16, 24)])
+        s = Sequence("AATGGAGTGACCCGGGATGGAGTAG")
         expected = {'+0': [(1, 9), (16, 24)], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
         result = s.sort_orfs([(1, 9), (16, 24)])
         self.assertEqual(expected, result)
 
     def testFwdReverseOrfs(self):
-        s = Sequence("AATTCATGAACGAAAATCTGTTCGCTTCATTCATTGCCCCCACAATCTAGGCCTACCC", [(5, 49), (29, 3)])
+        s = Sequence("AATTCATGAACGAAAATCTGTTCGCTTCATTCATTGCCCCCACAATCTAGGCCTACCC")
         expected = {'+0': [(5, 49)], '+1': [], '+2': [], '-0': [(29, 3)], '-1': [], '-2': []}
         result = s.sort_orfs([(5, 49), (29, 3)])
         self.assertEqual(expected, result)
 
     def testAllSixOrfs(self):
-        s = Sequence("AATTCATGAACGAAAATCTGTTCGCTTCATTCATTGCCCCCACAATCTAGGCCTACCC",
-                     [(0, 8), (8, 0), (1, 9), (9, 1), (2, 10), (10, 2)])
+        s = Sequence("AATTCATGAACGAAAATCTGTTCGCTTCATTCATTGCCCCCACAATCTAGGCCTACCC")
         expected = {'+0': [(0, 8)],
                     '+1': [(1, 9)],
                     '+2': [(2, 10)],
@@ -304,31 +303,42 @@ class TestGetCodon(unittest.TestCase):
         result = s.get_codon(11, (0, 11))
         self.assertEqual(expected, result)
 
+    def testFwdReverseOrfs(self):
+        s = Sequence("AATTCATGAACGAAAATCTGTTCGCTTCATTCATTGCCCCCACAATCTAGGCCTACCC")
+        rev_comp =   'GGGTAGGCCTAGATTGTGGGGGCAATGAATGAAGCGAACAGATTTTCGTTCATGAATT'
+        # ATG AAG CGA ACA GAT TTT CGT TCA TGA
+        # ATT CAT TGC CCC CAC AAT CTA GGC CTA
+        rev_comp = s.reverse_and_complement()
+        print(rev_comp)
+        expected = ('TAG', 2)
+        result = s.get_codon(29, (29, 3))
+        self.assertEqual(expected, result)
+
 
 class TestNtInORFs(unittest.TestCase):
 
     def testSimpleUse(self):
         n = Nucleotide('A', 0, {'+0': [(0, 8)], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []})
-        expected = [True, False, False, False, False, False]
+        expected = [(0, 8), None, None, None, None, None]
         result = n.nt_in_orfs({'+0': [(0, 8)], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []})
         self.assertEqual(expected, result)
 
     def testSimpleUse2(self):
         n = Nucleotide('T', 9, {'+0': [], '+1': [(1, 11)], '+2': [], '-0': [], '-1': [], '-2': []})
-        expected = [False, True, False, False, False, False]
+        expected = [None, (1, 11), None, None, None, None]
         result = n.nt_in_orfs({'+0': [], '+1': [(1, 11)], '+2': [], '-0': [], '-1': [], '-2': []})
         self.assertEqual(expected, result)
 
     def testNoOrfs(self):
         n = Nucleotide('A', 15, {'+0': [], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []})
-        expected = [False, False, False, False, False, False]
+        expected = [None, None, None, None, None, None]
         result = n.nt_in_orfs({'+0': [], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []})
         self.assertEqual(expected, result)
 
     def testInAllORFs(self):
         n = Nucleotide('G', 6, {'+0': [(0, 11)], '+1': [(1, 12)], '+2': [(2, 13)],
                                 '-0': [(11, 0)], '-1': [(12, 1)], '-2': [(13, 2)]})
-        expected = [True, True, True, True, True, True]
+        expected = [(0, 11), (1, 12), (2, 13), (11, 0), (12, 1), (13, 2)]
         result = n.nt_in_orfs({'+0': [(0, 11)], '+1': [(1, 12)], '+2': [(2, 13)],
                                '-0': [(11, 0)], '-1': [(12, 1)], '-2': [(13, 2)]})
         self.assertEqual(expected, result)

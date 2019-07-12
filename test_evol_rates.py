@@ -1,7 +1,6 @@
 import unittest
 from src.evol_rates import Rates
 from src.sequence_info import Sequence
-from src.sequence_info import Nucleotide
 
 
 class TestDrawOmegaValues(unittest.TestCase):
@@ -12,35 +11,53 @@ class TestGetFrequencyRates(unittest.TestCase):
     """
     Tests get_frequency_rates
     """
-    def testSimpleUse(self):
-        s = Sequence('AAAAAAAAA', [])
-        r = Rates(s, 0.5, None, None, None)
+    def testShortSeq(self):
+        s = Sequence('AAAAAAAAA')
+        mu = 0.00001
+        bias = {'A': {'C': 0.001, 'G': 0.065,   'T': 0.002},
+                'C': {'A': 0.001, 'G': 0.00001, 'T': 0.064},
+                'G': {'A': 0.065, 'C': 0.00001, 'T': 0.00001},
+                'T': {'A': 0.002, 'C': 0.064,   'G': 0.00001}}
+        pi = None
+        omega = None
+        r = Rates(s, mu, bias, pi, omega)
         expected = {'A': 1, 'C': 0, 'T': 0, 'G': 0}
         result = r.get_frequency_rates()
         self.assertEqual(expected, result)
 
-    def testSimpleUse1(self):
+    def testSimpleUse(self):
+        s = Sequence("GTACGATCGATCGATGCTAGC")
+        mu = 0.00005
+        bias = {'A': {'C': 0.001, 'G': 0.065,   'T': 0.002},
+                'C': {'A': 0.001, 'G': 0.00001, 'T': 0.064},
+                'G': {'A': 0.065, 'C': 0.00001, 'T': 0.00001},
+                'T': {'A': 0.002, 'C': 0.064,   'G': 0.00001}}
+        pi = None
+        omega = None
+        r = Rates(s, mu, bias, pi, omega)
         expected = {'A': 0.24, 'C': 0.24, 'T': 0.24, 'G': 0.29}
-        result = Rates.get_frequency_rates("GTACGATCGATCGATGCTAGC")
+        result = r.get_frequency_rates()
         self.assertEqual(expected, result)
 
-    def testSimpleUse2(self):
-        seq = "tggaagggctaattcactcccaacgaagacaagatatccttgatctgtgg" \
-              "atctaccacacacaaggctacttccctgattagcagaactacacaccagg" \
-              "gccagggatcagatatccactgacctttggatggtgctacaagctagtac" \
-              "cagttgagccagagaagttagaagaagccaacaaaggagagaacaccagc" \
-              "ttgttacaccctgtgagcctgcatggaatggatgacccggagagagaagt" \
-              "gttagagtggaggtttgacagccgcctagcatttcatcacatggcccgag" \
-              "agctgcatccggagtacttcaagaactgctgacatcgagcttgctacaag" \
-              "ggactttccgctggggactttccagggaggcgtggcctgggcgggactgg" \
-              "ggagtggcgagccctcagatcctgcatataagcagctgctttttgcctgt" \
-              "actgggtctctctggttagaccagatctgagcctgggagctctctggcta" \
-              "actagggaacccactgcttaagcctcaataaagcttgccttgagtgcttc" \
-              "aagtagtgtgtgcccgtctgttgtgtgactctggtaactagagatccctc" \
-              "agacccttttagtcagtgtggaaaatctctagcagtggcgcccgaacagg" \
-              "gacctgaaagcgaaagggaaaccagaggagctctctcgacgcaggactcg"
+    def testLongerSeq(self):
+        s = Sequence("TGGAAGGGCTAATTCACTCCCAACGAAGACAAGATATCCTTGATCTGTGGATCTACCACACACAAGGCTACTTCCCTGATTAGCAGAACT" 
+                     "ACACACCAGGGCCAGGGATCAGATATCCACTGACCTTTGGATGGTGCTACAAGCTAGTACCAGTTGAGCCAGAGAAGTTAGAAGAAGCCA" 
+                     "ACAAAGGAGAGAACACCAGCTTGTTACACCCTGTGAGCCTGCATGGAATGGATGACCCGGAGAGAGAAGTGTTAGAGTGGAGGTTTGACA" 
+                     "GCCGCCTAGCATTTCATCACATGGCCCGAGAGCTGCATCCGGAGTACTTCAAGAACTGCTGACATCGAGCTTGCTACAAGGGACTTTCCG" 
+                     "CTGGGGACTTTCCAGGGAGGCGTGGCCTGGGCGGGACTGGGGAGTGGCGAGCCCTCAGATCCTGCATATAAGCAGCTGCTTTTTGCCTGT" 
+                     "ACTGGGTCTCTCTGGTTAGACCAGATCTGAGCCTGGGAGCTCTCTGGCTAACTAGGGAACCCACTGCTTAAGCCTCAATAAAGCTTGCCT" 
+                     "TGAGTGCTTCAAGTAGTGTGTGCCCGTCTGTTGTGTGACTCTGGTAACTAGAGATCCCTCAGACCCTTTTAGTCAGTGTGGAAAATCTCT" 
+                     "AGCAGTGGCGCCCGAACAGGGACCTGAAAGCGAAAGGGAAACCAGAGGAGCTCTCTCGACGCAGGACTCG")
+        mu = 0.00005
+        bias = {'A': {'C': 0.001, 'G': 0.065,   'T': 0.002},
+                'C': {'A': 0.001, 'G': 0.00001, 'T': 0.064},
+                'G': {'A': 0.065, 'C': 0.00001, 'T': 0.00001},
+                'T': {'A': 0.002, 'C': 0.064,   'G': 0.00001}}
+        pi = None
+        omega = None
+        r = Rates(s, mu, bias, pi, omega)
         expected = {'A': 0.25, 'C': 0.25, 'T': 0.22, 'G': 0.28}
-        result = Rates.get_frequency_rates(seq.upper(), seq)
+        result = r.get_frequency_rates()
         self.assertEqual(expected, result)
 
 
@@ -50,17 +67,16 @@ class TestGetSynSubs(unittest.TestCase):
     """
     maxDiff = None
 
-    def testNoSeqNoORFs(self):
-        expected = []
-        result = Rates.get_syn_subs("", [])
-        self.assertEqual(expected, result)
-
-    def testNoSeq(self):
-        expected = []
-        result = Rates.get_syn_subs("", [(0, 8), (2, 10)])
-        self.assertEqual(expected, result)
-
     def testNoORFs(self):
+        s = Sequence("ATGTTTCCC")
+        mu = 0.00005
+        bias = {'A': {'C': 0.001, 'G': 0.065, 'T': 0.002},
+                'C': {'A': 0.001, 'G': 0.00001, 'T': 0.064},
+                'G': {'A': 0.065, 'C': 0.00001, 'T': 0.00001},
+                'T': {'A': 0.002, 'C': 0.064, 'G': 0.00001}}
+        pi = None
+        omega = None
+        r = Rates(s, mu, bias, pi, omega)
         expected = [{'A': [], 'C': [], 'G': [], 'T': []},
                     {'A': [], 'C': [], 'G': [], 'T': []},
                     {'A': [], 'C': [], 'G': [], 'T': []},
@@ -72,65 +88,106 @@ class TestGetSynSubs(unittest.TestCase):
                     {'A': [], 'C': [], 'G': [], 'T': []},
                     {'A': [], 'C': [], 'G': [], 'T': []},
                     {'A': [], 'C': [], 'G': [], 'T': []}]
-        result = Rates.get_syn_subs("ATGTTTCCC", [])
+        result = r.get_syn_subs()
         self.assertEqual(expected, result)
 
-    def testStartCodon(self):
-        expected = [{'A': [0], 'C': [1], 'G': [1], 'T': [1]},   # A
-                    {'A': [1], 'C': [1], 'G': [1], 'T': [0]},   # T
-                    {'A': [1], 'C': [1], 'G': [0], 'T': [1]}]   # G
-        result = Rates.get_syn_subs("ATG", [(0, 2)])
+    def testSmallOrf(self):
+        s = Sequence("ATGGGGTGA")
+        mu = 0.00005
+        bias = {'A': {'C': 0.001, 'G': 0.065, 'T': 0.002},
+                'C': {'A': 0.001, 'G': 0.00001, 'T': 0.064},
+                'G': {'A': 0.065, 'C': 0.00001, 'T': 0.00001},
+                'T': {'A': 0.002, 'C': 0.064, 'G': 0.00001}}
+        pi = None
+        omega = None
+        r = Rates(s, mu, bias, pi, omega)
+        expected = [{'A': [True],  'C': [False],  'G': [False], 'T': [False]},  # A
+                    {'A': [False], 'C': [False], 'G': [False],  'T': [True]},   # T
+                    {'A': [False], 'C': [False], 'G': [True],   'T': [False]},  # G
+
+                    {'A': [False], 'C': [False], 'G': [True],   'T': [False]},  # G
+                    {'A': [False], 'C': [False], 'G': [True],   'T': [False]},  # G
+                    {'A': [True],  'C': [True],  'G': [True],   'T': [True]},   # G
+
+                    {'A': [False], 'C': [False], 'G': [False],  'T': [True]},   # T
+                    {'A': [True],  'C': [False], 'G': [True],   'T': [False]},  # G
+                    {'A': [True],  'C': [False], 'G': [False],  'T': [False]}]  # A
+
+        result = r.get_syn_subs()
         self.assertEqual(expected, result)
 
     def testSimpleUse(self):
-        expected = [{'A': [0], 'C': [1], 'G': [1], 'T': [1]},   # A
-                    {'A': [1], 'C': [1], 'G': [1], 'T': [0]},   # T
-                    {'A': [1], 'C': [1], 'G': [0], 'T': [1]},   # G
+        s = Sequence("ATGCTGAAGTAG")
+        mu = 0.00005
+        bias = {'A': {'C': 0.001, 'G': 0.065, 'T': 0.002},
+                'C': {'A': 0.001, 'G': 0.00001, 'T': 0.064},
+                'G': {'A': 0.065, 'C': 0.00001, 'T': 0.00001},
+                'T': {'A': 0.002, 'C': 0.064, 'G': 0.00001}}
+        pi = None
+        omega = None
+        r = Rates(s, mu, bias, pi, omega)
+        expected = [{'A': [True],  'C': [False], 'G': [False], 'T': [False]},   # A
+                    {'A': [False], 'C': [False], 'G': [False], 'T': [True]},    # T
+                    {'A': [False], 'C': [False], 'G': [True],  'T': [False]},   # G
 
-                    {'A': [1], 'C': [1], 'G': [0], 'T': [1]},   # G
-                    {'A': [1], 'C': [1], 'G': [0], 'T': [1]},   # G
-                    {'A': [0], 'C': [0], 'G': [0], 'T': [0]},   # G
+                    {'A': [False], 'C': [True],  'G': [False], 'T': [True]},    # C
+                    {'A': [False], 'C': [False], 'G': [False], 'T': [True]},    # T
+                    {'A': [True],  'C': [True],  'G': [True],  'T': [True]},    # G
 
-                    {'A': [1], 'C': [1], 'G': [1], 'T': [0]},   # T
-                    {'A': [0], 'C': [1], 'G': [1], 'T': [1]},   # A
-                    {'A': [0], 'C': [1], 'G': [0], 'T': [1]}]   # G
-        result = Rates.get_syn_subs("ATGGGGTAG", [(0, 8)])
+                    {'A': [True],  'C': [False], 'G': [False], 'T': [False]},   # A
+                    {'A': [True],  'C': [False], 'G': [False], 'T': [False]},   # A
+                    {'A': [True],  'C': [False], 'G': [True],  'T': [False]},   # G
+
+                    {'A': [False], 'C': [False], 'G': [False], 'T': [True]},    # T
+                    {'A': [True],  'C': [False], 'G': [False], 'T': [False]},   # A
+                    {'A': [True],  'C': [False], 'G': [True],  'T': [False]}]   # G
+
+        result = r.get_syn_subs()
         self.assertEqual(expected, result)
 
     def testMultipleORFs(self):
-        expected = [
-                                                                    # ORF (0, 23)           # ORF (5, 19)
-            {'A': [0, 0], 'C': [1, 0], 'G': [1, 0], 'T': [1, 0]},   # A
-            {'A': [1, 0], 'C': [1, 0], 'G': [1, 0], 'T': [0, 0]},   # T
-            {'A': [1, 0], 'C': [1, 0], 'G': [0, 0], 'T': [1, 0]},   # G
+        s = Sequence("ATGAGATGGCACAAGTGTAACTAG")
+        mu = 0.00005
+        bias = {'A': {'C': 0.001, 'G': 0.065, 'T': 0.002},
+                'C': {'A': 0.001, 'G': 0.00001, 'T': 0.064},
+                'G': {'A': 0.065, 'C': 0.00001, 'T': 0.00001},
+                'T': {'A': 0.002, 'C': 0.064, 'G': 0.00001}}
+        pi = None
+        omega = None
+        r = Rates(s, mu, bias, pi, omega)
 
-            {'A': [0, 0], 'C': [0, 0], 'G': [1, 0], 'T': [1, 0]},   # A
-            {'A': [1, 0], 'C': [1, 0], 'G': [0, 0], 'T': [1, 0]},   # G
-            {'A': [0, 0], 'C': [1, 1], 'G': [0, 1], 'T': [1, 1]},   # A                     A   5
+        expected = [                                                                                # (0, 23)  (5, 19)
+            {'A': [True],         'C': [False],        'G': [False],        'T': [False]},          # A
+            {'A': [False],        'C': [False],        'G': [False],        'T': [True]},           # T
+            {'A': [False],        'C': [False],        'G': [True],         'T': [False]},          # G
 
-            {'A': [1, 1], 'C': [1, 1], 'G': [1, 1], 'T': [0, 0]},   # T                     T
-            {'A': [1, 1], 'C': [1, 1], 'G': [0, 0], 'T': [1, 1]},   # G                     G
-            {'A': [1, 1], 'C': [1, 1], 'G': [0, 0], 'T': [1, 1]},   # G                     G   8
+            {'A': [True],         'C': [True],         'G': [False],        'T': [False]},          # A
+            {'A': [False],        'C': [False],        'G': [True],         'T': [False]},          # G
+            {'A': [True, True],   'C': [False, False], 'G': [True, False],  'T': [False, False]},   # A         A   5
 
-            {'A': [1, 1], 'C': [0, 0], 'G': [1, 1], 'T': [1, 1]},   # C                     C
-            {'A': [0, 0], 'C': [1, 0], 'G': [1, 0], 'T': [1, 0]},   # A                     A
-            {'A': [1, 1], 'C': [0, 0], 'G': [1, 1], 'T': [0, 1]},   # C                     C   11
+            {'A': [False, False], 'C': [False, False], 'G': [False, False], 'T': [True, True]},     # T         T
+            {'A': [False, False], 'C': [False, False], 'G': [True, True],   'T': [False, False]},   # G         G
+            {'A': [False, False], 'C': [False, False], 'G': [True, True],   'T': [False, False]},   # G         G   8
 
-            {'A': [0, 0], 'C': [1, 1], 'G': [1, 1], 'T': [1, 1]},   # A                     A
-            {'A': [0, 0], 'C': [1, 1], 'G': [1, 0], 'T': [1, 1]},   # A                     A
-            {'A': [0, 1], 'C': [1, 1], 'G': [0, 0], 'T': [1, 1]},   # G                     G   14
+            {'A': [False, False], 'C': [True, True],   'G': [False, False], 'T': [False, False]},   # C         C
+            {'A': [True, True],   'C': [False, True],  'G': [False, True],  'T': [False, True]},    # A         A
+            {'A': [False, False], 'C': [True, True],   'G': [False, False], 'T': [True, False]},    # C         C   11
 
-            {'A': [1, 1], 'C': [1, 1], 'G': [1, 1], 'T': [0, 0]},   # T                     T
-            {'A': [1, 0], 'C': [1, 0], 'G': [0, 0], 'T': [1, 0]},   # G                     G
-            {'A': [1, 1], 'C': [0, 1], 'G': [1, 1], 'T': [0, 0]},   # T                     T   17
+            {'A': [True, True],   'C': [False, False], 'G': [False, False], 'T': [False, False]},   # A         A
+            {'A': [True, True],   'C': [False, False], 'G': [False, True],  'T': [False, False]},   # A         A
+            {'A': [True, False],  'C': [False, False], 'G': [True, True],   'T': [False, False]},   # G         G   14
 
-            {'A': [0, 0], 'C': [1, 1], 'G': [1, 0], 'T': [1, 1]},   # A                     A
-            {'A': [0, 0], 'C': [1, 1], 'G': [1, 0], 'T': [1, 1]},   # A                     A
-            {'A': [1, 0], 'C': [0, 0], 'G': [1, 0], 'T': [0, 0]},   # C
+            {'A': [False, False], 'C': [False, False], 'G': [False, False], 'T': [True, True]},     # T         T
+            {'A': [False, True],  'C': [False, True],  'G': [True, True],   'T': [False, True]},    # G         G
+            {'A': [False, False], 'C': [True, False],  'G': [False, False], 'T': [True, True]},     # T         T   17
 
-            {'A': [1, 0], 'C': [1, 0], 'G': [1, 0], 'T': [0, 0]},   # T
-            {'A': [0, 0], 'C': [1, 0], 'G': [1, 0], 'T': [1, 0]},   # A
-            {'A': [0, 0], 'C': [1, 0], 'G': [0, 0], 'T': [1, 0]}]   # G
+            {'A': [True, True],   'C': [False, False], 'G': [False, True],  'T': [False, False]},   # A         A
+            {'A': [True, True],   'C': [False, False], 'G': [False, True],  'T': [False, False]},   # A         A
+            {'A': [False],        'C': [True],         'G': [False],        'T': [True]},           # C
 
-        result = Rates.get_syn_subs("ATGAGATGGCACAAGTGTAACTAG", [(0, 23), (5, 19)])
+            {'A': [False],        'C': [False],        'G': [False],        'T': [True]},           # T
+            {'A': [True],         'C': [False],        'G': [False],        'T': [False]},          # A
+            {'A': [True],         'C': [False],        'G': [True],         'T': [False]}]          # G
+
+        result = r.get_syn_subs()
         self.assertEqual(expected, result)
