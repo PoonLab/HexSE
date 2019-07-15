@@ -303,15 +303,28 @@ class TestGetCodon(unittest.TestCase):
         result = s.get_codon(11, (0, 11))
         self.assertEqual(expected, result)
 
-    def testFwdReverseOrfs(self):
+    def testRevORF(self):
+        s = Sequence('CTCATCGCTTCAT')
+        expected = ("ATG", 0)
+        result = s.get_codon(12, (12, 1))
+        self.assertEqual(expected, result)
+
+    def testRevOrfStartCodon(self):
         s = Sequence("AATTCATGAACGAAAATCTGTTCGCTTCATTCATTGCCCCCACAATCTAGGCCTACCC")
-        rev_comp =   'GGGTAGGCCTAGATTGTGGGGGCAATGAATGAAGCGAACAGATTTTCGTTCATGAATT'
-        # ATG AAG CGA ACA GAT TTT CGT TCA TGA
-        # ATT CAT TGC CCC CAC AAT CTA GGC CTA
-        rev_comp = s.reverse_and_complement()
-        print(rev_comp)
-        expected = ('TAG', 2)
+        expected = ('ATG', 0)
         result = s.get_codon(29, (29, 3))
+        self.assertEqual(expected, result)
+
+    def testRevOrfStopCodon(self):
+        s = Sequence("AATTCATGAACGAAAATCTGTTCGCTTCATTCATTGCCCCCACAATCTAGGCCTACCC")
+        expected = ('TGA', 2)
+        result = s.get_codon(3, (29, 3))
+        self.assertEqual(expected, result)
+
+    def testRevOrfCodon(self):
+        s = Sequence("AATTCATGAACGAAAATCTGTTCGCTTCATTCATTGCCCCCACAATCTAGGCCTACCC")
+        expected = ('AAG', 1)
+        result = s.get_codon(25, (29, 3))
         self.assertEqual(expected, result)
 
 
