@@ -21,7 +21,7 @@ class Simulate:
         Calculate the total rate by iterating over dictionaries in <rates>
         """
         res = 0
-        for pdict in self.rates:
+        for pdict in self.rates.sub_rates:
             for nt, rate in pdict.items():
                 if rate != None:
                     res += rate
@@ -34,7 +34,7 @@ class Simulate:
         """
         # Draw a random limit where to reach te mutation given rates
         limit = random.uniform(0, self.sum_rates())
-        position = -1 # Should include position zero and can only go to len(seq)-1
+        position = -1  # Should include position zero and can only go to len(seq)-1
         total = 0
         # draw position
         while total < limit:
@@ -57,7 +57,7 @@ class Simulate:
 
         to_nt = np.random.choice(NUCLEOTIDES, 1, probabilities)
 
-        return(position, to_nt[0])
+        return position, to_nt[0]
 
 
     def draw_waiting_time(self):
@@ -68,7 +68,6 @@ class Simulate:
         instant_rate = self.sum_rates()
         time = np.random.exponential(scale=instant_rate)
         return time
-
 
     def simulate_on_branch(self, branch_length):
         """
@@ -107,7 +106,7 @@ class Simulate:
         for clade in self.tree.find_clades(order='level'):
             for child in clade:
                 child.parent = clade
-                #print(child, child.parent)
+                # print(child, child.parent)
 
         for node in self.tree.find_clades(order='level'):
             # TODO: skip the root (sequence already assigned)
@@ -115,7 +114,7 @@ class Simulate:
             if not hasattr(node, 'sequence'):
                 # print("second loop", node, node.parent, node.parent.sequence)
                 node.sequence = self.simulate_on_branch(node.branch_length)
-                #print('*', node.sequence)
+                # print('*', node.sequence)
 
         # Cleanup to avoid RecursionError when printing the tree
         for clade in self.tree.find_clades(order='level'):
@@ -139,7 +138,7 @@ class Simulate:
 
         # In the dictionary that is rates_before_omega, create the values for the nucleotide that use to be empty
         for to_nt in NUCLEOTIDES:
-            if rates_before_omega[to_nt] == None:
+            if rates_before_omega[to_nt] is None:
                 if to_nt == nt:
                     # Rate of nt mutating to itself is None
                     rates_before_omega[nt] = None
@@ -183,7 +182,7 @@ class Simulate:
                     # means that this is an ORF, otherwise no shift in the seq
                     omega_values = self.rates.omega[specific_orf]
 
-                    if self.rates.seq.in_orfs[position][i]: # if nt in orf
+                    if self.rates.seq.in_orfs[position][i]:  # if nt in orf
                         if i < 3:
                             # positive strand
                             position_in_orf = position - specific_orf[0]
