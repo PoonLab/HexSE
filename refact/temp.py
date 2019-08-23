@@ -1,8 +1,9 @@
 from  new_sequence_info import Sequence
 
-sequence = 'ACGAGCTAGCTAGCTATAGCT'
-test = [(0,8),(12,4)]
+sequence = 'AAAATTTGGGCCCA'
+test = [(1,9),(12,4)]
 
 seq = Sequence(sequence, test)
-for nt in seq:
-    print(seq.orfs)
+print(seq)
+#for nt in sieq:
+#    print(seq.orfs)

@@ -74,7 +74,7 @@ class Sequence:
 
         # Create Nucleotides
         for pos, nt in enumerate(self.original_seq):
-            self.nt_sequence.append(Nucleotide(nt, pos, self.original_seq, self.orfs))
+            self.nt_sequence.append(Nucleotide(nt, pos, self.original_seq, self.orfs, self.rcseq))
 
 
     @staticmethod
@@ -286,7 +286,7 @@ class Nucleotide:
                     - the Nucleotides's position in the codon
     """
 
-    def __init__(self, letter, position, seq, orfs):
+    def __init__(self, letter, position, seq, orfs, rcseq):
         """
         :param letter: Nucleotide A, C, G or T
         :param position: Position of the nucleotide in the sequence
@@ -295,32 +295,33 @@ class Nucleotide:
                         - the values are a list of tuples containing the start and end positions of the ORFs.
                         - Ex: {'+0': [(0, 8), (3, 15)], '+1': [(1, 9)], '+2': [], '-0': [], '-1': [], '-2': []}
         """
+        self.rcseq = rcseq
         self.seq = seq
         self.letter = letter
         self.position = position
         self.seq_orfs = orfs
-        self.orfs_for_nt = self.get_orfs_for_nt(self.seq_orfs)
+        self.orfs_for_nt = self.get_orfs_for_nt()
 
 
-    def get_orfs_for_nt(self, seq_orfs):
+    def get_orfs_for_nt(self):
         """
         Store the information of the nucleotide for which it makes part of
         """
         orfs_for_nt =  {'+0':[], '+1': [], '+2': [],
                         '-0': [], '-1': [], '-2': []}
 
-        # Find the orfs in which nt is involved
-        for key, values in seq_orfs:
+        # Find the orfs in which nt is involved accesing seq_orfs dictionatu
+        for key, values in self.seq_orfs.items():
             if values:
-                for i in values:
-                    from_to = values[i]
-                    max = max(from_to[0], from_to[1])
-                    min = min(from_to[0], from_to[1])
+                # Find if nt is inside the orf
+                for from_to in values:
+                    maxi = max(from_to[0], from_to[1])
+                    mini = min(from_to[0], from_to[1])
                     # If position in orf
-                    if pos in range(min, max):
+                    if self.position in range(mini, maxi+1):
                         # Store codon information
-                        orfs_for_nt[key].append(get_codon(from_to[0], from_to[1]))
-                        print(orfs_for_nt)
+                        orfs_for_nt[key].append(self.get_codon(from_to[0], from_to[1]))
+        return orfs_for_nt
 
     def get_codon(self, initial, final):
         """
@@ -329,11 +330,10 @@ class Nucleotide:
         :param orf: tuple indicating first and last nucleotide of an open reading frame
         :return codon, position_in_codon: tuple with nucleotide triplet and position of the nucleotide in the codon
         """
-
-        if initial > final:  # positive strand
-            my_orf = self.original_seq[initial:final + 1]
+        if final > initial:  # positive strand
+            my_orf = self.seq[initial:final + 1]
         else:  # negative strand
-            my_orf = self.rcseq[initial: final + 1]
+            my_orf = self.rcseq[(len(self.seq) - initial -1): (initial - final + 2)]
 
         position_in_orf = abs(initial - self.position)
         position_in_codon = position_in_orf % 3
