@@ -270,25 +270,52 @@ class Sequence:
         plus_zero, plus_one, plus_two, minus_zero, minus_one, minus_two = [], [], [], [], [], []
 
         if unsorted_orfs:
-            plus_zero_orf = unsorted_orfs[0]
+            first_orf = unsorted_orfs[0]
+            # if first orf is in the positive strand, store the rest of the orfs regarding plus zero
+            if first_orf[0] < first_orf[1]:
+                plus_zero_orf = unsorted_orfs[0]
 
-            for orf in unsorted_orfs:
-                difference = abs(orf[0] - plus_zero_orf[0]) % 3
-                if orf[0] < orf[1]:     # positive strand
-                    if difference == 0:
-                        plus_zero.append(orf)
-                    elif difference == 1:     # plus one
-                        plus_one.append(orf)
-                    elif difference == 2:   # plus two
-                        plus_two.append(orf)
+                for orf in unsorted_orfs:
+                    difference = abs(orf[0] - plus_zero_orf[0]) % 3
+                    if orf[0] < orf[1]:     # positive strand
+                        if difference == 0:
+                            plus_zero.append(orf)
+                        elif difference == 1:     # plus one
+                            plus_one.append(orf)
+                        elif difference == 2:   # plus two
+                            plus_two.append(orf)
 
-                elif orf[0] > orf[1]:   # negative strand
-                    if difference == 0 or difference == plus_zero_orf[0] % 3:
-                        minus_two.append(orf)
-                    elif difference == 1:
-                        minus_one.append(orf)
-                    elif difference == 2:
-                        minus_zero.append(orf)
+                    elif orf[0] > orf[1]:   # negative strand
+                        if difference == 0 or difference == plus_zero_orf[0] % 3:
+                            minus_two.append(orf)
+                        elif difference == 1:
+                            minus_one.append(orf)
+                        elif difference == 2:
+                            minus_zero.append(orf)
+
+            else: # The first orf is on the negative strand
+                minus_zero_orf = unsorted_orfs[0]
+
+                for orf in unsorted_orfs:
+                    difference = (minus_zero_orf[0] - orf[0]) % 3
+                    if orf[0] < orf[1]:  # positive strand
+                        if difference == 0:
+                            plus_two.append(orf)
+                        elif difference == 1:  # plus one
+                            plus_one.append(orf)
+                        elif difference == 2:  # plus two
+                            plus_zero.append(orf)
+
+                    elif orf[0] > orf[1]:  # negative strand
+                        if difference == 0:
+                            minus_zero.append(orf)
+                        elif difference == 1:
+                            minus_one.append(orf)
+                        elif difference == 2:
+                            minus_two.append(orf)
+
+
+
 
         sorted_orfs = {'+0': plus_zero, '+1': plus_one, '+2': plus_two,
                        '-0': minus_zero, '-1': minus_one, '-2': minus_two}
@@ -392,5 +419,5 @@ class DoubleLinkedList():
     def print_seq(self):        #Print the string of nucleotides (check the class is working properly)
         temp = self.head
         while temp != None:
-            print(temp.get_letter(), temp.get_pos())
+            #print(temp.get_letter(), temp.get_pos())
             temp = temp.get_right_nt()
