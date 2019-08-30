@@ -1,12 +1,15 @@
 import unittest
-from src.sequence_info import Sequence
-from src.sequence_info import Nucleotide
+
+from refact.new_sequence_info import DoubleLinkedList
+from refact.new_sequence_info import Nucleotide
+from refact.new_sequence_info import Sequence
 
 
 class TestValidSequence(unittest.TestCase):
     """
-    Tests valid_sequence
+    Tests valid_sequence from Sequence class
     """
+
     def testBadInput(self):
         seq = "SGDKLJFAHHH"
         expected = False
@@ -33,6 +36,9 @@ class TestValidSequence(unittest.TestCase):
 
 
 class TestValidORFs(unittest.TestCase):
+    """
+    Tests valid_orfs from Sequence class
+    """
 
     def testBadInput(self):
         s = Sequence("ATGCATGCATGC")
@@ -86,8 +92,9 @@ class TestValidORFs(unittest.TestCase):
 
 class TestReverseAndComplement(unittest.TestCase):
     """
-    Tests reverse_and_complement
+    Tests reverse_and_complement from Sequence class
     """
+
     def testLowerCaseInputSimple(self):
         s = Sequence("atgcatgcatgc")
         expected = "GCATGCATGCAT"
@@ -103,8 +110,9 @@ class TestReverseAndComplement(unittest.TestCase):
 
 class TestGetOpenReadingFrames(unittest.TestCase):
     """
-    Tests get_reading_frames
+    Tests get_reading_frames from Sequence class
     """
+
     def testOneORF(self):
         # Tests one ORF (ATG AAA TAG)
         s = Sequence("ATGAAATAG")
@@ -225,8 +233,9 @@ class TestGetOpenReadingFrames(unittest.TestCase):
 
 class TestSortOrfs(unittest.TestCase):
     """
-    Tests sort_orfs
+    Tests sort_orfs from Sequence class
     """
+
     def testSimpleUse(self):
         s = Sequence("ATGAAAGGGTAA")
         expected = {'+0': [(0, 11)], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
@@ -247,111 +256,81 @@ class TestSortOrfs(unittest.TestCase):
 
     def testFwdReverseOrfs(self):
         s = Sequence("AATTCATGAACGAAAATCTGTTCGCTTCATTCATTGCCCCCACAATCTAGGCCTACCC")
-        expected = {'+0': [(5, 49)], '+1': [], '+2': [], '-0': [(29, 3)], '-1': [], '-2': []}
+        expected = {'+0': [(5, 49)], '+1': [], '+2': [], '-0': [], '-1': [], '-2': [(29, 3)]}
         result = s.sort_orfs([(5, 49), (29, 3)])
         self.assertEqual(expected, result)
 
     def testAllSixOrfs(self):
         s = Sequence("AATTCATGAACGAAAATCTGTTCGCTTCATTCATTGCCCCCACAATCTAGGCCTACCC")
-        expected = {'+0': [(0, 8)],
-                    '+1': [(1, 9)],
-                    '+2': [(2, 10)],
-                    '-0': [(9, 1)],
-                    '-1': [(10, 2)],
-                    '-2': [(8, 0)]}
+        expected = {'+0': [(0, 8)], '+1': [(1, 9)], '+2': [(2, 10)],
+                    '-0': [(8, 0)], '-1': [(10, 2)], '-2': [(9, 1)]}
         result = s.sort_orfs([(0, 8), (8, 0), (1, 9), (9, 1), (2, 10), (10, 2)])
         self.assertEqual(expected, result)
 
 
-class TestGetCodon(unittest.TestCase):
+class TestCreateNtORFDict(unittest.TestCase):
     """
-    Tests get_codon
+    Tests create_nt_orf_dict from Sequence class
     """
-    def testSimpleUse(self):
-        s = Sequence("ATGAAAGGGTAA", [(0, 11)])
-        expected = ("ATG", 0)
-        result = s.get_codon(0, (0, 11))
-        self.assertEqual(expected, result)
 
-    def testSimpleUse2(self):
-        s = Sequence("ATGAAAGGGTAA", [(0, 11)])
-        expected = ("ATG", 1)
-        result = s.get_codon(1, (0, 11))
-        self.assertEqual(expected, result)
-
-    def testSimpleUse3(self):
-        s = Sequence("ATGAAAGGGTAA", [(0, 11)])
-        expected = ("GGG", 2)
-        result = s.get_codon(8, (0, 11))
-        self.assertEqual(expected, result)
-
-    def testSamePositionMultipleOrfs1(self):
-        s = Sequence("ATGAAAGTGCAACATGGGTAAATAG", [(0, 20)])
-        expected = ("CAT", 1)
-        result = s.get_codon(13, (0, 20))
-        self.assertEqual(expected, result)
-
-    def testSamePositionMultipleOrfs2(self):
-        s = Sequence("ATGAAAGTGCAACATGGGTAAATAG", [(13, 24)])
-        expected = ("ATG", 0)
-        result = s.get_codon(13, (13, 24))
-        self.assertEqual(expected, result)
-
-    def testFindStopCodon(self):
+    def testFirstNt(self):
         s = Sequence("ATGAAAGGGTAA")
-        expected = ("TAA", 2)
-        result = s.get_codon(11, (0, 11))
+        expected = {'+0': 0}
+        result = s.create_nt_orf_dict(0)
         self.assertEqual(expected, result)
 
-    def testRevORF(self):
-        s = Sequence('CTCATCGCTTCAT')
-        expected = ("ATG", 0)
-        result = s.get_codon(12, (12, 1))
+    def testMultipleORFs(self):
+        s = Sequence('ATGAGATGGCACAAGTGTAACTAG')
+        expected = {'+0': 2, '+2': 0}
+        result = s.create_nt_orf_dict(5)
         self.assertEqual(expected, result)
 
-    def testRevOrfStartCodon(self):
+    def testLastNt(self):
+        s = Sequence('ATGAGATGGCACAAGTGTAACTAG')
+        expected = {'+0': 2}
+        result = s.create_nt_orf_dict(23)
+        self.assertEqual(expected, result)
+
+    def testFwdRevORFs(self):
         s = Sequence("AATTCATGAACGAAAATCTGTTCGCTTCATTCATTGCCCCCACAATCTAGGCCTACCC")
-        expected = ('ATG', 0)
-        result = s.get_codon(29, (29, 3))
-        self.assertEqual(expected, result)
-
-    def testRevOrfStopCodon(self):
-        s = Sequence("AATTCATGAACGAAAATCTGTTCGCTTCATTCATTGCCCCCACAATCTAGGCCTACCC")
-        expected = ('TGA', 2)
-        result = s.get_codon(3, (29, 3))
-        self.assertEqual(expected, result)
-
-    def testRevOrfCodon(self):
-        s = Sequence("AATTCATGAACGAAAATCTGTTCGCTTCATTCATTGCCCCCACAATCTAGGCCTACCC")
-        expected = ('AAG', 1)
-        result = s.get_codon(25, (29, 3))
+        expected = {'+0': 0, '-2': 0}
+        result = s.create_nt_orf_dict(5)
         self.assertEqual(expected, result)
 
 
-class TestNtInORFs(unittest.TestCase):
+class TestInsertNt(unittest.TestCase):
+    """
+    Tests insert_nt from DoubleLinkedList class
+    """
 
     def testSimpleUse(self):
-        n = Nucleotide('A', 0, {'+0': [(0, 8)], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []})
-        expected = [(0, 8), None, None, None, None, None]
-        result = n.nt_in_orfs({'+0': [(0, 8)], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []})
-        self.assertEqual(expected, result)
+        seq = DoubleLinkedList()
 
-    def testSimpleUse2(self):
-        n = Nucleotide('T', 9, {'+0': [], '+1': [(1, 11)], '+2': [], '-0': [], '-1': [], '-2': []})
-        expected = [None, (1, 11), None, None, None, None]
-        result = n.nt_in_orfs({'+0': [], '+1': [(1, 11)], '+2': [], '-0': [], '-1': [], '-2': []})
-        self.assertEqual(expected, result)
+        # Test adding first nucleotide
+        seq.insert_nt('A', 0, {'+0': 0})
+        exp_head = Nucleotide('A', 0, {'+0': 0})
+        exp_current = exp_head
 
-    def testNoOrfs(self):
-        n = Nucleotide('A', 15, {'+0': [], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []})
-        expected = [None, None, None, None, None, None]
-        result = n.nt_in_orfs({'+0': [], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []})
-        self.assertEqual(expected, result)
+        self.assertEqual(exp_head.letter, seq.head.letter)
+        self.assertEqual(exp_head.pos, seq.head.pos)
+        self.assertEqual(exp_head.pos_in_codons, seq.head.pos_in_codons)
 
-    def testInAllORFs(self):
-        n = Nucleotide('G', 6, {'+0': [(0, 11)], '+1': [(1, 12)], '+2': [(2, 13)],
-                                '-0': [(11, 0)], '-1': [(12, 1)], '-2': [(13, 2)]})
-        expected = [(0, 11), (1, 12), (2, 13), (11, 0), (12, 1), (13, 2)]
-        result = n.nt_in_orfs({'+0': [(0, 11)], '+1': [(1, 12)], '+2': [(2, 13)],
-                               '-0': [(11, 0)], '-1': [(12, 1)], '-2': [(13, 2)]})
-        self.assertEqual(expected, result)
+        self.assertEqual(exp_current.letter, seq.current_nt.letter)
+        self.assertEqual(exp_current.pos, seq.current_nt.pos)
+        self.assertEqual(exp_current.pos_in_codons, seq.current_nt.pos_in_codons)
+
+        # Test adding second nucleotide
+        seq.insert_nt('T', 1, {'+0': 1})
+        exp_current = Nucleotide('T', 1, {'+0': 1})
+
+        self.assertEqual(exp_head.letter, seq.head.letter)
+        self.assertEqual(exp_head.pos, seq.head.pos)
+        self.assertEqual(exp_head.pos_in_codons, seq.head.pos_in_codons)
+
+        self.assertEqual(exp_current.letter, seq.current_nt.letter)
+        self.assertEqual(exp_current.pos, seq.current_nt.pos)
+        self.assertEqual(exp_current.pos_in_codons, seq.current_nt.pos_in_codons)
+
+
+if __name__ == '__main__':
+    unittest.main()
