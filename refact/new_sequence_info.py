@@ -1,4 +1,5 @@
-# store sequence information
+# Store sequence information
+
 import re
 import sys
 
@@ -33,16 +34,16 @@ class Sequence:
     """
     Store inputs and create sequence objects
     :ivar original_seq: the nucleotide sequence as a string
-    :ivar orfs: list of ORFs (as tuples) classified according to their reading frame shift relative
+    :ivar unsorted_orfs: list of ORFs (as tuples) classified according to their reading frame shift relative
                         to the first orf (+0, +1, +2, -0, -1, -2)
     :ivar nt_sequence: list of Nucleotide objects
     """
 
-    def __init__(self, original_seq, unsorted_orfs = None):
+    def __init__(self, original_seq, unsorted_orfs=None):
         """
         Creates a list of nucleotides, locates open reading frames, and creates a list of codons.
         :param original_seq: A list of Nucleotides
-        :param orfs: <option> A dictionary of ORFs, sorted by reading frame where:
+        :param unsorted_orfs: <option> A dictionary of ORFs, sorted by reading frame where:
                         - the keys are the reading frames (+0, +1, +2, -0, -1, -2)
                         - the values are a list of tuples containing the start and end positions of the ORFs.
                         - Ex: {'+0': [(0, 8), (3, 15)], '+1': [(1, 9)], '+2': [], '-0': [], '-1': [], '-2': []}
@@ -86,17 +87,15 @@ class Sequence:
         """
         Dictionary with keys as orfs (in which nt is involved) and items as a number (0,1 or 2) representing
         position of the nucleotide in the codon
-        :param orf: tuple with first and last positions of the orf
         :param pos: position of the nucleotide in the sequence
         :return: position of the nucleotide in the codon (e.g. 0, 1 or 2), given an orf
         """
-        nt_orf_dict = {}
+        nt_orf_dict = {'+0': None, '+1': None, '+2': None, '-0': None, '-1': None, '-2': None}
 
         for frame_shift, orfs_list in self.orfs.items():
             for orf_tuple in orfs_list:
                 # if nucleotide is inside the orf
-                #if orf_tuple[0] < orf_tuple[1]: # positive strand
-                if pos in range(orf_tuple[0], orf_tuple[1]) or pos in range(orf_tuple[1], orf_tuple[0]):
+                if orf_tuple[0] <= pos <= orf_tuple[1] or orf_tuple[1] <= pos <= orf_tuple[0]:
                     position_in_codon = abs(orf_tuple[0] - pos) % 3
                     nt_orf_dict[frame_shift] = position_in_codon
 
@@ -148,7 +147,7 @@ class Sequence:
                 return False
 
             # Check that the ORF is composed of codons
-            if orf[1] > orf[0]:     # Forward strand
+            if orf[1] > orf[0]:  # Forward strand
                 if (orf[1] - orf[0]) % 3 != 2:
                     print("Invalid orf: {}\n ORFs must be composed of codons".format(orf))
                     return False
@@ -162,7 +161,7 @@ class Sequence:
     def reverse_and_complement(self, my_region=None):
         """
         Generates the reverse complement of a DNA sequence
-        :param: <option> A sub-sequence of the original sequence
+        :param: my_region <option> A sub-sequence of the original sequence
         :return rcseq: The reverse complement of the sequence
         """
         if my_region is None:
@@ -264,96 +263,81 @@ class Sequence:
         """
         Store ORFs in position according to plus zero ORF (first of the list).
         They will be classified as (+0, +1, +2, -0, -1, -2)
-        :return orf_position: List of ORFs classified according to their shift relative to
+        :return sorted_orfs: List of ORFs classified according to their shift relative to
                     the plus zero reading frame  (+0, +1, +2, -0, -1, -2)
         """
-        plus_zero, plus_one, plus_two, minus_zero, minus_one, minus_two = [], [], [], [], [], []
+        sorted_orfs = {'+0': [], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
 
         if unsorted_orfs:
             first_orf = unsorted_orfs[0]
-            # if first orf is in the positive strand, store the rest of the orfs regarding plus zero
-            if first_orf[0] < first_orf[1]:
-                plus_zero_orf = unsorted_orfs[0]
+            for orf in unsorted_orfs:
+                difference = abs(orf[0] - first_orf[0]) % 3
 
-                for orf in unsorted_orfs:
-                    difference = abs(orf[0] - plus_zero_orf[0]) % 3
-                    if orf[0] < orf[1]:     # positive strand
-                        if difference == 0:
-                            plus_zero.append(orf)
-                        elif difference == 1:     # plus one
-                            plus_one.append(orf)
-                        elif difference == 2:   # plus two
-                            plus_two.append(orf)
-
-                    elif orf[0] > orf[1]:   # negative strand
-                        if difference == 0 or difference == plus_zero_orf[0] % 3:
-                            minus_two.append(orf)
-                        elif difference == 1:
-                            minus_one.append(orf)
-                        elif difference == 2:
-                            minus_zero.append(orf)
-
-            else: # The first orf is on the negative strand
-                minus_zero_orf = unsorted_orfs[0]
-
-                for orf in unsorted_orfs:
-                    difference = (minus_zero_orf[0] - orf[0]) % 3
+                if first_orf[0] < first_orf[1]:
                     if orf[0] < orf[1]:  # positive strand
                         if difference == 0:
-                            plus_two.append(orf)
-                        elif difference == 1:  # plus one
-                            plus_one.append(orf)
-                        elif difference == 2:  # plus two
-                            plus_zero.append(orf)
+                            sorted_orfs['+0'].append(orf)
+                        elif difference == 1:
+                            sorted_orfs['+1'].append(orf)
+                        elif difference == 2:
+                            sorted_orfs['+2'].append(orf)
 
                     elif orf[0] > orf[1]:  # negative strand
                         if difference == 0:
-                            minus_zero.append(orf)
+                            sorted_orfs['-2'].append(orf)
                         elif difference == 1:
-                            minus_one.append(orf)
+                            sorted_orfs['-1'].append(orf)
                         elif difference == 2:
-                            minus_two.append(orf)
+                            sorted_orfs['-0'].append(orf)
 
+                else:
+                    if orf[0] < orf[1]:  # positive strand
+                        if difference == 0:
+                            sorted_orfs['+2'].append(orf)
+                        elif difference == 1:  # plus one
+                            sorted_orfs['+1'].append(orf)
+                        elif difference == 2:  # plus two
+                            sorted_orfs['+0'].append(orf)
 
-
-
-        sorted_orfs = {'+0': plus_zero, '+1': plus_one, '+2': plus_two,
-                       '-0': minus_zero, '-1': minus_one, '-2': minus_two}
+                    elif orf[0] > orf[1]:  # negative strand
+                        if difference == 0:
+                            sorted_orfs['-0'].append(orf)
+                        elif difference == 1:
+                            sorted_orfs['-1'].append(orf)
+                        elif difference == 2:
+                            sorted_orfs['-2'].append(orf)
 
         return sorted_orfs
 
 
 class Nucleotide:
-
     """
     Stores information about the base, the open reading frames to which a Nucleotide belongs,
     and references to the previous and next base in the sequence.
-    :ivar seq: nucleotide sequence of origin
-    :ivar letter: the nucleotide base (A, T, G, C)
+    :ivar state: the nucleotide base (A, T, G, C)
     :ivar position: the position of the nucleotide relative to the start of the sequence
-    :ivar in_orfs: A list of 6 Boolean values, indicating the reading frames the Nucleotide is part of
-                 If the Nucleotide is in True if the nucleotide is in the frame, False otherwise
-    :ivar codons: A list of tuples that stores:
-                    - the codon each Nucleotide is part of
-                    - the Nucleotides's position in the codon
+    :ivar pos_in_codon: a dictionary where:
+                    - keys are the reading frames
+                    - values are the nucleotide's position in the reading frame
+    :ivar left_nt: reference to the nucleotide's left neighbour
+    :ivar right_nt: reference to the nucleotide's right neighbour
     """
 
-    def __init__(self, letter, position, pos_in_codon = {}, left_nt = None, right_nt = None):
+    def __init__(self, state, position, pos_in_codon={}, left_nt=None, right_nt=None):
         """
         :param state: Nucleotide A, C, G or T
         :param position: Position of the nucleotide in the sequence
-        :param left : reference to the adjacent nucleotide to the left (default to None)
-        :param right: reference to the adjacent nucleotide to the right (default to None)
+        :param left_nt : reference to the adjacent nucleotide to the left (default to None)
+        :param right_nt: reference to the adjacent nucleotide to the right (default to None)
         """
-        self.letter = letter
+        self.state = state
         self.pos = position
         self.left_nt = left_nt
         self.right_nt = right_nt
         self.pos_in_codons = pos_in_codon
 
-
-    def get_letter(self):
-        return self.letter
+    def get_state(self):
+        return self.state
 
     def get_pos(self):
         return self.pos
@@ -367,8 +351,8 @@ class Nucleotide:
     def get_pos_in_codons(self):
         return self.pos_in_codons
 
-    def set_letter(self, new_letter):
-        self.letter = new_letter
+    def set_state(self, new_state):
+        self.state = new_state
 
     def set_pos(self, new_pos):
         self.pos = new_pos
@@ -383,41 +367,41 @@ class Nucleotide:
         self.pos_in_codons = new_codons
 
 
-class DoubleLinkedList():
+class DoubleLinkedList:
     """
     Double linked list linking together objects of class Nucleotide
     default initialization with empty head node
     """
 
     def __init__(self):
-        self.head = None # head node (starting nucleotide)
-        self.current_nt = None # Pointer to current nt for insertion
+        self.head = None  # head node (starting nucleotide)
+        self.current_nt = None  # Pointer to current nt for insertion
 
-    def insert_nt(self, letter, position, nt_codon_dict):
+    def insert_nt(self, state, position, nt_codon_dict):
         """
         Insert objects of class Nucleotide to the end of the DoubleLinkedList
-        :param letter: Nucleotide state in sequence
+        :param state: Nucleotide state in sequence
         :param position: Position of nt in sequence
         :param nt_codon_dict: Dictionary with nucleotide position inside the codon given a frame shift (0, 1 or 2)
         """
-        new_nt = Nucleotide(letter, position)     # create new Nucleotide object
+        new_nt = Nucleotide(state, position)  # create new Nucleotide object
         new_nt.set_pos_in_codons(nt_codon_dict)
 
         # Assign the first nucleotide as head
-        if self.head == None:
+        if self.head is None:
             self.head = new_nt
             self.current_nt = new_nt
 
         else:
-            new_nt.set_left_nt(self.current_nt) # For the new nucleotide, create a left pointer towards the current one
-            self.current_nt.set_right_nt(new_nt) # Create the double link between current and new
+            new_nt.set_left_nt(self.current_nt)  # For the new nucleotide, create a left pointer towards the current one
+            self.current_nt.set_right_nt(new_nt)  # Create the double link between current and new
             self.current_nt = new_nt
 
     def get_head(self):
         return self.head
 
-    def print_seq(self):        #Print the string of nucleotides (check the class is working properly)
+    def print_seq(self):  # Print the string of nucleotides (check the class is working properly)
         temp = self.head
-        while temp != None:
-            #print(temp.get_letter(), temp.get_pos())
+        while temp is not None:
+            # print(temp.get_letter(), temp.get_pos())
             temp = temp.get_right_nt()

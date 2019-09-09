@@ -275,25 +275,25 @@ class TestCreateNtORFDict(unittest.TestCase):
 
     def testFirstNt(self):
         s = Sequence("ATGAAAGGGTAA")
-        expected = {'+0': 0}
+        expected = {'+0': 0, '+1': None, '+2': None, '-0': None, '-1': None, '-2': None}
         result = s.create_nt_orf_dict(0)
         self.assertEqual(expected, result)
 
     def testMultipleORFs(self):
         s = Sequence('ATGAGATGGCACAAGTGTAACTAG')
-        expected = {'+0': 2, '+2': 0}
+        expected = {'+0': 2, '+1': None, '+2': 0, '-0': None, '-1': None, '-2': None}
         result = s.create_nt_orf_dict(5)
         self.assertEqual(expected, result)
 
     def testLastNt(self):
         s = Sequence('ATGAGATGGCACAAGTGTAACTAG')
-        expected = {'+0': 2}
+        expected = {'+0': 2, '+1': None, '+2': None, '-0': None, '-1': None, '-2': None}
         result = s.create_nt_orf_dict(23)
         self.assertEqual(expected, result)
 
     def testFwdRevORFs(self):
         s = Sequence("AATTCATGAACGAAAATCTGTTCGCTTCATTCATTGCCCCCACAATCTAGGCCTACCC")
-        expected = {'+0': 0, '-2': 0}
+        expected = {'+0': 0, '+1': None, '+2': None, '-0': None, '-1': None, '-2': 0}
         result = s.create_nt_orf_dict(5)
         self.assertEqual(expected, result)
 
