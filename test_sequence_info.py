@@ -311,11 +311,11 @@ class TestInsertNt(unittest.TestCase):
         exp_head = Nucleotide('A', 0, {'+0': 0})
         exp_current = exp_head
 
-        self.assertEqual(exp_head.letter, seq.head.letter)
+        self.assertEqual(exp_head.state, seq.head.letter)
         self.assertEqual(exp_head.pos, seq.head.pos)
         self.assertEqual(exp_head.pos_in_codons, seq.head.pos_in_codons)
 
-        self.assertEqual(exp_current.letter, seq.current_nt.letter)
+        self.assertEqual(exp_current.state, seq.current_nt.letter)
         self.assertEqual(exp_current.pos, seq.current_nt.pos)
         self.assertEqual(exp_current.pos_in_codons, seq.current_nt.pos_in_codons)
 
@@ -323,13 +323,58 @@ class TestInsertNt(unittest.TestCase):
         seq.insert_nt('T', 1, {'+0': 1})
         exp_current = Nucleotide('T', 1, {'+0': 1})
 
-        self.assertEqual(exp_head.letter, seq.head.letter)
+        self.assertEqual(exp_head.state, seq.head.letter)
         self.assertEqual(exp_head.pos, seq.head.pos)
         self.assertEqual(exp_head.pos_in_codons, seq.head.pos_in_codons)
 
-        self.assertEqual(exp_current.letter, seq.current_nt.letter)
+        self.assertEqual(exp_current.state, seq.current_nt.letter)
         self.assertEqual(exp_current.pos, seq.current_nt.pos)
         self.assertEqual(exp_current.pos_in_codons, seq.current_nt.pos_in_codons)
+
+
+class TestGetNonsynSubs(unittest.TestCase):
+    """
+    Tests get_nonsyn_subs from the Nucleotide class
+    """
+
+    def testNoORFs(self):
+        s = Sequence('AAAAAAAAAAA')
+        seq = DoubleLinkedList()
+        for pos, nt in enumerate(s.nt_sequence):
+            pos_in_codon = s.create_nt_orf_dict(pos)
+            seq.insert_nt(nt, pos, pos_in_codon)
+
+        nt = s.nt_sequence[2]
+
+        expected = {'+0': {'A': None, 'T': None, 'G': None, 'C': None},
+                    '+1': {'A': None, 'T': None, 'G': None, 'C': None},
+                    '+2': {'A': None, 'T': None, 'G': None, 'C': None},
+                    '-0': {'A': None, 'T': None, 'G': None, 'C': None},
+                    '-1': {'A': None, 'T': None, 'G': None, 'C': None},
+                    '-2': {'A': None, 'T': None, 'G': None, 'C': None}}
+
+        result = nt.get_nonsyn_subs()
+        self.assertEqual(expected, result)
+
+    def testOneOrf(self):
+
+        s = Sequence('ATGCCCTGA')
+        seq = DoubleLinkedList()
+        for pos, nt in enumerate(s.nt_sequence):
+            pos_in_codon = s.create_nt_orf_dict(pos)
+            seq.insert_nt(nt, pos, pos_in_codon)
+
+        nt = s.nt_sequence[0]
+
+        expected = {'+0': {'A': False, 'T': True, 'G': True, 'C': True},
+                    '+1': {'A': None,  'T': None, 'G': None, 'C': None},
+                    '+2': {'A': None,  'T': None, 'G': None, 'C': None},
+                    '-0': {'A': None,  'T': None, 'G': None, 'C': None},
+                    '-1': {'A': None,  'T': None, 'G': None, 'C': None},
+                    '-2': {'A': None,  'T': None, 'G': None, 'C': None}}
+
+        result = nt.get_nonsyn_subs()
+        self.assertEqual(expected, result)
 
 
 if __name__ == '__main__':

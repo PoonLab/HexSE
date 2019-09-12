@@ -335,6 +335,7 @@ class Nucleotide:
         self.left_nt = left_nt
         self.right_nt = right_nt
         self.pos_in_codons = pos_in_codon
+        # self.syn_nonsyn = self.get_nonsyn_subs()
 
     def get_state(self):
         return self.state
@@ -365,6 +366,67 @@ class Nucleotide:
 
     def set_pos_in_codons(self, new_codons):
         self.pos_in_codons = new_codons
+    #
+    # def get_nonsyn_subs(self):
+    #     """
+    #     Get synonymous and non-synonymous substitutions given the open reading frame
+    #     :return: a dictionary with possible mutations for each reading frame.
+    #             The value is True if the substitution is non-synonymous, otherwise it is False
+    #     """
+    #
+    #     nonsyn_syn = {}
+    #     for frame in self.pos_in_codons:
+    #         nonsyn_syn[frame] = {'A': None, 'T': None, 'G': None, 'C': None}
+    #
+    #         # Get the codon to which the Nucleotide belongs
+    #         codon = []
+    #         if self.pos_in_codons[frame] is not None:
+    #
+    #             if self.pos_in_codons[frame] == 0:
+    #                 right = self.get_right_nt()
+    #
+    #                 # Check that right neighbours exits
+    #                 if right is not None:
+    #                     right_right = right.get_right_nt()
+    #
+    #                     if right_right is not None:
+    #                         codon.append(self.get_state())
+    #                         codon.append(right.get_state())
+    #                         codon.append(right_right.get_state())
+    #
+    #             elif self.pos_in_codons[frame] == 1:
+    #                 left = self.get_left_nt()
+    #                 right = self.get_right_nt()
+    #
+    #                 # Check that left and right neighbours exist
+    #                 if left and right is not None:
+    #                     codon.append(left.get_state())
+    #                     codon.append(self.get_state())
+    #                     codon.append(right.get_state())
+    #
+    #             else:
+    #                 left = self.get_left_nt()
+    #                 # Check that left neighbour exists
+    #                 if left is not None:
+    #                     left_left = left.get_left_nt()
+    #
+    #                     if left_left is not None:
+    #                         codon.append(left_left.get_state())
+    #                         codon.append(left.get_state())
+    #                         codon.append(self.get_state())
+    #
+    #             print(codon)
+    #             if codon:
+    #                 for nt in NUCLEOTIDES:
+    #                     mutated_codon = codon
+    #                     mutated_codon[self.pos_in_codons[frame]] = nt
+    #
+    #                     if CODON_DICT[''.join(mutated_codon)] != CODON_DICT[''.join(codon)]:
+    #                         nonsyn_syn[frame][nt] = True    # Non-synonymous
+    #                     else:
+    #                         nonsyn_syn[frame][nt] = False   # Synonymous
+    #
+    #     return nonsyn_syn
 
 
 class DoubleLinkedList:
