@@ -78,8 +78,6 @@ class Sequence:
             new_dict = self.create_nt_orf_dict(pos)
             self.nt_sequence.insert_nt(nt, pos, new_dict)
 
-        self.nt_sequence.print_seq()
-
     def get_sequence(self):
         return self.nt_sequence
 
@@ -309,6 +307,37 @@ class Sequence:
 
         return sorted_orfs
 
+    def get_codon(self, position, orf):
+        """
+        Get codon sequence, and position of my_nt in the codon
+        :param position: position of the nucleotide in the sequence
+        :param orf: tuple indicating first and last nucleotide of an open reading frame
+        :return codon: nucleotide triplet
+        """
+        if orf[1] > orf[0]:  # positive strand
+            my_orf = self.original_seq[orf[0]:orf[1] + 1]
+            position_in_orf = position - orf[0]
+        else:  # negative strand
+            my_orf = self.rcseq[orf[1]:orf[0] + 1]
+            position_in_orf = orf[0] - position
+
+        try:
+            position_in_orf < 0
+        except ValueError as e:
+            raise ValueError("Invalid position: {}".format(position_in_orf))
+
+        if position_in_orf % 3 == 0:
+            position_in_codon = 0
+            codon = my_orf[position_in_orf: position_in_orf + 3]
+        elif position_in_orf % 3 == 1:
+            position_in_codon = 1
+            codon = my_orf[position_in_orf - 1: position_in_orf + 2]
+        else:
+            position_in_codon = 2
+            codon = my_orf[position_in_orf - 2: position_in_orf + 1]
+
+        return codon, position_in_codon
+
 
 class Nucleotide:
     """
@@ -335,7 +364,8 @@ class Nucleotide:
         self.left_nt = left_nt
         self.right_nt = right_nt
         self.pos_in_codons = pos_in_codon
-        # self.syn_nonsyn = self.get_nonsyn_subs()
+        self.codons = {'+0': None, '+1': None, '+2': None, '-0': None, '-1': None, '-2': None}
+        self.nonsyn_subs = None
 
     def get_state(self):
         return self.state
@@ -355,9 +385,6 @@ class Nucleotide:
     def set_state(self, new_state):
         self.state = new_state
 
-    def set_pos(self, new_pos):
-        self.pos = new_pos
-
     def set_left_nt(self, new_left_nt):
         self.left_nt = new_left_nt
 
@@ -366,67 +393,27 @@ class Nucleotide:
 
     def set_pos_in_codons(self, new_codons):
         self.pos_in_codons = new_codons
-    #
-    # def get_nonsyn_subs(self):
-    #     """
-    #     Get synonymous and non-synonymous substitutions given the open reading frame
-    #     :return: a dictionary with possible mutations for each reading frame.
-    #             The value is True if the substitution is non-synonymous, otherwise it is False
-    #     """
-    #
-    #     nonsyn_syn = {}
-    #     for frame in self.pos_in_codons:
-    #         nonsyn_syn[frame] = {'A': None, 'T': None, 'G': None, 'C': None}
-    #
-    #         # Get the codon to which the Nucleotide belongs
-    #         codon = []
-    #         if self.pos_in_codons[frame] is not None:
-    #
-    #             if self.pos_in_codons[frame] == 0:
-    #                 right = self.get_right_nt()
-    #
-    #                 # Check that right neighbours exits
-    #                 if right is not None:
-    #                     right_right = right.get_right_nt()
-    #
-    #                     if right_right is not None:
-    #                         codon.append(self.get_state())
-    #                         codon.append(right.get_state())
-    #                         codon.append(right_right.get_state())
-    #
-    #             elif self.pos_in_codons[frame] == 1:
-    #                 left = self.get_left_nt()
-    #                 right = self.get_right_nt()
-    #
-    #                 # Check that left and right neighbours exist
-    #                 if left and right is not None:
-    #                     codon.append(left.get_state())
-    #                     codon.append(self.get_state())
-    #                     codon.append(right.get_state())
-    #
-    #             else:
-    #                 left = self.get_left_nt()
-    #                 # Check that left neighbour exists
-    #                 if left is not None:
-    #                     left_left = left.get_left_nt()
-    #
-    #                     if left_left is not None:
-    #                         codon.append(left_left.get_state())
-    #                         codon.append(left.get_state())
-    #                         codon.append(self.get_state())
-    #
-    #             print(codon)
-    #             if codon:
-    #                 for nt in NUCLEOTIDES:
-    #                     mutated_codon = codon
-    #                     mutated_codon[self.pos_in_codons[frame]] = nt
-    #
-    #                     if CODON_DICT[''.join(mutated_codon)] != CODON_DICT[''.join(codon)]:
-    #                         nonsyn_syn[frame][nt] = True    # Non-synonymous
-    #                     else:
-    #                         nonsyn_syn[frame][nt] = False   # Synonymous
-    #
-    #     return nonsyn_syn
+
+    def set_codons(self, codons):
+        self.codons = codons
+
+    def find_nonsyn_subs(self, to_nt):
+        """
+        Get synonymous and non-synonymous substitutions given the open reading frame
+        :return: True if the mutation is non-synonymous, False otherwise
+        """
+        is_nonsyn = {'+0': None, '+1': None, '+2': None, '-0': None, '-1': None, '-2': None}
+
+        for frame in self.codons:
+            codon = self.codons[frame]
+            in_codon_pos = self.get_pos_in_codons()[frame]
+            if codon is not None and in_codon_pos is not None:
+                mutated_codon = codon
+                mutated_codon[in_codon_pos] = to_nt
+                is_nonsyn[frame] = True if CODON_DICT[''.join(mutated_codon)] != CODON_DICT[''.join(codon)] \
+                    else is_nonsyn[frame] = False
+
+        self.nonsyn_subs = is_nonsyn
 
 
 class DoubleLinkedList:
@@ -463,7 +450,21 @@ class DoubleLinkedList:
         return self.head
 
     def print_seq(self):  # Print the string of nucleotides (check the class is working properly)
+        s = ''
         temp = self.head
         while temp is not None:
-            # print(temp.get_letter(), temp.get_pos())
+            s += temp.get_state()
             temp = temp.get_right_nt()
+        print(s)
+
+    def nucleotide_at_pos(self, position):
+        """
+        Traverse sequence to find the Nucleotide object at a specific position
+        :param position: the position of the Nucleotide
+        :return: the Nucleotide object in the specified position
+        """
+        current_nt = self.get_head()
+        while current_nt is not None:
+            if position == current_nt.get_pos():
+                return current_nt
+            current_nt = current_nt.get_right_nt()

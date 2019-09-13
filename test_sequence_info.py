@@ -5,6 +5,29 @@ from refact.new_sequence_info import Nucleotide
 from refact.new_sequence_info import Sequence
 
 
+def make_dll(original_sequence):
+    s = Sequence(original_sequence)
+    s.nt_sequence = DoubleLinkedList()
+    for pos, nt in enumerate(s.original_seq):
+        pos_in_codon = s.create_nt_orf_dict(pos)
+        s.nt_sequence.insert_nt(nt, pos, pos_in_codon)
+    return s
+
+
+class TestSequences(unittest.TestCase):
+    def setUp(self):
+        s1 = make_dll('ATTTTTTTTTTTTT')
+        self.seq1 = s1.nt_sequence
+        s2 = make_dll('TTTTTTTTTTTTTG')
+        self.seq2 = s2.nt_sequence
+        s3 = make_dll('TTTTTTCTTTTTTT')
+        self.seq3 = s3.nt_sequence
+        s4 = make_dll('ATGCCGTATGC')
+        self.seq4 = s4.nt_sequence
+        s5 = make_dll('ATGCCCTGA')
+        self.seq5 = s5.nt_sequence
+
+
 class TestValidSequence(unittest.TestCase):
     """
     Tests valid_sequence from Sequence class
@@ -311,11 +334,11 @@ class TestInsertNt(unittest.TestCase):
         exp_head = Nucleotide('A', 0, {'+0': 0})
         exp_current = exp_head
 
-        self.assertEqual(exp_head.state, seq.head.letter)
+        self.assertEqual(exp_head.state, seq.head.state)
         self.assertEqual(exp_head.pos, seq.head.pos)
         self.assertEqual(exp_head.pos_in_codons, seq.head.pos_in_codons)
 
-        self.assertEqual(exp_current.state, seq.current_nt.letter)
+        self.assertEqual(exp_current.state, seq.current_nt.state)
         self.assertEqual(exp_current.pos, seq.current_nt.pos)
         self.assertEqual(exp_current.pos_in_codons, seq.current_nt.pos_in_codons)
 
@@ -323,28 +346,51 @@ class TestInsertNt(unittest.TestCase):
         seq.insert_nt('T', 1, {'+0': 1})
         exp_current = Nucleotide('T', 1, {'+0': 1})
 
-        self.assertEqual(exp_head.state, seq.head.letter)
+        self.assertEqual(exp_head.state, seq.head.state)
         self.assertEqual(exp_head.pos, seq.head.pos)
         self.assertEqual(exp_head.pos_in_codons, seq.head.pos_in_codons)
 
-        self.assertEqual(exp_current.state, seq.current_nt.letter)
+        self.assertEqual(exp_current.state, seq.current_nt.state)
         self.assertEqual(exp_current.pos, seq.current_nt.pos)
         self.assertEqual(exp_current.pos_in_codons, seq.current_nt.pos_in_codons)
 
 
-class TestGetNonsynSubs(unittest.TestCase):
+class TestNucleotideAtPos(TestSequences):
+    """
+    Tests nucleotide_at_pos from DoubleLinkedList class
+    """
+
+    def testFindFirst(self):
+        result_nt = self.seq1.nucleotide_at_pos(0)
+        expected_state = 'A'
+        self.assertEqual(expected_state, result_nt.get_state())
+
+    def testFindLast(self):
+        result_nt = self.seq2.nucleotide_at_pos(13)
+        expected_state = 'G'
+        self.assertEqual(expected_state, result_nt.get_state())
+
+    def testFindMiddle(self):
+        result_nt = self.seq3.nucleotide_at_pos(6)
+        expected_state = 'C'
+        self.assertEqual(expected_state, result_nt.get_state())
+
+
+class TestGetNonsynSubs(TestSequences):
     """
     Tests get_nonsyn_subs from the Nucleotide class
     """
 
     def testNoORFs(self):
-        s = Sequence('AAAAAAAAAAA')
-        seq = DoubleLinkedList()
-        for pos, nt in enumerate(s.nt_sequence):
+        s = Sequence('ATGCCGTATGC')
+        s.nt_sequence = DoubleLinkedList()
+        for pos, nt in enumerate(s.original_seq):
             pos_in_codon = s.create_nt_orf_dict(pos)
-            seq.insert_nt(nt, pos, pos_in_codon)
+            s.nt_sequence.insert_nt(nt, pos, pos_in_codon)
 
-        nt = s.nt_sequence[2]
+        s.nt_sequence.print_seq()
+
+        nt = s.nt_sequence.nucleotide_at_pos(2)
 
         expected = {'+0': {'A': None, 'T': None, 'G': None, 'C': None},
                     '+1': {'A': None, 'T': None, 'G': None, 'C': None},
@@ -364,7 +410,7 @@ class TestGetNonsynSubs(unittest.TestCase):
             pos_in_codon = s.create_nt_orf_dict(pos)
             seq.insert_nt(nt, pos, pos_in_codon)
 
-        nt = s.nt_sequence[0]
+        nt = s.nt_sequence.nucleotide_at_pos(0)
 
         expected = {'+0': {'A': False, 'T': True, 'G': True, 'C': True},
                     '+1': {'A': None,  'T': None, 'G': None, 'C': None},
