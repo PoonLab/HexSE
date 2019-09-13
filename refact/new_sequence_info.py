@@ -307,37 +307,6 @@ class Sequence:
 
         return sorted_orfs
 
-    def get_codon(self, position, orf):
-        """
-        Get codon sequence, and position of my_nt in the codon
-        :param position: position of the nucleotide in the sequence
-        :param orf: tuple indicating first and last nucleotide of an open reading frame
-        :return codon: nucleotide triplet
-        """
-        if orf[1] > orf[0]:  # positive strand
-            my_orf = self.original_seq[orf[0]:orf[1] + 1]
-            position_in_orf = position - orf[0]
-        else:  # negative strand
-            my_orf = self.rcseq[orf[1]:orf[0] + 1]
-            position_in_orf = orf[0] - position
-
-        try:
-            position_in_orf < 0
-        except ValueError as e:
-            raise ValueError("Invalid position: {}".format(position_in_orf))
-
-        if position_in_orf % 3 == 0:
-            position_in_codon = 0
-            codon = my_orf[position_in_orf: position_in_orf + 3]
-        elif position_in_orf % 3 == 1:
-            position_in_codon = 1
-            codon = my_orf[position_in_orf - 1: position_in_orf + 2]
-        else:
-            position_in_codon = 2
-            codon = my_orf[position_in_orf - 2: position_in_orf + 1]
-
-        return codon, position_in_codon
-
 
 class Nucleotide:
     """
