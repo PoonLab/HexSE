@@ -38,7 +38,7 @@ class Sequence:
     :ivar nt_sequence: list of Nucleotide objects
     """
 
-    def __init__(self, original_seq, unsorted_orfs = None):
+    def __init__(self, original_seq, mu, kappa, unsorted_orfs = None, pi = None, omega = None):
         """
         Creates a list of nucleotides, locates open reading frames, and creates a list of codons.
         :param original_seq: A list of Nucleotides
@@ -47,6 +47,7 @@ class Sequence:
                         - the values are a list of tuples containing the start and end positions of the ORFs.
                         - Ex: {'+0': [(0, 8), (3, 15)], '+1': [(1, 9)], '+2': [], '-0': [], '-1': [], '-2': []}
         :raises ValueError: If the sequence contains invalid characters or if it contains no ORFs
+
         """
 
         # Check if sequence is valid
@@ -57,6 +58,10 @@ class Sequence:
         self.original_seq = original_seq
         self.orfs = {}
         self.rcseq = self.reverse_and_complement(original_seq)
+        self.mu = mu
+        self.pi = pi
+        self.kappa = kappa
+        self.omega = omega
 
         # Check if the ORFs the user specified are valid
         if unsorted_orfs is not None:
@@ -73,16 +78,14 @@ class Sequence:
 
         # Create Nucleotides
         self.nt_sequence = DoubleLinkedList()
-        for pos, nt in enumerate(self.original_seq):
-            new_dict = self.create_nt_orf_dict(pos)
-            self.nt_sequence.insert_nt(nt, pos, new_dict)
-
-        self.nt_sequence.print_seq()
+        for pos_in_seq, nt in enumerate(self.original_seq):
+            new_dict = self.create_nt_orf_dict(pos_in_seq)
+            self.nt_sequence.insert_nt(nt, pos_in_seq, new_dict)
 
     def get_sequence(self):
         return self.nt_sequence
 
-    def create_nt_orf_dict(self, pos):
+    def create_nt_orf_dict(self, pos_in_seq):
         """
         Dictionary with keys as orfs (in which nt is involved) and items as a number (0,1 or 2) representing
         position of the nucleotide in the codon
@@ -95,12 +98,17 @@ class Sequence:
         for frame_shift, orfs_list in self.orfs.items():
             for orf_tuple in orfs_list:
                 # if nucleotide is inside the orf
-                #if orf_tuple[0] < orf_tuple[1]: # positive strand
-                if pos in range(orf_tuple[0], orf_tuple[1]) or pos in range(orf_tuple[1], orf_tuple[0]):
-                    position_in_codon = abs(orf_tuple[0] - pos) % 3
+                # if orf_tuple[0] < orf_tuple[1]: # positive strand
+                if  orf_tuple[0] <= pos_in_seq <= orf_tuple[1] or orf_tuple[1] <= pos_in_seq <= orf_tuple[0]:
+                    position_in_codon = abs(orf_tuple[0] - pos_in_seq) % 3
                     nt_orf_dict[frame_shift] = position_in_codon
 
         return nt_orf_dict
+    #
+    # def create_nt_rates(self, letter):
+    #     nt_rates = {}
+    # 
+    #     for to_nt in NUCLEOTIDES:
 
     @staticmethod
     def valid_sequence(seq):
@@ -314,9 +322,6 @@ class Sequence:
                         elif difference == 2:
                             minus_two.append(orf)
 
-
-
-
         sorted_orfs = {'+0': plus_zero, '+1': plus_one, '+2': plus_two,
                        '-0': minus_zero, '-1': minus_one, '-2': minus_two}
 
@@ -338,7 +343,7 @@ class Nucleotide:
                     - the Nucleotides's position in the codon
     """
 
-    def __init__(self, letter, position, pos_in_codon = {}, left_nt = None, right_nt = None):
+    def __init__(self, letter, pos_in_seq, pos_in_codon = {}, left_nt = None, right_nt = None):
         """
         :param state: Nucleotide A, C, G or T
         :param position: Position of the nucleotide in the sequence
@@ -346,7 +351,7 @@ class Nucleotide:
         :param right: reference to the adjacent nucleotide to the right (default to None)
         """
         self.letter = letter
-        self.pos = position
+        self.pos_in_seq = pos_in_seq
         self.left_nt = left_nt
         self.right_nt = right_nt
         self.pos_in_codons = pos_in_codon
@@ -355,8 +360,8 @@ class Nucleotide:
     def get_letter(self):
         return self.letter
 
-    def get_pos(self):
-        return self.pos
+    def get_pos_in_seq(self):
+        return self.pos_in_seq
 
     def get_left_nt(self):
         return self.left_nt
@@ -371,7 +376,7 @@ class Nucleotide:
         self.letter = new_letter
 
     def set_pos(self, new_pos):
-        self.pos = new_pos
+        self.pos_in_seq = new_pos
 
     def set_left_nt(self, new_left_nt):
         self.left_nt = new_left_nt
@@ -381,7 +386,6 @@ class Nucleotide:
 
     def set_pos_in_codons(self, new_codons):
         self.pos_in_codons = new_codons
-
 
 class DoubleLinkedList():
     """
@@ -419,5 +423,5 @@ class DoubleLinkedList():
     def print_seq(self):        #Print the string of nucleotides (check the class is working properly)
         temp = self.head
         while temp != None:
-            #print(temp.get_letter(), temp.get_pos())
+            print(temp.get_letter(), temp.get_pos_in_seq())
             temp = temp.get_right_nt()

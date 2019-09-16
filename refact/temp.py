@@ -27,11 +27,16 @@ pos3 = 3
 #seq.insert_nt('T', 2)
 
 s = 'AAACCCGGGTTTATATCTATCTAGAGCTAGATAGCTA'
-orfs = [(8,0), (0,8), (12,4), (9,17), (11,3)]
-seq = Sequence(s,orfs) 
+orfs = [(0,8), (8,0), (12,4), (9,17), (11,3)]
+mu = 0.3
+kappa = 0.5
+pi = 0.3
+omega = 1
+seq = Sequence(s,mu, kappa, orfs) 
 print(seq.orfs)
 print(seq.create_nt_orf_dict(4))
 
 print(seq.get_sequence())   # double linked list
 print(seq.get_sequence().get_head())   # first nucleotide
 print(seq.get_sequence().get_head().get_pos_in_codons()) # get orf dictionary for this specific nt
+print(seq.get_sequence().print_seq())
