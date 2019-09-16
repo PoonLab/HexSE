@@ -39,11 +39,8 @@ class Sequence:
     :ivar nt_sequence: list of Nucleotide objects
     """
 
-<<<<<<< HEAD
     def __init__(self, original_seq, mu, kappa, unsorted_orfs = None, pi = None, omega = None):
-=======
-    def __init__(self, original_seq, unsorted_orfs=None):
->>>>>>> 9103ea85de13c9093a2c724b6aba360d9bb0dd44
+
         """
         Creates a list of nucleotides, locates open reading frames, and creates a list of codons.
         :param original_seq: A list of Nucleotides
@@ -83,15 +80,10 @@ class Sequence:
 
         # Create Nucleotides
         self.nt_sequence = DoubleLinkedList()
-<<<<<<< HEAD
+
         for pos_in_seq, nt in enumerate(self.original_seq):
             new_dict = self.create_nt_orf_dict(pos_in_seq)
             self.nt_sequence.insert_nt(nt, pos_in_seq, new_dict)
-=======
-        for pos, nt in enumerate(self.original_seq):
-            new_dict = self.create_nt_orf_dict(pos)
-            self.nt_sequence.insert_nt(nt, pos, new_dict)
->>>>>>> 9103ea85de13c9093a2c724b6aba360d9bb0dd44
 
     def get_sequence(self):
         return self.nt_sequence
@@ -108,14 +100,9 @@ class Sequence:
         for frame_shift, orfs_list in self.orfs.items():
             for orf_tuple in orfs_list:
                 # if nucleotide is inside the orf
-<<<<<<< HEAD
                 # if orf_tuple[0] < orf_tuple[1]: # positive strand
                 if  orf_tuple[0] <= pos_in_seq <= orf_tuple[1] or orf_tuple[1] <= pos_in_seq <= orf_tuple[0]:
                     position_in_codon = abs(orf_tuple[0] - pos_in_seq) % 3
-=======
-                if orf_tuple[0] <= pos <= orf_tuple[1] or orf_tuple[1] <= pos <= orf_tuple[0]:
-                    position_in_codon = abs(orf_tuple[0] - pos) % 3
->>>>>>> 9103ea85de13c9093a2c724b6aba360d9bb0dd44
                     nt_orf_dict[frame_shift] = position_in_codon
 
         return nt_orf_dict
@@ -329,14 +316,11 @@ class Sequence:
                         elif difference == 1:
                             sorted_orfs['-1'].append(orf)
                         elif difference == 2:
-<<<<<<< HEAD
                             minus_two.append(orf)
 
         sorted_orfs = {'+0': plus_zero, '+1': plus_one, '+2': plus_two,
                        '-0': minus_zero, '-1': minus_one, '-2': minus_two}
-=======
-                            sorted_orfs['-2'].append(orf)
->>>>>>> 9103ea85de13c9093a2c724b6aba360d9bb0dd44
+
 
         return sorted_orfs
 
@@ -354,24 +338,16 @@ class Nucleotide:
     :ivar right_nt: reference to the nucleotide's right neighbour
     """
 
-<<<<<<< HEAD
     def __init__(self, letter, pos_in_seq, pos_in_codon = {}, left_nt = None, right_nt = None):
-=======
-    def __init__(self, state, position, pos_in_codon={}, left_nt=None, right_nt=None):
->>>>>>> 9103ea85de13c9093a2c724b6aba360d9bb0dd44
+
         """
         :param state: Nucleotide A, C, G or T
         :param position: Position of the nucleotide in the sequence
         :param left_nt : reference to the adjacent nucleotide to the left (default to None)
         :param right_nt: reference to the adjacent nucleotide to the right (default to None)
         """
-<<<<<<< HEAD
         self.letter = letter
         self.pos_in_seq = pos_in_seq
-=======
-        self.state = state
-        self.pos = position
->>>>>>> 9103ea85de13c9093a2c724b6aba360d9bb0dd44
         self.left_nt = left_nt
         self.right_nt = right_nt
         self.pos_in_codons = pos_in_codon
@@ -393,16 +369,14 @@ class Nucleotide:
     def get_pos_in_codons(self):
         return self.pos_in_codons
 
-<<<<<<< HEAD
     def set_letter(self, new_letter):
         self.letter = new_letter
 
     def set_pos(self, new_pos):
         self.pos_in_seq = new_pos
-=======
+
     def set_state(self, new_state):
         self.state = new_state
->>>>>>> 9103ea85de13c9093a2c724b6aba360d9bb0dd44
 
     def set_left_nt(self, new_left_nt):
         self.left_nt = new_left_nt
@@ -413,33 +387,8 @@ class Nucleotide:
     def set_pos_in_codons(self, new_codons):
         self.pos_in_codons = new_codons
 
-<<<<<<< HEAD
+
 class DoubleLinkedList():
-=======
-    def set_codons(self, codons):
-        self.codons = codons
-
-    def find_nonsyn_subs(self, to_nt):
-        """
-        Get synonymous and non-synonymous substitutions given the open reading frame
-        :return: True if the mutation is non-synonymous, False otherwise
-        """
-        is_nonsyn = {'+0': None, '+1': None, '+2': None, '-0': None, '-1': None, '-2': None}
-
-        for frame in self.codons:
-            codon = self.codons[frame]
-            in_codon_pos = self.get_pos_in_codons()[frame]
-            if codon is not None and in_codon_pos is not None:
-                mutated_codon = codon
-                mutated_codon[in_codon_pos] = to_nt
-                is_nonsyn[frame] = True if CODON_DICT[''.join(mutated_codon)] != CODON_DICT[''.join(codon)] \
-                    else is_nonsyn[frame] = False
-
-        self.nonsyn_subs = is_nonsyn
-
-
-class DoubleLinkedList:
->>>>>>> 9103ea85de13c9093a2c724b6aba360d9bb0dd44
     """
     Double linked list linking together objects of class Nucleotide
     default initialization with empty head node
@@ -475,13 +424,9 @@ class DoubleLinkedList:
     def print_seq(self):  # Print the string of nucleotides (check the class is working properly)
         s = ''
         temp = self.head
-<<<<<<< HEAD
-        while temp != None:
-            print(temp.get_letter(), temp.get_pos_in_seq())
-=======
+
         while temp is not None:
             s += temp.get_state()
->>>>>>> 9103ea85de13c9093a2c724b6aba360d9bb0dd44
             temp = temp.get_right_nt()
         print(s)
 
@@ -496,3 +441,24 @@ class DoubleLinkedList:
             if position == current_nt.get_pos():
                 return current_nt
             current_nt = current_nt.get_right_nt()
+
+    def set_codons(self, codons):
+        self.codons = codons
+
+    def find_nonsyn_subs(self, to_nt):
+        """
+        Get synonymous and non-synonymous substitutions given the open reading frame
+        :return: True if the mutation is non-synonymous, False otherwise
+        """
+        is_nonsyn = {'+0': None, '+1': None, '+2': None, '-0': None, '-1': None, '-2': None}
+
+        for frame in self.codons:
+            codon = self.codons[frame]
+            in_codon_pos = self.get_pos_in_codons()[frame]
+            if codon is not None and in_codon_pos is not None:
+                mutated_codon = codon
+                mutated_codon[in_codon_pos] = to_nt
+                is_nonsyn[frame] = True if CODON_DICT[''.join(mutated_codon)] != CODON_DICT[''.join(codon)] \
+                    else is_nonsyn[frame] = False
+
+        self.nonsyn_subs = is_nonsyn
