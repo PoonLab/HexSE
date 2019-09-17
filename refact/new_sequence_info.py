@@ -4,6 +4,7 @@
 
 import re
 import sys
+from event_tree import Event_tree
 
 NUCLEOTIDES = ['A', 'C', 'G', 'T']
 
@@ -46,8 +47,7 @@ class Sequence:
         Creates a list of nucleotides, locates open reading frames, and creates a list of codons.
         :param original_seq: A list of Nucleotides
         :param mu: The global rate (substitutions/site/unit time)
-        :param kappa: A List of 6 rates [AC, AG, AT, CG, CT, GT] assuming time-reversibility.
-                        If not specified, defaults to 1's
+        :param kappa: transition transversion rate ratio
         :param unsorted_orfs: <optional> A dictionary of ORFs, sorted by reading frame where:
                         - the keys are the reading frames (+0, +1, +2, -0, -1, -2)
                         - the values are a list of tuples containing the start and end positions of the ORFs.
@@ -66,6 +66,7 @@ class Sequence:
             print("Invalid sequence: {}".format(original_seq))
             sys.exit(0)
 
+
         self.original_seq = original_seq
         self.orfs = {}
         self.rcseq = self.reverse_and_complement(original_seq)
@@ -73,6 +74,11 @@ class Sequence:
         self.pi = pi
         self.kappa = kappa
         self.omega = omega
+
+
+        # Calculate stationary frequency rates
+        if self.pi is None:
+            self.pi = self.get_frequency_rates(self.original_seq)
 
         # Check if the ORFs the user specified are valid
         if unsorted_orfs is not None:
@@ -86,6 +92,9 @@ class Sequence:
         else:
             unsorted_orfs = self.get_open_reading_frames()
             self.orfs = self.sort_orfs(unsorted_orfs)
+
+        # Create event tree for sequence (tree containing all possible mutation and the parameters that should be taken into account when calculating rates)
+        event_tree = Event_tree(self.pi)
 
         # Create Nucleotides
         self.nt_sequence = DoubleLinkedList()
@@ -102,6 +111,8 @@ class Sequence:
                 for codon in codons:
                     for i, nt in enumerate(codon.nts_in_codon):
                         nt.add_codon(codon)
+
+        # TODO: Calculate mutation rates for each nucleotide according to event tree and codon info
 
     def get_sequence(self):
         return self.nt_sequence
@@ -315,16 +326,22 @@ class Sequence:
         return sorted_orfs
 
     @staticmethod
-    def codon_iterator(my_orf):
+    def codon_iterator(my_orf, start_pos, end_pos):
         """
         Generator to move every tree nucleotides (codon)
         :param my_orf: A list of Nucleotides in the ORF
         :yield codon
         """
-        i = 0
-        while i < len(my_orf):
-            yield my_orf[i:i + 3]
-            i += 3
+        if start_pos < end_pos: # Positive strand, move to the right
+            i = 0
+            while i < len(my_orf):
+                yield my_orf[i:i + 3]
+                i += 3
+        else: # Negative strand, move to the left
+            i = len(my_orf) - 1
+            while i > 0:
+                yield my_orf[i:i-3:-1]
+                i -= 3
 
     def find_codons(self, frame, orf):
         """
@@ -334,9 +351,11 @@ class Sequence:
         :return: a list of Codon objects for the specified ORF
         """
         codons = []
-        if orf[1] > orf[0]:   # positive strand
-            my_orf = self.nt_sequence.slice_sequence(orf[0], orf[1] + 1)  # Convert DLL to a list of Nucleotides
+        start_pos = orf[0]
+        end_pos = orf[1]
+        my_orf = self.nt_sequence.slice_sequence(start_pos, end_pos)
 
+        if start_pos < end_pos:
             # Iterate over list by threes and create Codons in the forward strand
             for cdn in self.codon_iterator(my_orf):
                 codon = Codon(orf, frame, cdn)
@@ -347,6 +366,25 @@ class Sequence:
             pass
 
         return codons
+
+    def get_frequency_rates(self, seq):
+        """
+        Frequency of nucleotides in the DNA sequence
+        :param seq: the DNA sequence
+        :return: a dictionary frequencies where the key is the nucleotide and the value is the frequency
+        """
+        seq = list(seq)
+        frequencies = {
+            'A': 0,
+            'C': 0,
+            'T': 0,
+            'G': 0
+        }
+
+        for nucleotide in frequencies:
+            frequencies[nucleotide] = round((float(seq.count(nucleotide)) / (len(seq))), 2)
+
+        return frequencies
 
 
 class Nucleotide:
@@ -372,6 +410,7 @@ class Nucleotide:
         self.left_nt = left_nt
         self.right_nt = right_nt
         self.codons = []
+        self.complement_state = COMPLEMENT_DICT[self.state]
 
     def __repr__(self):
         return self.state
@@ -387,6 +426,9 @@ class Nucleotide:
 
     def get_right_nt(self):
         return self.right_nt
+
+    def get_complement_state(self):
+        return self.complement_state
 
     def set_state(self, new_state):
         self.state = new_state
@@ -472,13 +514,21 @@ class DoubleLinkedList:
         :param end_pos: the end position
         :return sub_seq: a list of Nucleotides between the start and end positions
         """
-        curr_nt = self.nucleotide_at_pos(start_pos)
-        sub_seq = []
 
-        # If there is a next Nucleotide and the position is within the range
-        while curr_nt.get_right_nt() is not None and curr_nt.get_pos_in_seq() < end_pos:
-            sub_seq.append(curr_nt)
-            curr_nt = curr_nt.get_right_nt()
+        sub_seq = []
+        curr_nt = self.nucleotide_at_pos(start_pos)
+
+        if start_pos > end_pos: # Positive strand
+            # If there is a next Nucleotide and the position is within the range
+            while curr_nt.get_right_nt() is not None and curr_nt.get_pos_in_seq() <= end_pos:
+                sub_seq.append(curr_nt)
+                curr_nt = curr_nt.get_right_nt()
+        else: # Negative strand
+            # If there is a previous Nucleotide and the position is within the range
+            while curr_nt.get_left_nt() is not None and curr_nt.get_pos_in_seq() >= end_pos:
+                sub_seq.append(curr_nt)
+                curr_nt = curr_nt.get_left_nt()
+
         return sub_seq
 
 

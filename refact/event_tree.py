@@ -68,10 +68,11 @@ class Event_tree:
                                 'C':{},
                                 'G':{}}
                         }
+        omega_values = self.get_omega_values(2,4)
 
         for nt in self.nt_frequencies.keys():
             if nt in event_tree['to_nt'].keys():
-                # Add stationary frequencies to every nucleotide the event tree
+                # Add stationary frequencies to every nucleotide in the event tree
                 event_tree['to_nt'][nt]['stationary_frequency'] = self.nt_frequencies[nt]
                 # Update nucleotides with possible mutations
                 event_tree['to_nt'][nt].update([( 'from_nt',{'A':{},'T':{},'C':{},'G':{}})])
@@ -79,12 +80,11 @@ class Event_tree:
                 for from_nt in event_tree['to_nt'][nt]['from_nt'].keys():
                     event_tree['to_nt'][nt]['from_nt'][from_nt] = self.check_transversion(from_nt, nt)
                     # store omega values for mutations
-                    event_tree['to_nt'][nt]['from_nt'][from_nt].update([('omega_values', self.get_omega_values(2,4))])
-
+                    event_tree['to_nt'][nt]['from_nt'][from_nt].update([('omega_values', omega_values)])
 
         return event_tree
 
 s_frequencies = {'A': 0.24, 'C': 0.24, 'T': 0.24, 'G': 0.29}
 events = Event_tree(s_frequencies)
 dict = events.create_event_tree()
-print(dict['to_nt']['A']['from_nt']['T'])
+print(dict['to_nt']['T']['from_nt']['C'])
