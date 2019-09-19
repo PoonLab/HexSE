@@ -1,10 +1,8 @@
 # Store sequence information
 
-# TODO: Handle Nucleotides involved in reverse strand ORFs (Issue #41)
-
 import re
 import sys
-from event_tree import Event_tree
+from refact.event_tree import Event_tree
 
 NUCLEOTIDES = ['A', 'C', 'G', 'T']
 
@@ -66,7 +64,6 @@ class Sequence:
             print("Invalid sequence: {}".format(original_seq))
             sys.exit(0)
 
-
         self.original_seq = original_seq
         self.orfs = {}
         self.rcseq = self.reverse_and_complement(original_seq)
@@ -74,7 +71,6 @@ class Sequence:
         self.pi = pi
         self.kappa = kappa
         self.omega = omega
-
 
         # Calculate stationary frequency rates
         if self.pi is None:
@@ -328,20 +324,19 @@ class Sequence:
     @staticmethod
     def codon_iterator(my_orf, start_pos, end_pos):
         """
-        Generator to move every tree nucleotides (codon)
+        Generator to move every three nucleotides (codon)
         :param my_orf: A list of Nucleotides in the ORF
+        :param start_pos: The start position of the ORF
+        :param end_pos: The end position of the ORF
         :yield codon
         """
-        if start_pos < end_pos: # Positive strand, move to the right
-            i = 0
-            while i < len(my_orf):
-                yield my_orf[i:i + 3]
-                i += 3
-        else: # Negative strand, move to the left
-            i = len(my_orf) - 1
-            while i > 0:
-                yield my_orf[i:i-3:-1]
-                i -= 3
+        if start_pos > end_pos:  # Negative strand
+            my_orf.reverse()
+
+        i = 0
+        while i < len(my_orf):
+            yield[my_orf[i:i + 3]]
+            i += 3
 
     def find_codons(self, frame, orf):
         """
@@ -357,7 +352,7 @@ class Sequence:
 
         if start_pos < end_pos:
             # Iterate over list by threes and create Codons in the forward strand
-            for cdn in self.codon_iterator(my_orf):
+            for cdn in self.codon_iterator(my_orf, start_pos, end_pos):
                 codon = Codon(orf, frame, cdn)
                 codons.append(codon)
 
@@ -367,13 +362,13 @@ class Sequence:
 
         return codons
 
-    def get_frequency_rates(self, seq):
+    @staticmethod
+    def get_frequency_rates(seq):
         """
         Frequency of nucleotides in the DNA sequence
         :param seq: the DNA sequence
         :return: a dictionary frequencies where the key is the nucleotide and the value is the frequency
         """
-        seq = list(seq)
         frequencies = {
             'A': 0,
             'C': 0,
@@ -518,12 +513,12 @@ class DoubleLinkedList:
         sub_seq = []
         curr_nt = self.nucleotide_at_pos(start_pos)
 
-        if start_pos > end_pos: # Positive strand
+        if start_pos > end_pos:  # Positive strand
             # If there is a next Nucleotide and the position is within the range
             while curr_nt.get_right_nt() is not None and curr_nt.get_pos_in_seq() <= end_pos:
                 sub_seq.append(curr_nt)
                 curr_nt = curr_nt.get_right_nt()
-        else: # Negative strand
+        else:   # Negative strand
             # If there is a previous Nucleotide and the position is within the range
             while curr_nt.get_left_nt() is not None and curr_nt.get_pos_in_seq() >= end_pos:
                 sub_seq.append(curr_nt)
