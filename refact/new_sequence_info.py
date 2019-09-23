@@ -1,8 +1,11 @@
 # Store sequence information
-
+import scipy
+import scipy.stats as ss
+import numpy as np
 import re
 import sys
 from refact.event_tree import Event_tree
+
 
 NUCLEOTIDES = ['A', 'C', 'G', 'T']
 
@@ -90,12 +93,17 @@ class Sequence:
             self.orfs = self.sort_orfs(unsorted_orfs)
 
         # Create event tree for sequence (tree containing all possible mutation and the parameters that should be taken into account when calculating rates)
-        event_tree = Event_tree(self.pi)
+        self.tree = Event_tree(self.pi)
+        self.event_tree = self.tree.create_event_tree()
+
+        # Draw omega values from gamma distrubution
+        omega_values = self.get_omega_values(2, 4)
 
         # Create Nucleotides
         self.nt_sequence = DoubleLinkedList()
         for pos_in_seq, nt in enumerate(self.original_seq):
             self.nt_sequence.insert_nt(nt, pos_in_seq)
+
 
         # Set Codons based on the reading frames
         for frame in self.orfs:
@@ -380,6 +388,39 @@ class Sequence:
             frequencies[nucleotide] = round((float(seq.count(nucleotide)) / (len(seq))), 2)
 
         return frequencies
+
+    def get_omega_values(self, alpha, ncat):
+        """
+        Draw ncat number of omega values from a discretized gamma distribution
+        :param alpha: shape parameter
+        :param ncat: Number of categories (expected omegas)
+        :return: dictionary with number of categories as keys (e.i. {0: 0.29, 1: 0.65, 2: 1.06})
+        """
+        values = self.discretize_gamma(alpha = alpha, ncat = ncat)
+        omega_values = list(values)
+        return omega_values
+
+    def discretize_gamma(self, alpha, ncat, dist=ss.gamma):
+        """
+        Divide the gamma distribution into a number of intervals with equal probability and get the mid point of those intervals
+        From https://gist.github.com/kgori/95f604131ce92ec15f4338635a86dfb9
+        :param alpha: shape parameter
+        :param ncat: Number of categories
+        :param dist: function from scipy stats
+        :return: array with ncat number of values
+        """
+        if dist == ss.gamma:
+            dist = dist(alpha, scale=1 / alpha)
+        elif dist == ss.lognorm:
+            dist = dist(s=alpha, scale=np.exp(0.5 * alpha ** 2))
+        quantiles = dist.ppf(np.arange(0, ncat) / ncat)
+        rates = np.zeros(ncat, dtype=np.double) # return a new array of shape ncat and type double
+        for i in range(ncat - 1):
+            rates[i] = ncat * scipy.integrate.quad(lambda x: x * dist.pdf(x),
+                                                   quantiles[i], quantiles[i + 1])[0]
+        rates[ncat - 1] = ncat * scipy.integrate.quad(lambda x: x * dist.pdf(x),
+                                                      quantiles[ncat - 1], np.inf)[0]
+        return rates
 
 
 class Nucleotide:
