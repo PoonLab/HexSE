@@ -9,6 +9,17 @@
 - Sort ORFs according to plus zero ORF (first of the list), and classified them as (+0, +1, +2, -0, -1, -2). The ouput is a dictionary with six keys that access the reading frames for each option. 
 
 *Nucleotide class*
-- Check in which orf the nucleotide is involve
-- Retrieve the codon and the position in the codon for each orf
+- Store information related to each nucleotide (state, position in sequence, pointer to nucleotide on the left, pointer to nucleotide on the right)
+
+*Double linked list class*
+- Lists together objects of class Nucleotide
+- Default initialization with empty head node
+- Method: Slice sequence (to partition the sequence according to reading frames)
+- Method: nucleotide at position (retrieve the nucleotide at a specific position in sequence)
+
+*Codon class*
+- Finds positition of the Nucleotide in the condon
+- Checks if a mutation on that nucleotide is syn or nonsyn
+
+
 

@@ -20,10 +20,11 @@ class Event_tree:
 
     def get_omega_values(self):
         return self.omega
+
     def get_nt_frequencies(self):
         return self.nt_frequencies
 
-    def get_omega_values(self, alpha, ncat):
+    def draw_omega_values(self, alpha, ncat):
         """
         Draw ncat number of omega values from a discretized gamma distribution
         :param alpha: shape parameter
@@ -31,7 +32,7 @@ class Event_tree:
         :return: dictionary with number of categories as keys (e.i. {0: 0.29, 1: 0.65, 2: 1.06})
         """
         values = self.discretize(alpha = alpha, ncat = ncat)
-        omega_values = dict(enumerate(values))
+        omega_values = list(values)
         return omega_values
 
     def discretize(self, alpha, ncat, dist=ss.gamma):
@@ -68,19 +69,22 @@ class Event_tree:
                                 'C':{},
                                 'G':{}}
                         }
-        omega_values = self.get_omega_values(2,4)
 
-        for nt in self.nt_frequencies.keys():
-            if nt in event_tree['to_nt'].keys():
+        for to_nt in self.nt_frequencies.keys():
+            if to_nt in event_tree['to_nt'].keys():
                 # Add stationary frequencies to every nucleotide in the event tree
-                event_tree['to_nt'][nt]['stationary_frequency'] = self.nt_frequencies[nt]
+                event_tree['to_nt'][to_nt]['stationary_frequency'] = self.nt_frequencies[to_nt]
                 # Update nucleotides with possible mutations
-                event_tree['to_nt'][nt].update([( 'from_nt',{'A':{},'T':{},'C':{},'G':{}})])
+                event_tree['to_nt'][to_nt].update([( 'from_nt',{'A':{},'T':{},'C':{},'G':{}})])
                 # For possible mutations, check if they are a transition or a transversion
-                for from_nt in event_tree['to_nt'][nt]['from_nt'].keys():
-                    event_tree['to_nt'][nt]['from_nt'][from_nt] = self.check_transversion(from_nt, nt)
-                    # store omega values for mutations
-                    event_tree['to_nt'][nt]['from_nt'][from_nt].update([('omega_values', omega_values)])
+                for from_nt in event_tree['to_nt'][to_nt]['from_nt'].keys():
+                    # Nucleotide cannot change to itself
+                    if from_nt == to_nt:
+                        event_tree['to_nt'][to_nt]['from_nt'][from_nt] = None
+                    else:
+                        event_tree['to_nt'][to_nt]['from_nt'][from_nt] = self.check_transversion(from_nt, to_nt)
+                        # create key to a dictionary that will store information about nucleotides affected by nonsyn mutations
+                        event_tree['to_nt'][to_nt]['from_nt'][from_nt].update([('is_nonsyn', {})])
 
         return event_tree
 
