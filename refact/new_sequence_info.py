@@ -6,6 +6,7 @@ import re
 import sys
 from refact.event_tree import Event_tree
 
+TRANSITIONS_DICT = {'A':'G', 'G':'A', 'T':'C', 'C':'T'}
 
 NUCLEOTIDES = ['A', 'C', 'G', 'T']
 
@@ -55,10 +56,7 @@ class Sequence:
                         - Ex: {'+0': [(0, 8), (3, 15)], '+1': [(1, 9)], '+2': [], '-0': [], '-1': [], '-2': []}
         :param pi: <optional> a vector of stationary nucleotide frequencies.  If not specified, defaults
                    to the empirical frequencies in <seq>
-        :param omega: <optional> a List of dN/dS (omega) ratios along sequence length as {dict}.
-                      {dict} always contains key +0 (parent reading frame).  May contain omega for alternate
-                      reading frame as (+1, +2, -0,sim_ -1 or -2). Codon position is determined by the nt's
-                      location relative to start of <seq>
+        :param omega: <optional> a List of dN/dS (omega) ratios. If user does not specify any values, they will be drawn from a gamma distribution
         :raises ValueError: If the sequence contains invalid characters or if it contains no ORFs
         """
 
@@ -87,6 +85,10 @@ class Sequence:
             # Since ORFs are valid, sort the ORFs by reading frame
             self.orfs = self.sort_orfs(unsorted_orfs)
 
+        # Draw omega values
+        if self.omega is None:
+            self.omega = self.get_omega_values(2,4)
+
         # If the user did not specify ORFs
         else:
             unsorted_orfs = self.get_open_reading_frames()
@@ -95,9 +97,6 @@ class Sequence:
         # Create event tree for sequence (tree containing all possible mutation and the parameters that should be taken into account when calculating rates)
         self.tree = Event_tree(self.pi)
         self.event_tree = self.tree.create_event_tree()
-
-        # Draw omega values from gamma distrubution
-        omega_values = self.get_omega_values(2, 4)
 
         # Create Nucleotides
         self.nt_sequence = DoubleLinkedList()
@@ -116,7 +115,46 @@ class Sequence:
                     for i, nt in enumerate(codon.nts_in_codon):
                         nt.add_codon(codon)
 
-        # TODO: Calculate mutation rates for each nucleotide according to event tree and codon info
+        # Calculate mutation rates for each nucleotide in sequence
+        for nt in self.nt_sequence:
+            rates = calculate_mutation_rates(nt)
+            nt.set_rates(rates[0])
+            nt.set_my_omegas(rates[1])
+
+    def calculate_substitution_rates(self, nt):
+        """
+        :param nt: object of class Nucleotide
+        :return: list of omega values applied to calculate substitution rates
+                Dictionary of substitutions rates, which nt
+        """
+        sub_rates = {}
+        my_omegas = []
+        current_nt = nt.get_state()
+
+        for to_nt in NUCLEOTIDES:
+            if to_nt == current_nt:
+                sub_rates[to_nt] = None
+            else:
+                # Apply global substitution rate and stationary nucleotide frequency
+                sub_rates[to_nt] = self.mu * self.pi[current_nt]
+                if self.is_transv(current_nt, to_nt):
+                    sub_rates[to_nt] *= self.kappa
+
+                # Apply omega when mutation is non-synonymous
+                #TODO create method to calculate pos_in_codon
+                for codon in nt.codons:
+                    if codon.is_nonsyn(pos_in_codon, to_nt):
+                        omega = random.choice(self.omega)
+                        my_omegas.append(omega)
+                        sub_rates[to_nt] *= omega
+
+        return sub_rates, my_omegas
+
+    def is_transv(self, from_nt, to_nt):
+        transv = True
+        if TRANSITIONS_DICT[from_nt] == to_nt:
+            transv = False
+        return transv
 
     def get_sequence(self):
         return self.nt_sequence
@@ -338,13 +376,17 @@ class Sequence:
         :param end_pos: The end position of the ORF
         :yield codon
         """
-        if start_pos > end_pos:  # Negative strand
-            my_orf.reverse()
 
-        i = 0
-        while i < len(my_orf):
-            yield[my_orf[i:i + 3]]
-            i += 3
+        if start_pos < end_pos:  # Positive strand, move to the right
+            i = 0
+            while i < len(my_orf):
+                yield my_orf[i:i + 3]
+                i += 3
+        else:  # Negative strand, move to the left
+            i = len(my_orf) - 1
+            while i > -1:
+                yield my_orf[i:i - 3:-1]
+                i -= 3
 
     def find_codons(self, frame, orf):
         """
@@ -358,15 +400,10 @@ class Sequence:
         end_pos = orf[1]
         my_orf = self.nt_sequence.slice_sequence(start_pos, end_pos)
 
-        if start_pos < end_pos:
-            # Iterate over list by threes and create Codons in the forward strand
-            for cdn in self.codon_iterator(my_orf, start_pos, end_pos):
-                codon = Codon(orf, frame, cdn)
-                codons.append(codon)
-
-        else:
-            # TODO: Handle Nucleotides involved in reverse strand ORFs (Issue #41)
-            pass
+        # Iterate over list by threes and create Codons
+        for cdn in self.codon_iterator(my_orf, start_pos, end_pos):
+            codon = Codon(orf, frame, cdn)
+            codons.append(codon)
 
         return codons
 
@@ -394,7 +431,7 @@ class Sequence:
         Draw ncat number of omega values from a discretized gamma distribution
         :param alpha: shape parameter
         :param ncat: Number of categories (expected omegas)
-        :return: dictionary with number of categories as keys (e.i. {0: 0.29, 1: 0.65, 2: 1.06})
+        :return: list of ncat number of omega values (e.i. if ncat = 3, omega_values = [0.29, 0.65, 1.06])
         """
         values = self.discretize_gamma(alpha = alpha, ncat = ncat)
         omega_values = list(values)
@@ -447,6 +484,8 @@ class Nucleotide:
         self.right_nt = right_nt
         self.codons = []
         self.complement_state = COMPLEMENT_DICT[self.state]
+        self.rates = {} # Mutation rates
+        self.my_omegas = []
 
     def __repr__(self):
         return self.state
@@ -480,6 +519,12 @@ class Nucleotide:
 
     def add_codon(self, codon):
         self.codons.append(codon)
+
+    def set_rates(self, rates):
+        self.rates = rates
+
+    def set_my_omegas(self, omegas):
+        self.my_omegas = omegas
 
 
 class DoubleLinkedList:
@@ -595,7 +640,7 @@ class Codon:
             if query_nt == nt:
                 return idx
 
-    def is_nonsyn(self, pos, to_nt):
+    def is_nonsyn(self, pos_in_codon, to_nt):
         """
         Finds if a substitution at the specified position results in a non-synonymous mutation
         :param pos: the position in the Codon
@@ -603,10 +648,15 @@ class Codon:
         :return: True if the substitution leads to a non-synonymous mutation,
                  False if the substitution leads to a synonymous mutation
         """
-        codon = [str(nt) for nt in self.nts_in_codon]    # Cast all Nucleotides in the Codon to strings
+
+        if orf[0] < orf[1]: # Positive strand
+            codon = [str(nt) for nt in self.nts_in_codon]    # Cast all Nucleotides in the Codon to strings
+        else:
+            codon = [nt.complement_state for nt in self.nts_in_codon]
+            to_nt = COMPLEMENT_DICT[to_nt]
 
         mutated_codon = codon.copy()
-        mutated_codon[pos] = to_nt
+        mutated_codon[pos_in_codon] = to_nt
 
         if CODON_DICT[''.join(mutated_codon)] != CODON_DICT[''.join(codon)]:
             return True
