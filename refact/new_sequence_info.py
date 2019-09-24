@@ -150,16 +150,13 @@ class Sequence:
         :yield codon
         """
 
-        if start_pos < end_pos:  # Positive strand, move to the right
-            i = 0
-            while i < len(my_orf):
-                yield my_orf[i:i + 3]
-                i += 3
-        else:  # Negative strand, move to the left
-            i = len(my_orf) - 1
-            while i > -1:
-                yield my_orf[i:i - 3:-1]
-                i -= 3
+        if start_pos > end_pos:  # Negative strand
+            my_orf.reverse()
+
+        i = 0
+        while i < len(my_orf):
+            yield[my_orf[i:i+3]]
+            i += 3
 
     def find_codons(self, frame, orf):
         """
