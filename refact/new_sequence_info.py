@@ -65,10 +65,10 @@ class Sequence:
         self.mu = mu
         self.pi = pi
         self.kappa = kappa
-        self.omega = omega
+        self.omega_values = omega
 
         # Drawn omega values from gamma distrubution
-        self.omega = self.get_omega_values(2,4)
+        self.omega_values = self.get_omega_values(2,4)
 
         # Calculate stationary frequency rates
         if self.pi is None:
@@ -96,25 +96,43 @@ class Sequence:
                         for i, nt in enumerate(codon.nts_in_codon):
                             nt.add_codon(codon)
 
-        # Calculate mutation rates for each nucleotide in sequence
+        # Calculate mutation rates for each nucleotide in sequence, populate the event tree which each nucleotide
         for nt in self.nt_sequence:
-            rates = calculate_mutation_rates(nt)
+            rates = self.get_substitution_rates(nt)
             nt.set_rates(rates[0])
             nt.set_my_omegas(rates[1])
 
-    def calculate_substitution_rates(self, nt):
+
+    def create_keys(self, my_omegas):
         """
+        Create omega keys according to how many times a given omega was used to calculate a substitution rate
+        :param my_omegas: list of omega values
+        :return: key of omegas as tuple (e.i, (1, 0, 2): first value was used once, second value wasn't used, third value was used twice)
+        """
+        omega_key = []
+        for value in self.omega_values:
+            count = my_omegas.count(value)
+            omega_key.append(count)
+
+        return tuple(omega_key)
+
+
+    def get_substitution_rates(self, nt):
+        """
+        Calculates substitution rates for each mutation and populates Event tree
         :param nt: object of class Nucleotide
-        :return: list of omega values applied to calculate substitution rates
-                Dictionary of substitutions rates, which nt
+        :return: 1. Dictionary of substitutions rates, keyed by nt subs
+                 2. Dictionary with omega keys
         """
         sub_rates = {}
-        my_omegas = []
+        my_omega_keys = {}
         current_nt = nt.get_state()
 
         for to_nt in NUCLEOTIDES:
+            omegas_in_subs = [] # omegas applied given a substitution from current_nt to to_nt
             if to_nt == current_nt:
                 sub_rates[to_nt] = None
+                my_omegas[to_nt] = None
             else:
                 # Apply global substitution rate and stationary nucleotide frequency
                 sub_rates[to_nt] = self.mu * self.pi[current_nt]
@@ -125,11 +143,22 @@ class Sequence:
                 #TODO create method to calculate pos_in_codon
                 for codon in nt.codons:
                     if codon.is_nonsyn(pos_in_codon, to_nt):
-                        omega = random.choice(self.omega)
-                        my_omegas.append(omega)
+                        omega = random.choice(self.omega_values)
                         sub_rates[to_nt] *= omega
+                        omegas_in_subs.append(omega) #store the omegas used to calculate this rate
 
-        return sub_rates, my_omegas
+                key = self.create_keys(omegas_in_subs)
+                my_omega_keys[to_nt] = self.create_keys(key)
+                # Populate even tree using omega_keys
+                if omegas_in_subs: # List is not empty, therefore at least one omega was used
+                    current_event = self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_nonsyn']
+                    # Create key if needed, associate it with the current nucleotide
+                    if key not in current_event:
+                        self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_nonsyn'][key] = [nt]
+                    else:
+                        self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_nonsyn'][key].append(nt)
+
+        return sub_rates, my_omega_keys
 
     def is_transv(self, from_nt, to_nt):
         transv = True
