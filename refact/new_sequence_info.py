@@ -140,8 +140,8 @@ class Sequence:
                     sub_rates[to_nt] *= self.kappa
 
                 # Apply omega when mutation is non-synonymous
-                #TODO create method to calculate pos_in_codon
                 for codon in nt.codons:
+                    pos_in_codon = codon.nt_in_pos(nt)
                     if codon.is_nonsyn(pos_in_codon, to_nt):
                         omega = random.choice(self.omega_values)
                         sub_rates[to_nt] *= omega
