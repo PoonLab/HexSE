@@ -41,12 +41,93 @@ class TestSequences(unittest.TestCase):
         self.sequence6 = s6
 
         s7 = make_dll('GTACGATCGATCGATGCTAGC')
+        self.seq7 = s7.nt_sequence
+        self.sequence7 = s7
 
 
+# ==========================================
+# Tests for Sequence
+# ==========================================
+class TestCreateKeys(TestSequences):
+
+    def testOmegas(self):
+        my_omegas = [0.29327471612351436,
+                     0.6550136761581515,
+                     1.0699896623909886,
+                     1.9817219453273531]
+        result = self.sequence7.create_keys(my_omegas)
+        expected = (1, 1, 1, 1)
+        self.assertEqual(expected, result)
+
+    def testSixOmegaValues(self):
+        my_omegas = [0.29327471612351436,
+                     0.6550136761581515,
+                     1.0699896623909886,
+                     1.9817219453273531,
+                     1.0699896623909886,
+                     1.9817219453273531]
+        result = self.sequence7.create_keys(my_omegas)
+        expected = (1, 1, 2, 2)
+        self.assertEqual(expected, result)
+
+    def testNoOmegas(self):
+        my_omegas = []
+        result = self.sequence7.create_keys(my_omegas)
+        expected = (0, 0, 0, 0)
+        self.assertEqual(expected, result)
+
+    def testThreeValues(self):
+        my_omegas = [1.9817219453273531, 0.29327471612351436, 0.29327471612351436]
+        result = self.sequence7.create_keys(my_omegas)
+        expected = (2, 0, 0, 1)
+        self.assertEqual(expected, result)
+
+
+class TestIsTransversion(TestSequences):
+    def testSameNucleotide(self):
+        result = self.sequence7.is_transv('A', 'A')
+        expected = None
+        self.assertEqual(expected, result)
+
+    def testTransition(self):
+        result = self.sequence7.is_transv('A', 'G')
+        expected = False
+        self.assertEqual(expected, result)
+
+    def testTransversion(self):
+        result = self.sequence7.is_transv('C', 'A')
+        expected = True
+        self.assertEqual(expected, result)
+
+
+class TestCodonIterator(TestSequences):
+
+    def testForwardStrand(self):
+        results = []
+        orf = ['G', 'T', 'A', 'C', 'G', 'A', 'T', 'C', 'G', 'A', 'T', 'C', 'G', 'A', 'T', 'G', 'C', 'T', 'A', 'G', 'C']
+        for codon in self.sequence7.codon_iterator(orf, 0, 21):
+            results.append(codon)
+
+        expected =[['G', 'T', 'A'], ['C', 'G', 'A'], ['T', 'C', 'G'],
+                   ['A', 'T', 'C'], ['G', 'A', 'T'], ['G', 'C', 'T'], ['A', 'G', 'C']]
+        self.assertEqual(expected, results)
+
+    def testReverseStrand(self):
+        results = []
+        orf = ['G', 'T', 'A', 'C', 'G', 'A', 'T', 'C', 'G', 'A', 'T', 'C', 'G', 'A', 'T', 'G', 'C', 'T', 'A', 'G', 'C']
+        for codon in self.sequence7.codon_iterator(orf, 21, 0):
+            results.append(codon)
+
+        expected = [['C', 'G', 'A'], ['T', 'C', 'G'], ['T', 'A', 'G'],
+                    ['C', 'T', 'A'], ['G', 'C', 'T'], ['A', 'G', 'C'], ['A', 'T', 'G']]
+        self.assertEqual(expected, results)
+
+
+# ==========================================
+# Tests for DoubleLinkedList
+# ==========================================
 class TestInsertNt(unittest.TestCase):
-    """
-    Tests insert_nt from DoubleLinkedList class
-    """
+
     def testSimpleUse(self):
         seq = DoubleLinkedList()
 
@@ -71,9 +152,7 @@ class TestInsertNt(unittest.TestCase):
 
 
 class TestNucleotideAtPos(TestSequences):
-    """
-    Tests nucleotide_at_pos from DoubleLinkedList class
-    """
+
     def testFindFirst(self):
         result_nt = self.seq1.nucleotide_at_pos(0)
         expected_state = 'A'
@@ -90,10 +169,10 @@ class TestNucleotideAtPos(TestSequences):
         self.assertEqual(expected_state, result_nt.get_state())
 
 
+# ==========================================
+# Tests for Nucleotide
+# ==========================================
 class TestGetNonsynSubs(TestSequences):
-    """
-    Tests get_nonsyn_subs from the Nucleotide class
-    """
 
     def testNoORFs(self):
         s = Sequence('ATGCCGTATGC', rcseq=None, sorted_orfs=[], pi=None, kappa=None, mu=None)
@@ -116,7 +195,7 @@ class TestGetNonsynSubs(TestSequences):
         self.assertEqual(expected, result)
 
     def testOneOrf(self):
-        s = Sequence('ATGCCCTGA', kappa=None, mu=None)
+        s = Sequence('ATGCCCTGA', rcseq=None, sorted_orfs=None, mu=None, pi=None, kappa=None)
         seq = DoubleLinkedList()
         for pos, nt in enumerate(s.nt_sequence):
             seq.insert_nt(nt, pos)
