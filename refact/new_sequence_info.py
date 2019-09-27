@@ -5,7 +5,7 @@ import scipy.stats as ss
 import numpy as np
 import random
 
-from refact.event_tree import Event_tree
+from refact.event_tree import EventTree
 
 TRANSITIONS_DICT = {'A': 'G', 'G': 'A', 'T': 'C', 'C': 'T'}
 
@@ -77,7 +77,7 @@ class Sequence:
             self.pi = self.get_frequency_rates(self.original_seq)
 
         # Create event tree for sequence (tree containing all possible mutation and the parameters that should be taken into account when calculating rates)
-        self.tree = Event_tree(self.pi)
+        self.tree = EventTree(self.pi)
         self.event_tree = self.tree.create_event_tree()
 
         # Create Nucleotides
@@ -131,7 +131,7 @@ class Sequence:
             omegas_in_subs = []  # omegas applied given a substitution from current_nt to to_nt
             if to_nt == current_nt:
                 sub_rates[to_nt] = None
-                my_omegas[to_nt] = None
+                my_omega_keys[to_nt] = None
             else:
                 # Apply global substitution rate and stationary nucleotide frequency
                 sub_rates[to_nt] = self.mu * self.pi[current_nt]
@@ -159,7 +159,8 @@ class Sequence:
 
         return sub_rates, my_omega_keys
 
-    def is_transv(self, from_nt, to_nt):
+    @staticmethod
+    def is_transv(from_nt, to_nt):
 
         if from_nt == to_nt:
             transv = None
@@ -203,7 +204,7 @@ class Sequence:
 
         # Iterate over list by threes and create Codons
         for cdn in self.codon_iterator(my_orf, start_pos, end_pos):
-            codon = Codon(orf, frame, cdn)
+            codon = Codon(frame, orf, cdn)
             codons.append(codon)
 
         return codons
@@ -338,6 +339,14 @@ class DoubleLinkedList:
         self.head = None  # head node (starting nucleotide)
         self.current_nt = None  # Pointer to current nt for insertion
 
+    def __iter__(self):
+        return self.head
+
+    def __next__(self):
+        current_nt = self.head()
+        while current_nt is not None:
+            return current_nt.get_right_nt()
+
     def insert_nt(self, state, position):
         """
         Insert objects of class Nucleotide to the end of the DoubleLinkedList
@@ -355,14 +364,6 @@ class DoubleLinkedList:
             new_nt.set_left_nt(self.current_nt)  # For the new nucleotide, create a left pointer towards the current one
             self.current_nt.set_right_nt(new_nt)  # Create the double link between current and new
             self.current_nt = new_nt
-
-    def __iter__(self):
-        return self.head
-
-    def __next__(self):
-        current_nt = self.head()
-        while current_nt is not None:
-            return current_nt.get_right_nt()
 
     def get_head(self):
         return self.head
@@ -402,14 +403,14 @@ class DoubleLinkedList:
 
         if start_pos > end_pos:  # Positive strand
             # If there is a next Nucleotide and the position is within the range
-            while curr_nt.get_right_nt() is not None and curr_nt.get_pos_in_seq() <= end_pos:
+            while curr_nt.right_nt is not None and curr_nt.pos_in_seq <= end_pos:
                 sub_seq.append(curr_nt)
-                curr_nt = curr_nt.get_right_nt()
+                curr_nt = curr_nt.right_nt
         else:   # Negative strand
             # If there is a previous Nucleotide and the position is within the range
-            while curr_nt.get_left_nt() is not None and curr_nt.get_pos_in_seq() >= end_pos:
+            while curr_nt.right_nt is not None and curr_nt.pos_in_seq < end_pos:
                 sub_seq.append(curr_nt)
-                curr_nt = curr_nt.get_left_nt()
+                curr_nt = curr_nt.right_nt
 
         return sub_seq
 

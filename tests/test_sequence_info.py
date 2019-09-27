@@ -84,6 +84,8 @@ class TestCreateKeys(TestSequences):
 
 
 class TestIsTransversion(TestSequences):
+    """Since is_transv is a static method, it can be called with or without an instance of a Sequence object"""
+
     def testSameNucleotide(self):
         result = self.sequence7.is_transv('A', 'A')
         expected = None
@@ -101,11 +103,12 @@ class TestIsTransversion(TestSequences):
 
 
 class TestCodonIterator(TestSequences):
+    """Since codon_iterator is a static method, it can be called with or without an instance of a Sequence object"""
 
     def testForwardStrand(self):
         results = []
         orf = ['G', 'T', 'A', 'C', 'G', 'A', 'T', 'C', 'G', 'A', 'T', 'C', 'G', 'A', 'T', 'G', 'C', 'T', 'A', 'G', 'C']
-        for codon in self.sequence7.codon_iterator(orf, 0, 21):
+        for codon in self.sequence7.codon_iterator(orf, 0, 20):
             results.append(codon)
 
         expected =[['G', 'T', 'A'], ['C', 'G', 'A'], ['T', 'C', 'G'],
@@ -115,12 +118,65 @@ class TestCodonIterator(TestSequences):
     def testReverseStrand(self):
         results = []
         orf = ['G', 'T', 'A', 'C', 'G', 'A', 'T', 'C', 'G', 'A', 'T', 'C', 'G', 'A', 'T', 'G', 'C', 'T', 'A', 'G', 'C']
-        for codon in self.sequence7.codon_iterator(orf, 21, 0):
+        for codon in self.sequence7.codon_iterator(orf, 20, 0):
             results.append(codon)
 
         expected = [['C', 'G', 'A'], ['T', 'C', 'G'], ['T', 'A', 'G'],
                     ['C', 'T', 'A'], ['G', 'C', 'T'], ['A', 'G', 'C'], ['A', 'T', 'G']]
         self.assertEqual(expected, results)
+
+
+class TestFindCodons(TestSequences):
+
+    def testFwdOrf(self):
+        expected = [['G', 'T', 'A'], ['C', 'G', 'A'], ['T', 'C', 'G'],
+                    ['A', 'T', 'C'], ['G', 'A', 'T'], ['G', 'C', 'T'],
+                    ['A', 'G', 'C']]
+        result = self.sequence7.find_codons('+0', (0, 20))
+        self.assertEqual(len(expected), len(result))
+
+        for idx, codon in enumerate(result):
+            self.assertEqual(codon.frame, '+0')
+            for pos, nt in enumerate(codon.nts_in_codon):
+                self.assertEqual(expected[idx][pos], nt.get_state())
+
+    def testReverseOrf(self):
+        expected = [['G', 'C', 'T'], ['A', 'G', 'C'], ['A', 'T', 'C'],
+                    ['G', 'A', 'T'], ['C', 'G', 'A'], ['T', 'C', 'G'],
+                    ['T', 'A', 'C']]
+        result = self.sequence7.find_codons('-0', (20, 0))
+        self.assertEqual(len(expected), len(result))
+
+        for idx, codon in enumerate(result):
+            self.assertEqual(codon.frame, '-0')
+            for pos, nt in enumerate(codon.nts_in_codon):
+                self.assertEqual(expected[idx][pos], nt.get_state())
+
+
+class TestGetFrequencyRates(unittest.TestCase):
+    """ get_frequency_rates() is a static method, so it can be called without the instance of a Sequence object"""
+
+    def testSameNucleotide(self):
+        result = Sequence.get_frequency_rates('AAAAAAAAA')
+        expected = {'A': 1, 'C': 0, 'T': 0, 'G': 0}
+        self.assertEqual(expected, result)
+
+    def testShortSeq(self):
+        result = Sequence.get_frequency_rates('GTACGATCGATCGATGCTAGC')
+        expected = {'A': 0.24, 'C': 0.24, 'T': 0.24, 'G': 0.29}
+        self.assertEqual(expected, result)
+
+    def testLongerSeq(self):
+        s = "TGGAAGGGCTAATTCACTCCCAACGAAGACAAGATATCCTTGATCTGTGGATCTACCACACACAAGGCTACTTCCCTGATTAGCAGAACTACACACCAGGGCCA" \
+            "GGGATCAGATATCCACTGACCTTTGGATGGTGCTACAAGCTAGTACCAGTTGAGCCAGAGAAGTTAGAAGAAGCCAACAAAGGAGAGAACACCAGCTTGTTACA" \
+            "CCCTGTGAGCCTGCATGGAATGGATGACCCGGAGAGAGAAGTGTTAGAGTGGAGGTTTGACAGCCGCCTAGCATTTCATCACATGGCCCGAGAGCTGCATCCGG" \
+            "AGTACTTCAAGAACTGCTGACATCGAGCTTGCTACAAGGGACTTTCCGCTGGGGACTTTCCAGGGAGGCGTGGCCTGGGCGGGACTGGGGAGTGGCGAGCCCTC" \
+            "AGATCCTGCATATAAGCAGCTGCTTTTTGCCTGTACTGGGTCTCTCTGGTTAGACCAGATCTGAGCCTGGGAGCTCTCTGGCTAACTAGGGAACCCACTGCTTA" \
+            "AGCCTCAATAAAGCTTGCCTTGAGTGCTTCAAGTAGTGTGTGCCCGTCTGTTGTGTGACTCTGGTAACTAGAGATCCCTCAGACCCTTTTAGTCAGTGTGGAAA" \
+            "ATCTCTAGCAGTGGCGCCCGAACAGGGACCTGAAAGCGAAAGGGAAACCAGAGGAGCTCTCTCGACGCAGGACTCG"
+        result = Sequence.get_frequency_rates(s)
+        expected = {'A': 0.25, 'C': 0.25, 'T': 0.22, 'G': 0.28}
+        self.assertEqual(expected, result)
 
 
 # ==========================================
@@ -167,6 +223,27 @@ class TestNucleotideAtPos(TestSequences):
         result_nt = self.seq3.nucleotide_at_pos(6)
         expected_state = 'C'
         self.assertEqual(expected_state, result_nt.get_state())
+
+
+class TestSliceSequence(TestSequences):
+
+    def testSliceMiddle(self):
+        nts = self.seq7.slice_sequence(1, 4)
+        expected = ['T', 'A', 'C']
+        result = [nt.get_state() for nt in nts]
+        self.assertEqual(expected, result)
+
+    def testSliceFromStart(self):
+        nts = self.seq7.slice_sequence(0, 3)
+        expected = ['G', 'T', 'A']
+        result = [nt.get_state() for nt in nts]
+        self.assertEqual(expected, result)
+
+    def testSliceToEnd(self):
+        nts = self.seq7.slice_sequence(18, 21)
+        expected = ['A', 'G', 'C']
+        result = [nt.get_state() for nt in nts]
+        self.assertEqual(expected, result)
 
 
 # ==========================================
