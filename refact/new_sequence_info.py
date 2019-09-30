@@ -5,7 +5,7 @@ import scipy.stats as ss
 import numpy as np
 import random
 
-from refact.event_tree import EventTree
+from event_tree import EventTree
 
 TRANSITIONS_DICT = {'A': 'G', 'G': 'A', 'T': 'C', 'C': 'T'}
 
@@ -99,9 +99,12 @@ class Sequence:
 
         # Calculate mutation rates for each nucleotide in sequence, populate the event tree which each nucleotide
         for nt in iter(self.nt_sequence):
-            rates = self.get_substitution_rates(nt)
-            nt.set_rates(rates[0])
-            nt.set_my_omegas(rates[1])
+            if nt is None:
+                break
+            else:
+                rates = self.get_substitution_rates(nt)
+                nt.set_rates(rates[0])
+                nt.set_my_omegas(rates[1])
 
     def create_keys(self, my_omegas):
         """
@@ -113,7 +116,6 @@ class Sequence:
         for value in self.omega_values:
             count = my_omegas.count(value)
             omega_key.append(count)
-
         return tuple(omega_key)
 
     def get_substitution_rates(self, nt):
@@ -128,7 +130,6 @@ class Sequence:
         current_nt = nt.get_state()
 
         for to_nt in NUCLEOTIDES:
-            omegas_in_subs = []  # omegas applied given a substitution from current_nt to to_nt
             if to_nt == current_nt:
                 sub_rates[to_nt] = None
                 my_omega_keys[to_nt] = None
@@ -138,16 +139,16 @@ class Sequence:
                 if self.is_transv(current_nt, to_nt):
                     sub_rates[to_nt] *= self.kappa
 
-                # Apply omega when mutation is non-synonym
+                omegas_in_subs = []  # omegas applied given a substitution from current_nt to to_nt
                 for codon in nt.codons:
                     pos_in_codon = codon.nt_in_pos(nt)
-                    if codon.is_nonsyn(pos_in_codon, to_nt):
+                    if codon.is_nonsyn(pos_in_codon, to_nt): # Apply omega when mutation is non-synonym
                         omega = random.choice(self.omega_values)
                         sub_rates[to_nt] *= omega
                         omegas_in_subs.append(omega)  # store the omegas used to calculate this rate
 
                 key = self.create_keys(omegas_in_subs)
-                my_omega_keys[to_nt] = self.create_keys(key)
+                my_omega_keys[to_nt] = key
                 # Populate even tree using omega_keys
                 if omegas_in_subs:  # List is not empty, therefore at least one omega was used
                     current_event = self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_nonsyn']
@@ -340,11 +341,12 @@ class DoubleLinkedList:
         self.current_nt = None  # Pointer to current nt for insertion
 
     def __iter__(self):
-        return self.head
+        return self
 
     def __next__(self):
-        current_nt = self.head()
-        while current_nt is not None:
+        current_nt = self.head
+        while current_nt.right_nt is not None:
+            self.head = self.head.get_right_nt()
             return current_nt.get_right_nt()
 
     def insert_nt(self, state, position):
@@ -395,20 +397,17 @@ class DoubleLinkedList:
         Slices the Nucleotide sequence
         :param start_pos: the start position
         :param end_pos: the end position
-        :return sub_seq: a list of Nucleotides between the start and end positions
+        :return sub_seq: a list of Nucleotides between the start and end positions (in 5', 3' direction)
         """
 
         sub_seq = []
-        curr_nt = self.nucleotide_at_pos(start_pos)
-
-        if start_pos > end_pos:  # Positive strand
-            # If there is a next Nucleotide and the position is within the range
-            while curr_nt.right_nt is not None and curr_nt.pos_in_seq <= end_pos:
-                sub_seq.append(curr_nt)
-                curr_nt = curr_nt.right_nt
+        if start_pos < end_pos:  # Positive strand
+            curr_nt = self.nucleotide_at_pos(start_pos)
         else:   # Negative strand
-            # If there is a previous Nucleotide and the position is within the range
-            while curr_nt.right_nt is not None and curr_nt.pos_in_seq < end_pos:
+            curr_nt = self.nucleotide_at_pos(end_pos)
+            end_pos = start_pos
+
+        while curr_nt is not None and curr_nt.pos_in_seq <= end_pos:
                 sub_seq.append(curr_nt)
                 curr_nt = curr_nt.right_nt
 
@@ -426,6 +425,7 @@ class Codon:
         :param frame: the reading frame (+0, +1, +2, -0, -1, -2)
         :param orf: a tuple containing the reading frame and the coordinates of the orf
         :param ptrs_to_nts: a list of pointers to the Nucleotides in the Codon
+        :param omega_values: list of omega values
         """
 
         self.frame = frame
@@ -450,7 +450,6 @@ class Codon:
         :return: True if the substitution leads to a non-synonymous mutation,
                  False if the substitution leads to a synonymous mutation
         """
-
         if self.orf[0] < self.orf[1]:  # Positive strand
             codon = [str(nt) for nt in self.nts_in_codon]    # Cast all Nucleotides in the Codon to strings
         else:

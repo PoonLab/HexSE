@@ -4,9 +4,9 @@ import re
 
 from Bio import Phylo
 
-from refact.new_sequence_info import NUCLEOTIDES
-from refact.new_sequence_info import COMPLEMENT_DICT
-from refact.new_sequence_info import Sequence
+from new_sequence_info import NUCLEOTIDES
+from new_sequence_info import COMPLEMENT_DICT
+from new_sequence_info import Sequence
 
 
 def get_args(parser):

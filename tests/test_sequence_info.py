@@ -1,6 +1,6 @@
 import unittest
 
-from refact.new_sequence_info import Sequence
+from ovrf.refact.new_sequence_info import Sequence
 from refact.new_sequence_info import DoubleLinkedList
 from refact.new_sequence_info import Nucleotide
 from refact.new_sequence_info import Codon
