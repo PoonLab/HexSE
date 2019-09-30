@@ -65,6 +65,7 @@ def valid_orfs(orfs, seq):
     Example of valid input: [(1, 9), (27, 13)]
     Example of invalid input: (1, 9), (27, 13)
     :param orfs: The list of open reading frames
+    :param seq: The original sequence as a string
     :return: <True> if the ORFs are valid, <False> otherwise
     """
     if not type(orfs) == list:
@@ -317,7 +318,6 @@ def main():
     # TODO: check that there is a check for all non-None values in omega
     # keys = ['+0', '+1', '+2', '-0', '-1', '-2']
     # omega = dict(zip(keys, args.omega))
-
 
     # Run simulation
     # sim = Simulate(rates, tree)

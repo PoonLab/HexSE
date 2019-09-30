@@ -2,7 +2,7 @@
 
 TRANSITIONS_DICT = {'A':'G', 'G':'A', 'T':'C', 'C':'T'}
 
-class Event_tree:
+class EventTree:
 
     def __init__(self, nt_frequencies):
         """
@@ -49,6 +49,6 @@ class Event_tree:
         return event_tree
 
 s_frequencies = {'A': 0.24, 'C': 0.24, 'T': 0.24, 'G': 0.29}
-events = Event_tree(s_frequencies)
+events = EventTree(s_frequencies)
 dict = events.create_event_tree()
 print(dict['to_nt']['T']['from_nt']['C'])
