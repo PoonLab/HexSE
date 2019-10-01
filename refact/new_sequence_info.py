@@ -103,6 +103,44 @@ class Sequence:
             nt.set_rates(rates[0])
             nt.set_my_omegas(rates[1])
 
+        # Update event_tree to include a list of nucleotides in the tips
+        self.event_tree = self.get_nts_on_tips()
+
+    def get_nts_on_tips(self):
+        """
+        Look at the tips of the event tree and create keys and values for nucleotides in substitution and number of events
+        :param event_tree: Dictionary of class EventTree populated with all of the nucleotides associated with each event
+        :return: Updated event Tree that includes: - List of nucleotides for each tip
+                                                   - Total number of events
+                                                   - Number of events leading to each to_nt
+        """
+        updated_event_tree = self.event_tree
+        my_tree = updated_event_tree['to_nt']
+
+        total_events = 0 # Number of all possible events on the tree
+        for key1, to_nt in my_tree.items():
+            subset = to_nt['from_nt']
+            events_for_to_nt = 0 # Number of all events that can lead to a mutation
+            for key2, from_nt in subset.items():
+                if from_nt:
+                    nt_in_substitution = []  # Nucleotides associated with each substitution event
+                    # Add nucleotides that are not involved in any non-syn substitution
+                    if from_nt['is_syn']:
+                        nt_in_substitution.extend([nts for nts in from_nt['is_syn']])
+                    # Add nucleotides involved in non-syn substitutions
+                    non_syn_subs = from_nt['is_nonsyn']
+                    for key3, nts in non_syn_subs.items():
+                        nt_in_substitution.extend([nt for nt in nts])
+                    updated_event_tree['to_nt'][key1]['from_nt'][key2].update([('nts_in_subs', nt_in_substitution)])
+                    updated_event_tree['to_nt'][key1]['from_nt'][key2].update([('number_of_events', len(nt_in_substitution))])
+                    events_for_to_nt += len(nt_in_substitution)
+                    total_events += len(nt_in_substitution)
+
+            updated_event_tree['to_nt'][key1].update([('events_for_nt', events_for_to_nt)])
+
+        updated_event_tree['total_events'] = total_events
+        return updated_event_tree
+
     def create_keys(self, my_omegas):
         """
         Create omega keys according to how many times a given omega was used to calculate a substitution rate
@@ -113,7 +151,7 @@ class Sequence:
         for value in self.omega_values:
             count = my_omegas.count(value)
             omega_key.append(count)
-        return tuple(omega_key)git 
+        return tuple(omega_key)
 
     def get_substitution_rates(self, nt):
         """

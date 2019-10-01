@@ -35,7 +35,7 @@ class EventTree:
                 # Add stationary frequencies to every nucleotide in the event tree
                 event_tree['to_nt'][to_nt]['stationary_frequency'] = self.nt_frequencies[to_nt]
                 # Update nucleotides with possible mutations
-                event_tree['to_nt'][to_nt].update([( 'from_nt',{'A':{},'T':{},'C':{},'G':{}})])
+                event_tree['to_nt'][to_nt].update([('from_nt',{'A':{},'T':{},'C':{},'G':{}})])
                 # For possible mutations, check if they are a transition or a transversion
                 for from_nt in event_tree['to_nt'][to_nt]['from_nt'].keys():
                     # Nucleotide cannot change to itself
@@ -48,7 +48,6 @@ class EventTree:
                         event_tree['to_nt'][to_nt]['from_nt'][from_nt].update([('is_syn', [])])
 
         return event_tree
-
 
 # s_frequencies = {'A': 0.24, 'C': 0.24, 'T': 0.24, 'G': 0.29}
 # events = EventTree(s_frequencies)
