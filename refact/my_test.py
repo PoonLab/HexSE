@@ -1,7 +1,4 @@
 # Testing
-import sys
-print(sys.path)
-
 from new_sequence_info import Sequence
 from run_simulate import reverse_and_complement
 from run_simulate import sort_orfs
@@ -17,3 +14,8 @@ pi = None
 kappa = 0.3
 
 sequence = Sequence(ori_seq, rcseq, sorted_orfs, mu, pi, kappa)
+print(sequence.event_tree['to_nt']["A"]["from_nt"])
+#print(sequence.event_tree['to_nt']["A"]["from_nt"]['T']['is_nonsyn'][(0, 0, 1, 0)])
+
+event_tree = sequence.event_tree
+#Count the amount of events in every tip

@@ -142,7 +142,7 @@ class Sequence:
                 omegas_in_subs = []  # omegas applied given a substitution from current_nt to to_nt
                 for codon in nt.codons:
                     pos_in_codon = codon.nt_in_pos(nt)
-                    if codon.is_nonsyn(pos_in_codon, to_nt): # Apply omega when mutation is non-synonym
+                    if codon.is_nonsyn(pos_in_codon, to_nt): # Apply omega when mutation is non-synonymous
                         omega = random.choice(self.omega_values)
                         sub_rates[to_nt] *= omega
                         omegas_in_subs.append(omega)  # store the omegas used to calculate this rate
@@ -150,13 +150,16 @@ class Sequence:
                 key = self.create_keys(omegas_in_subs)
                 my_omega_keys[to_nt] = key
                 # Populate even tree using omega_keys
-                if omegas_in_subs:  # List is not empty, therefore at least one omega was used
+                if omegas_in_subs:  # At least one omega was used
                     current_event = self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_nonsyn']
                     # Create key if needed, associate it with the current nucleotide
                     if key not in current_event:
                         self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_nonsyn'][key] = [nt]
                     else:
                         self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_nonsyn'][key].append(nt)
+
+                else: # If mutation is syn in all codons
+                    self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_syn'].append(nt)
 
         return sub_rates, my_omega_keys
 

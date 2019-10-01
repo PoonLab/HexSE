@@ -45,10 +45,13 @@ class EventTree:
                         event_tree['to_nt'][to_nt]['from_nt'][from_nt] = self.check_transversion(from_nt, to_nt)
                         # create key to a dictionary that will store information about nucleotides affected by nonsyn mutations
                         event_tree['to_nt'][to_nt]['from_nt'][from_nt].update([('is_nonsyn', {})])
+                        event_tree['to_nt'][to_nt]['from_nt'][from_nt].update([('is_syn', [])])
 
         return event_tree
 
-s_frequencies = {'A': 0.24, 'C': 0.24, 'T': 0.24, 'G': 0.29}
-events = EventTree(s_frequencies)
-dict = events.create_event_tree()
-print(dict['to_nt']['T']['from_nt']['C'])
+
+# s_frequencies = {'A': 0.24, 'C': 0.24, 'T': 0.24, 'G': 0.29}
+# events = EventTree(s_frequencies)
+# dict = events.create_event_tree()
+# print(dict['to_nt']['T']['from_nt']['C'])
+# print(dict)
