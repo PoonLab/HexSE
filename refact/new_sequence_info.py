@@ -99,12 +99,9 @@ class Sequence:
 
         # Calculate mutation rates for each nucleotide in sequence, populate the event tree which each nucleotide
         for nt in iter(self.nt_sequence):
-            if nt is None:
-                break
-            else:
-                rates = self.get_substitution_rates(nt)
-                nt.set_rates(rates[0])
-                nt.set_my_omegas(rates[1])
+            rates = self.get_substitution_rates(nt)
+            nt.set_rates(rates[0])
+            nt.set_my_omegas(rates[1])
 
     def create_keys(self, my_omegas):
         """
@@ -116,7 +113,7 @@ class Sequence:
         for value in self.omega_values:
             count = my_omegas.count(value)
             omega_key.append(count)
-        return tuple(omega_key)
+        return tuple(omega_key)git 
 
     def get_substitution_rates(self, nt):
         """
@@ -342,15 +339,20 @@ class DoubleLinkedList:
     def __init__(self):
         self.head = None  # head node (starting nucleotide)
         self.current_nt = None  # Pointer to current nt for insertion
+        self.next_iter_nt = None # Current state of the iteration
 
     def __iter__(self):
+        self.next_iter_nt = self.head
         return self
 
     def __next__(self):
-        current_nt = self.head
-        while current_nt.right_nt is not None:
-            self.head = self.head.get_right_nt()
-            return current_nt.get_right_nt()
+        # Note: Not thread safe
+        if self.next_iter_nt is not None:
+            nt = self.next_iter_nt
+            self.next_iter_nt = nt.get_right_nt()
+            return nt
+        else:
+            raise StopIteration
 
     def insert_nt(self, state, position):
         """
