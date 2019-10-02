@@ -19,4 +19,4 @@ sequence = Sequence(ori_seq, rcseq, sorted_orfs, mu, pi, kappa)
 event_tree = sequence.event_tree
 #print(event_tree)
 simulation = Simulate(sequence)
-simulation.get_substitution()
+print(simulation.get_substitution())

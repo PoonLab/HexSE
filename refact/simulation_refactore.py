@@ -24,11 +24,8 @@ class Simulate:
         # Select: to nucleotide
         events = self.event_tree['total_events']
         to_mutation = self.select_value(self.event_tree['to_nt'], events ,'events_for_nt')
-        print(to_mutation, '\n')
         # Select: from nucleotide
-        # TODO: Make sure that second dictionary has simular layers
         events = to_mutation[0]['events_for_nt']
-        print(events)
         from_mutation = self.select_value(to_mutation[0]['from_nt'], events, 'number_of_events')
 
         return from_mutation
@@ -49,8 +46,11 @@ class Simulate:
                 (key, value) = next(iter_object)
                 out_key = key
                 result = value
-                number = value[key_local]
-                sum += number
+                if value:
+                    number = value[key_local]
+                    sum += number
+                else:
+                    pass
             except StopIteration:
                 break
         return result, out_key
