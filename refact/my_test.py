@@ -19,4 +19,7 @@ sequence = Sequence(ori_seq, rcseq, sorted_orfs, mu, pi, kappa)
 event_tree = sequence.event_tree
 #print(event_tree)
 simulation = Simulate(sequence)
-print(simulation.get_substitution())
+substitution = simulation.get_substitution()
+print(substitution)
+print("My nucleotide: {}, rates for nucleotide: {}, to state: {} \n".format(substitution[0].get_state(), substitution[0].rates, substitution[1]))
+

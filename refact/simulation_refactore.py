@@ -24,11 +24,13 @@ class Simulate:
         # Select: to nucleotide
         events = self.event_tree['total_events']
         to_mutation = self.select_value(self.event_tree['to_nt'], events ,'events_for_nt')
+        to_state = to_mutation[1]
         # Select: from nucleotide
         events = to_mutation[0]['events_for_nt']
         from_mutation = self.select_value(to_mutation[0]['from_nt'], events, 'number_of_events')
+        from_nucleotide = random.choice(from_mutation[0]['nts_in_subs'])
 
-        return from_mutation
+        return from_nucleotide, to_state
 
 
     def select_value(self, dictionary, number_of_events, key_local):
