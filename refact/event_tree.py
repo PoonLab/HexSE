@@ -4,7 +4,7 @@ TRANSITIONS_DICT = {'A':'G', 'G':'A', 'T':'C', 'C':'T'}
 
 class EventTree:
 
-    def __init__(self, nt_frequencies):
+    def __init__(self, nt_frequencies, kappa):
         """
 
         :param nt_frequencies: <Dict> Frequency of nucleotides in a given sequence, with nucleotide as keys
@@ -13,14 +13,18 @@ class EventTree:
 
         """
         self.nt_frequencies = nt_frequencies
+        self.kappa = kappa
 
     def get_nt_frequencies(self):
         return self.nt_frequencies
 
     def check_transversion(self, from_nt, to_nt):
-        trv_dict = {'is_trv':True}
+        # If transversion
+        trv_dict = {'is_trv': True, 'kappa' : self.kappa}
         if TRANSITIONS_DICT[from_nt] == to_nt:
+            # If transition
             trv_dict['is_trv'] = False
+            trv_dict['kappa'] = 1
         return trv_dict
 
     def create_event_tree(self):

@@ -77,7 +77,7 @@ class Sequence:
             self.pi = self.get_frequency_rates(self.original_seq)
 
         # Create event tree for sequence (tree containing all possible mutation and the parameters that should be taken into account when calculating rates)
-        self.tree = EventTree(self.pi)
+        self.tree = EventTree(self.pi, self.kappa)
         self.event_tree = self.tree.create_event_tree()
 
         # Create Nucleotides

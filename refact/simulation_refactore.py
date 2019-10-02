@@ -23,14 +23,19 @@ class Simulate:
         """
         # Select: to nucleotide
         events = self.event_tree['total_events']
-        to_mutation = self.select_value(self.event_tree['to_nt'], events ,'events_for_nt')
-        to_state = to_mutation[1]
+        #to_mutation = self.select_value(self.event_tree['to_nt'], events ,'events_for_nt', 'stationary_frequency')
+        to_mutation = self.select_weighted_values(self.event_tree['to_nt'], events, 'events_for_nt', 'stationary_frequency')
         # Select: from nucleotide
-        events = to_mutation[0]['events_for_nt']
-        from_mutation = self.select_value(to_mutation[0]['from_nt'], events, 'number_of_events')
-        from_nucleotide = random.choice(from_mutation[0]['nts_in_subs'])
+        from_dict = self.event_tree['to_nt'][to_mutation]['from_nt']
+        print(from_dict)
+        number_of_events = self.event_tree['to_nt'][to_mutation]['events_for_nt']
+        print(number_of_events)
+        from_mutation = self.select_weighted_values(from_dict, number_of_events, 'number_of_events', 'kappa')
+        print(from_mutation)
+        #from_nucleotide = random.choice(from_mutation[0]['nts_in_subs'])
 
-        return from_nucleotide, to_state
+
+        return to_mutation
 
 
     def select_value(self, dictionary, number_of_events, key_local):
@@ -56,3 +61,23 @@ class Simulate:
             except StopIteration:
                 break
         return result, out_key
+
+
+    def select_weighted_values(self, dictionary, number_of_events, key_local, key_to_weight):
+        total_events = number_of_events
+        temp = {keys: (value[key_local]/total_events)*value[key_to_weight] for keys, value in dictionary.items()}
+        iter_object = iter(temp.items())
+        total_values = sum(temp.values())
+        limit = random.uniform(0,total_values)
+        s = 0
+        while s < limit:
+            try:
+                (key, value) = next(iter_object)
+                if value:
+                    s += value
+                else:
+                    pass
+            except StopIteration:
+                break
+
+        return key
