@@ -18,25 +18,39 @@ class Simulate:
 
 
     def get_substitution(self):
-        percentage = random.uniform(0, 1)
-        total = event_tree['total_events']
-        limit = total * percentage
-        sum = 0
+        """
+        Select a substitution by moving over the event_tree according to the generation of random numbers
+        """
+        # Select: to nucleotide
+        events = self.event_tree['total_events']
+        to_mutation = self.select_value(self.event_tree['to_nt'], events ,'events_for_nt')
+        print(to_mutation, '\n')
+        # Select: from nucleotide
+        # TODO: Make sure that second dictionary has simular layers
+        events = to_mutation[0]['events_for_nt']
+        print(events)
+        from_mutation = self.select_value(to_mutation[0]['from_nt'], events, 'number_of_events')
 
-        # Draw event
-        my_tree = event_tree['to_nt']
-        iter_object = iter(my_tree.items())
+        return from_mutation
+
+
+    def select_value(self, dictionary, number_of_events, key_local):
+        """
+        :param number_of_events: Number of total number of events on branch
+        :param key_local: key to the number of events for each specific value
+        """
+        percentage = random.uniform(0, 1)
+        limit = number_of_events * percentage
+        iter_object = iter(dictionary.items())
         result = None
+        sum = 0
         while sum < limit:
             try:
-                (key, to_nt) = next(iter_object)
-                result = to_nt
-                number = to_nt['events_for_nt']
+                (key, value) = next(iter_object)
+                out_key = key
+                result = value
+                number = value[key_local]
                 sum += number
-                print("limit: {}, sum: {} ".format(limit, sum))
             except StopIteration:
                 break
-
-        print(result)
-
-
+        return result, out_key
