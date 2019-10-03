@@ -25,50 +25,41 @@ class Simulate:
         events = self.event_tree['total_events']
         #to_mutation = self.select_value(self.event_tree['to_nt'], events ,'events_for_nt', 'stationary_frequency')
         to_mutation = self.select_weighted_values(self.event_tree['to_nt'], events, 'events_for_nt', 'stationary_frequency')
+
         # Select: from nucleotide
         from_dict = self.event_tree['to_nt'][to_mutation]['from_nt']
-        print(from_dict)
-        number_of_events = self.event_tree['to_nt'][to_mutation]['events_for_nt']
-        print(number_of_events)
-        from_mutation = self.select_weighted_values(from_dict, number_of_events, 'number_of_events', 'kappa')
-        print(from_mutation)
-        #from_nucleotide = random.choice(from_mutation[0]['nts_in_subs'])
+        events_for_nt = self.event_tree['to_nt'][to_mutation]['events_for_nt']
+        from_mutation = self.select_weighted_values(from_dict, events_for_nt, 'number_of_events', 'kappa')
+        final_mutation = self.event_tree['to_nt'][to_mutation]['from_nt'][from_mutation]
+        from_nucleotide = random.choice(final_mutation['nts_in_subs'])
+
+        return from_nucleotide, to_mutation
 
 
-        return to_mutation
-
-
-    def select_value(self, dictionary, number_of_events, key_local):
+    def select_weighted_values(self, dictionary, number_of_total_events, key_for_local_events, key_to_weight):
         """
-        :param number_of_events: Number of total number of events on branch
-        :param key_local: key to the number of events for each specific value
+        Randomly selected a key from a dictionary of events with weighted values
+        :param number_of_total_events: Number of total number of events on branch
+        :param number_of_local_events: key to the number of events for each specific value
+        :param key_to_weight: Depending on the level of the branch, this could be:
+                - the key to stationary frequency
+                - the key to transition/transversion rate ratio
         """
-        percentage = random.uniform(0, 1)
-        limit = number_of_events * percentage
-        iter_object = iter(dictionary.items())
-        result = None
-        sum = 0
-        while sum < limit:
-            try:
-                (key, value) = next(iter_object)
-                out_key = key
-                result = value
-                if value:
-                    number = value[key_local]
-                    sum += number
-                else:
-                    pass
-            except StopIteration:
-                break
-        return result, out_key
 
+        total_events = number_of_total_events
+        temp = {}
+        sum_values = 0
+        # Create a temp dictionary to store the weighted values
+        for key, value in dictionary.items():
+            if value:
+                temp[key] = (value[key_for_local_events]/total_events)*value[key_to_weight]
+                sum_values += temp[key]
+            else:
+                temp[key] = None
 
-    def select_weighted_values(self, dictionary, number_of_events, key_local, key_to_weight):
-        total_events = number_of_events
-        temp = {keys: (value[key_local]/total_events)*value[key_to_weight] for keys, value in dictionary.items()}
+        # Randomly selected a key on the dictionary
         iter_object = iter(temp.items())
-        total_values = sum(temp.values())
-        limit = random.uniform(0,total_values)
+        limit = random.uniform(0, sum_values)
         s = 0
         while s < limit:
             try:

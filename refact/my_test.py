@@ -23,6 +23,6 @@ event_tree = sequence.event_tree
 simulation = Simulate(sequence)
 substitution = simulation.get_substitution()
 print(substitution)
-# print(substitution)
+
 # print("My nucleotide: {}, rates for nucleotide: {}, to state: {} \n".format(substitution[0].get_state(), substitution[0].rates, substitution[1]))
 #
