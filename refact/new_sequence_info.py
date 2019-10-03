@@ -328,7 +328,8 @@ class Nucleotide:
         self.codons = []
         self.complement_state = COMPLEMENT_DICT[self.state]
         self.rates = {}  # Mutation rates
-        self.my_omegas = []
+        self.my_omegas = [] # omegas that have used for this nucleotide when creating rates
+        self.mutation_rate = 0
 
     def __repr__(self):
         return self.state
@@ -368,6 +369,10 @@ class Nucleotide:
 
     def set_my_omegas(self, omegas):
         self.my_omegas = omegas
+
+    def get_mutation_rate(self):
+        self.mutation_rate = sum([self.mutation_rate + i for i in self.rates.values() if i is not None])
+        return self.mutation_rate
 
 
 class DoubleLinkedList:

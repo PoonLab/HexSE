@@ -17,12 +17,17 @@ kappa = 0.3
 
 sequence = Sequence(ori_seq, rcseq, sorted_orfs, mu, pi, kappa)
 event_tree = sequence.event_tree
-
+#print(sequence.nt_sequence)
 #print(event_tree)
 
 simulation = Simulate(sequence)
 substitution = simulation.get_substitution()
 print(substitution)
+my_nt = substitution[0]
+print(simulation.sum_rates())
+simulation.mutate_on_branch(15)
 
+#print(my_nt.rates.values())
+#print(simulation)
 # print("My nucleotide: {}, rates for nucleotide: {}, to state: {} \n".format(substitution[0].get_state(), substitution[0].rates, substitution[1]))
 #
