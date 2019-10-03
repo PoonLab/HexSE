@@ -1,13 +1,14 @@
 import unittest
+import random
 
-from ovrf.refact.new_sequence_info import Sequence
+from refact.new_sequence_info import Sequence
 from refact.new_sequence_info import DoubleLinkedList
 from refact.new_sequence_info import Nucleotide
 from refact.new_sequence_info import Codon
 
 
 def make_dll(original_sequence):
-    s = Sequence(original_sequence, rcseq=None, sorted_orfs=None, mu=None, pi=None, kappa=None)
+    s = Sequence(original_sequence, rcseq=None, sorted_orfs=None, mu=0.5, pi=None, kappa=0.3)
     s.nt_sequence = DoubleLinkedList()
     for pos, nt in enumerate(s.original_seq):
         s.nt_sequence.insert_nt(nt, pos)
@@ -83,6 +84,39 @@ class TestCreateKeys(TestSequences):
         self.assertEqual(expected, result)
 
 
+class TestGetSubstitutionRates(unittest.TestCase):
+
+    def testDefaultPi(self):
+        random.seed(9001)   # Set seed value to initialize pseudo-random number generator
+
+        seq = Sequence('GTACGATCGATCGATGCTAGC', None, {'+0': [(0, 20)]}, 0.5, None, 0.3)
+        nt = seq.nt_sequence.slice_sequence(0, 0)       # First nucleotide is G
+
+        result = seq.get_substitution_rates(nt[0])
+        expected = ({'A': 0.04252483383790958,
+                     'C': 0.046544550314008,
+                     'G': None,
+                     'T': 0.08620490462173985},
+                    {'A': (1, 0, 0, 0), 'C': (0, 0, 1, 0), 'G': None, 'T': (0, 0, 0, 1)})
+        self.assertEqual(expected, result)
+
+    def testNonDefaultPi(self):
+
+        random.seed(900)    # Set seed value to initialize pseudo-random number generator
+
+        pi = {'A': 0.25, 'T': 0.25, 'C': 0.25, 'G': 0.25}
+        seq = Sequence('TTTTTTCTTTTTTT', None, {'+0': [(0, 11)]}, 0.5, pi, 0.3)
+        nt = seq.nt_sequence.slice_sequence(1, 1)
+
+        result = seq.get_substitution_rates(nt[0])
+        expected = ({'A': 0.07431457294977574,
+                     'C': 0.036659339515439295,
+                     'G': 0.07431457294977574,
+                     'T': None},
+                    {'A': (0, 0, 0, 1), 'C': (1, 0, 0, 0), 'G': (0, 0, 0, 1), 'T': None})
+        self.assertEqual(expected, result)
+
+
 class TestIsTransversion(TestSequences):
     """Since is_transv is a static method, it can be called with or without an instance of a Sequence object"""
 
@@ -127,6 +161,10 @@ class TestCodonIterator(TestSequences):
 
 
 class TestFindCodons(TestSequences):
+    """
+    For reverse strand orfs, find_codons reverses the sequence, without complementing the nucleotides.
+    is_nonsyn() handles finding the complement of the nucleotides.
+    """
 
     def testFwdOrf(self):
         expected = [['G', 'T', 'A'], ['C', 'G', 'A'], ['T', 'C', 'G'],
@@ -141,10 +179,11 @@ class TestFindCodons(TestSequences):
                 self.assertEqual(expected[idx][pos], nt.get_state())
 
     def testReverseOrf(self):
-        expected = [['G', 'C', 'T'], ['A', 'G', 'C'], ['A', 'T', 'C'],
-                    ['G', 'A', 'T'], ['C', 'G', 'A'], ['T', 'C', 'G'],
-                    ['T', 'A', 'C']]
+        expected = [['C', 'G', 'A'], ['T', 'C', 'G'], ['T', 'A', 'G'],
+                    ['C', 'T', 'A'], ['G', 'C', 'T'], ['A', 'G', 'C'], ['A', 'T', 'G']]
         result = self.sequence7.find_codons('-0', (20, 0))
+        for res in result:
+            print(res.nts_in_codon)
         self.assertEqual(len(expected), len(result))
 
         for idx, codon in enumerate(result):
@@ -177,6 +216,7 @@ class TestGetFrequencyRates(unittest.TestCase):
         result = Sequence.get_frequency_rates(s)
         expected = {'A': 0.25, 'C': 0.25, 'T': 0.22, 'G': 0.28}
         self.assertEqual(expected, result)
+
 
 
 # ==========================================
@@ -229,19 +269,43 @@ class TestSliceSequence(TestSequences):
 
     def testSliceMiddle(self):
         nts = self.seq7.slice_sequence(1, 4)
-        expected = ['T', 'A', 'C']
+        expected = ['T', 'A', 'C', 'G']
         result = [nt.get_state() for nt in nts]
         self.assertEqual(expected, result)
 
     def testSliceFromStart(self):
         nts = self.seq7.slice_sequence(0, 3)
-        expected = ['G', 'T', 'A']
+        expected = ['G', 'T', 'A', 'C']
         result = [nt.get_state() for nt in nts]
         self.assertEqual(expected, result)
 
     def testSliceToEnd(self):
-        nts = self.seq7.slice_sequence(18, 21)
+        nts = self.seq7.slice_sequence(18, 20)
         expected = ['A', 'G', 'C']
+        result = [nt.get_state() for nt in nts]
+        self.assertEqual(expected, result)
+
+    def testSliceOutOfBounds1(self):
+        nts = self.seq7.slice_sequence(21, 23)
+        expected = []
+        result = [nt.get_state() for nt in nts]
+        self.assertEqual(expected, result)
+
+    def testSliceOutOfBounds2(self):
+        nts = self.seq7.slice_sequence(-1, -5)
+        expected = []
+        result = [nt.get_state() for nt in nts]
+        self.assertEqual(expected, result)
+
+    def testSliceReverse(self):
+        nts = self.seq7.slice_sequence(5, 1)
+        expected = ['T', 'A', 'C', 'G', 'A']
+        result = [nt.get_state() for nt in nts]
+        self.assertEqual(expected, result)
+
+    def testSameStartSameEnd(self):
+        nts = self.seq7.slice_sequence(0, 0)
+        expected = ['G']
         result = [nt.get_state() for nt in nts]
         self.assertEqual(expected, result)
 
@@ -252,7 +316,7 @@ class TestSliceSequence(TestSequences):
 class TestGetNonsynSubs(TestSequences):
 
     def testNoORFs(self):
-        s = Sequence('ATGCCGTATGC', rcseq=None, sorted_orfs=[], pi=None, kappa=None, mu=None)
+        s = Sequence('ATGCCGTATGC', rcseq=None, sorted_orfs=[], mu=0.5, pi=None, kappa=0.3, )
         s.nt_sequence = DoubleLinkedList()
         for pos, nt in enumerate(s.original_seq):
             s.nt_sequence.insert_nt(nt, pos)
@@ -272,7 +336,7 @@ class TestGetNonsynSubs(TestSequences):
         self.assertEqual(expected, result)
 
     def testOneOrf(self):
-        s = Sequence('ATGCCCTGA', rcseq=None, sorted_orfs=None, mu=None, pi=None, kappa=None)
+        s = Sequence('ATGCCCTGA', rcseq=None, sorted_orfs=None, mu=0.5, pi=None, kappa=0.3)
         seq = DoubleLinkedList()
         for pos, nt in enumerate(s.nt_sequence):
             seq.insert_nt(nt, pos)

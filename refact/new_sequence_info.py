@@ -117,10 +117,10 @@ class Sequence:
         updated_event_tree = self.event_tree
         my_tree = updated_event_tree['to_nt']
 
-        total_events = 0 # Number of all possible events on the tree
+        total_events = 0  # Number of all possible events on the tree
         for key1, to_nt in my_tree.items():
             subset = to_nt['from_nt']
-            events_for_to_nt = 0 # Number of all events that can lead to a mutation
+            events_for_to_nt = 0  # Number of all events that can lead to a mutation
             for key2, from_nt in subset.items():
                 if from_nt:
                     nt_in_substitution = []  # Nucleotides associated with each substitution event
@@ -193,7 +193,7 @@ class Sequence:
                     else:
                         self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_nonsyn'][key].append(nt)
 
-                else: # If mutation is syn in all codons
+                else:  # If mutation is syn in all codons
                     self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_syn'].append(nt)
 
         return sub_rates, my_omega_keys
@@ -267,18 +267,20 @@ class Sequence:
 
         return frequencies
 
-    def get_omega_values(self, alpha, ncat):
+    @staticmethod
+    def get_omega_values(alpha, ncat):
         """
         Draw ncat number of omega values from a discretized gamma distribution
         :param alpha: shape parameter
         :param ncat: Number of categories (expected omegas)
         :return: list of ncat number of omega values (e.i. if ncat = 3, omega_values = [0.29, 0.65, 1.06])
         """
-        values = self.discretize_gamma(alpha=alpha, ncat=ncat)
+        values = Sequence.discretize_gamma(alpha=alpha, ncat=ncat)
         omega_values = list(values)
         return omega_values
 
-    def discretize_gamma(self, alpha, ncat, dist=ss.gamma):
+    @staticmethod
+    def discretize_gamma(alpha, ncat, dist=ss.gamma):
         """
         Divide the gamma distribution into a number of intervals with equal probability and get the mid point of those intervals
         From https://gist.github.com/kgori/95f604131ce92ec15f4338635a86dfb9
@@ -377,7 +379,7 @@ class DoubleLinkedList:
     def __init__(self):
         self.head = None  # head node (starting nucleotide)
         self.current_nt = None  # Pointer to current nt for insertion
-        self.next_iter_nt = None # Current state of the iteration
+        self.next_iter_nt = None  # Current state of the iteration
 
     def __iter__(self):
         self.next_iter_nt = self.head
@@ -437,7 +439,7 @@ class DoubleLinkedList:
 
     def slice_sequence(self, start_pos, end_pos):
         """
-        Slices the Nucleotide sequence
+        Slices the Nucleotide sequence from the start position, up to and including the end position (inclusive slicing)
         :param start_pos: the start position
         :param end_pos: the end position
         :return sub_seq: a list of Nucleotides between the start and end positions (in 5', 3' direction)
@@ -451,8 +453,8 @@ class DoubleLinkedList:
             end_pos = start_pos
 
         while curr_nt is not None and curr_nt.pos_in_seq <= end_pos:
-                sub_seq.append(curr_nt)
-                curr_nt = curr_nt.right_nt
+            sub_seq.append(curr_nt)
+            curr_nt = curr_nt.right_nt
 
         return sub_seq
 
