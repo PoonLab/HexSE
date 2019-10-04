@@ -90,18 +90,17 @@ class TestGetSubstitutionRates(unittest.TestCase):
         random.seed(9001)   # Set seed value to initialize pseudo-random number generator
 
         seq = Sequence('GTACGATCGATCGATGCTAGC', None, {'+0': [(0, 20)]}, 0.5, None, 0.3)
-        nt = seq.nt_sequence.slice_sequence(0, 0)       # First nucleotide is G
+        nt = seq.nt_sequence.slice_sequence(1, 1)       # First nucleotide is G
 
         result = seq.get_substitution_rates(nt[0])
-        expected = ({'A': 0.04252483383790958,
-                     'C': 0.046544550314008,
-                     'G': None,
-                     'T': 0.08620490462173985},
-                    {'A': (1, 0, 0, 0), 'C': (0, 0, 1, 0), 'G': None, 'T': (0, 0, 0, 1)})
+        expected = ({'A': 0.010557889780446516,
+                     'C': 0.12839875948691862,
+                     'G': 0.07134199003178471,
+                     'T': None},
+                    {'A': (1, 0, 0, 0), 'C': (0, 0, 1, 0), 'G': (0, 0, 0, 1), 'T': None})
         self.assertEqual(expected, result)
 
     def testNonDefaultPi(self):
-
         random.seed(900)    # Set seed value to initialize pseudo-random number generator
 
         pi = {'A': 0.25, 'T': 0.25, 'C': 0.25, 'G': 0.25}
@@ -115,6 +114,23 @@ class TestGetSubstitutionRates(unittest.TestCase):
                      'T': None},
                     {'A': (0, 0, 0, 1), 'C': (1, 0, 0, 0), 'G': (0, 0, 0, 1), 'T': None})
         self.assertEqual(expected, result)
+
+    def testMultipleORFs(self):
+        random.seed(7)      # Set seed value to initialize pseudo-random number generator
+
+        s = 'AATTCATGAACGAAAATCTGTTCGCTTCATTCATTGCCCCCACAATCTAGGCCTACCC'
+        orfs = {'+0': [(5, 49)], '+1': [], '+2': [], '-0': [], '-1': [], '-2': [(29, 3)]}
+        seq = Sequence(s, None, orfs, 0.5, None, 0.3)
+        nt = seq.nt_sequence.slice_sequence(6, 6)
+        result = seq.get_substitution_rates(nt[0])
+        expected = ({'A': 0.012317538077187603,
+                         'C': 0.09170191466214123,
+                         'G': 0.04493956582042152,
+                         'T': None},
+                        {'A': (1, 0, 0, 0), 'C': (0, 1, 0, 0), 'G': (0, 0, 1, 0), 'T': None})
+
+        self.assertEqual(expected, result)
+
 
 
 class TestIsTransversion(TestSequences):
