@@ -22,7 +22,6 @@ class Simulate:
         Select a substitution by moving over the event_tree according to the generation of random numbers
         """
         # Select: to nucleotide
-        print("Entering get substitution")
         events = self.event_tree['total_events']
         to_mutation = self.select_weighted_values(self.event_tree['to_nt'], events, 'events_for_nt', 'stationary_frequency')
 
@@ -115,7 +114,6 @@ class Simulate:
         instant_rate = self.sum_rates()
 
         while True:
-            #print("ENTERING MUTATE ON BRANCH")
             random_time = self.draw_waiting_time(instant_rate)
             times_sum += random_time
             #print("Random time: ",random_time)
@@ -133,19 +131,22 @@ class Simulate:
             self.remove_nt(my_nt)
             self.update_nucleotide(my_nt, to_state)
 
+            # Update information about adjacent nucleotides
+            if my_nt.codons:  # If the mutated nucleotide belongs to at least one codon
+                adjacent_positions = [my_nt.pos_in_seq - 2, my_nt.pos_in_seq - 1, my_nt.pos_in_seq + 1, my_nt.pos_in_seq + 2]
+                for i in adjacent_positions:
+                    if 0 < i < len(self.sequence.original_seq):  # If position in sequence
+                        adj_nt = self.sequence.nt_sequence.nucleotide_at_pos(i)
+                        for codon in adj_nt.codons:
+                            if codon in my_nt.codons:  # If adjacent nucleotide and mutated nucleotide share at least one codon
+                                self.remove_nt(adj_nt)
+                                self.update_nucleotide(adj_nt, adj_nt.state)
+                                break
 
-            # adjacent_positions = [my_nt.pos_in_seq-2, my_nt.pos_in_seq-1, my_nt.pos_in_seq+1, my_nt.pos_in_seq+2]
-            # for i in adjacent_positions:
-            #     adj_nt = self.sequence.nucleotide_at_position(i)
-
-
-            # TODO: update parameters for adjacent nucleotides
 
     def remove_nt(self, nt):
         """
         Find nucleotide selected to mutate in the event tree and remove it from every branch on the event tree
-        :param nt:
-        :return:
         """
         for key_to_nt, value_to_nt in self.event_tree['to_nt'].items():
             if key_to_nt != nt.state:
@@ -163,9 +164,7 @@ class Simulate:
         """
         Update parameters on the mutated nucleotide
         """
-
-        # Update the state of the nucleotide
-        nt.set_state(to_state)
+        nt.set_state(to_state)  # Update the state of the nucleotide
         # Update rates, omega key and event tree with the nucleotide according to its new state
         nt.set_complement_state()  # Change complementary state given the mutation
         rates = self.sequence.get_substitution_rates(nt)  # Calculate new rates and update event tree
