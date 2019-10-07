@@ -102,6 +102,7 @@ class Sequence:
             rates = self.get_substitution_rates(nt)
             nt.set_rates(rates[0])
             nt.set_my_omegas(rates[1])
+            nt.set_nt_rate()
 
         # Update event_tree to include a list of nucleotides in the tips
         self.event_tree = self.get_nts_on_tips()
@@ -329,7 +330,6 @@ class Nucleotide:
         self.complement_state = COMPLEMENT_DICT[self.state]
         self.rates = {}  # Mutation rates
         self.my_omegas = [] # omegas that have used for this nucleotide when creating rates
-        self.mutation_rate = 0
 
     def __repr__(self):
         return self.state
@@ -371,8 +371,17 @@ class Nucleotide:
         self.my_omegas = omegas
 
     def get_mutation_rate(self):
-        self.mutation_rate = sum([self.mutation_rate + i for i in self.rates.values() if i is not None])
-        return self.mutation_rate
+        total_rate = 0
+        for to_nt, value in self.rates.items():
+            if value:
+                total_rate += value
+        return total_rate
+
+    def set_complement_state(self):
+        self.complement_state = COMPLEMENT_DICT[self.state]
+
+    def set_nt_rate(self):
+        self.mutation_rate = self.get_mutation_rate()
 
 
 class DoubleLinkedList:
@@ -513,3 +522,4 @@ class Codon:
             return True
         else:
             return False
+

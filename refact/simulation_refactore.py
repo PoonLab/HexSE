@@ -22,6 +22,7 @@ class Simulate:
         Select a substitution by moving over the event_tree according to the generation of random numbers
         """
         # Select: to nucleotide
+        print("Entering get substitution")
         events = self.event_tree['total_events']
         to_mutation = self.select_weighted_values(self.event_tree['to_nt'], events, 'events_for_nt', 'stationary_frequency')
 
@@ -33,14 +34,13 @@ class Simulate:
 
         # List of nucleotides that are candidates to mutate
         candidate_nts = final_mutation['nts_in_subs']
-        rates_list = [nt.get_mutation_rate() for nt in candidate_nts]
+        rates_list = [nt.mutation_rate for nt in candidate_nts]
         nt_dict = dict(zip(candidate_nts, rates_list))
 
         # Select weighted nucleotide
         from_nucleotide = self.weighted_random_choice(nt_dict, sum(rates_list))
 
         return from_nucleotide, to_mutation
-
 
     def select_weighted_values(self, dictionary, number_of_total_events, key_for_local_events, key_to_weight):
         """
@@ -95,16 +95,14 @@ class Simulate:
         """
         Calculate the total mutation rate of sequence
         """
-        total_rate = sum([nt.get_mutation_rate() for nt in iter(self.sequence.nt_sequence)])
+        total_rate = sum([nt.mutation_rate for nt in iter(self.sequence.nt_sequence)])
         return total_rate
 
-
-    def draw_waiting_time(self):
+    def draw_waiting_time(self, instant_rate):
         """
         Draw a time at which mutation occurs according to mutation rates.
         :return:
         """
-        instant_rate = self.sum_rates()
         time = np.random.exponential(scale=instant_rate)
         return time
 
@@ -112,17 +110,65 @@ class Simulate:
         """
         Simulate molecular evolution in sequence given a branch length
         """
+
         times_sum = 0
+        instant_rate = self.sum_rates()
 
         while True:
-            random_time = self.draw_waiting_time()
+            #print("ENTERING MUTATE ON BRANCH")
+            random_time = self.draw_waiting_time(instant_rate)
             times_sum += random_time
+            #print("Random time: ",random_time)
+            #print("Instant_rate", instant_rate)
+
             if times_sum > branch_length:
                 break
 
             # Draw a mutation
             mutation = self.get_substitution()
-            # Replace state of nucleotide
-            mutation[0].set_state(mutation[1])
+            my_nt = mutation[0]
+            to_state = mutation[1]
 
-            # TODO: update parameters of mutated and adjacent nucleotides according to the new state
+            # Remove the mutated nucleotide from the event tree and update information in Nucleotide
+            self.remove_nt(my_nt)
+            self.update_nucleotide(my_nt, to_state)
+
+
+            # adjacent_positions = [my_nt.pos_in_seq-2, my_nt.pos_in_seq-1, my_nt.pos_in_seq+1, my_nt.pos_in_seq+2]
+            # for i in adjacent_positions:
+            #     adj_nt = self.sequence.nucleotide_at_position(i)
+
+
+            # TODO: update parameters for adjacent nucleotides
+
+    def remove_nt(self, nt):
+        """
+        Find nucleotide selected to mutate in the event tree and remove it from every branch on the event tree
+        :param nt:
+        :return:
+        """
+        for key_to_nt, value_to_nt in self.event_tree['to_nt'].items():
+            if key_to_nt != nt.state:
+                # Find branches that contain my nucleotide
+                my_branch = self.event_tree['to_nt'][key_to_nt]['from_nt'][nt.state]
+                 # Remove nt from non-synonymous mutations
+                for omega_key, nucleotide_list in my_branch['is_nonsyn'].items():
+                    if nt in nucleotide_list:
+                        nucleotide_list.remove(nt)
+                # Remove nt from synonymous mutations and list of nucleotides in substitution
+                if nt in my_branch['is_syn']: my_branch['is_syn'].remove(nt)
+                if nt in my_branch['nts_in_subs']: my_branch['nts_in_subs'].remove(nt)
+
+    def update_nucleotide(self, nt, to_state):
+        """
+        Update parameters on the mutated nucleotide
+        """
+
+        # Update the state of the nucleotide
+        nt.set_state(to_state)
+        # Update rates, omega key and event tree with the nucleotide according to its new state
+        nt.set_complement_state()  # Change complementary state given the mutation
+        rates = self.sequence.get_substitution_rates(nt)  # Calculate new rates and update event tree
+        nt.set_rates(rates[0])  # Update substitution rates
+        nt.set_my_omegas(rates[1]) # Update omega keys
+        nt.set_nt_rate()
