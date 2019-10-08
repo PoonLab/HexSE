@@ -303,6 +303,13 @@ class Sequence:
                                                       quantiles[ncat - 1], np.inf)[0]
         return rates
 
+    def get_string_sequence(self):
+        seq_as_string = ''
+        for nt in iter(self.nt_sequence):
+            seq_as_string += nt.state
+        return seq_as_string
+
+
 
 class Nucleotide:
     """
@@ -522,4 +529,3 @@ class Codon:
             return True
         else:
             return False
-

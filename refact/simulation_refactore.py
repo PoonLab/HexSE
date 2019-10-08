@@ -2,6 +2,7 @@
 import numpy as np
 import random
 from new_sequence_info import Sequence
+from Bio import Phylo
 
 
 class Simulate:
@@ -143,6 +144,7 @@ class Simulate:
                                 self.update_nucleotide(adj_nt, adj_nt.state)
                                 break
 
+        return self.sequence.get_string_sequence()
 
     def remove_nt(self, nt):
         """
@@ -171,3 +173,49 @@ class Simulate:
         nt.set_rates(rates[0])  # Update substitution rates
         nt.set_my_omegas(rates[1]) # Update omega keys
         nt.set_nt_rate()
+
+    def traverse_tree(self):
+        """
+        Post-order traversal of tree from the root.
+        Call simulate_on_branch on each branch and feed the resulting sequence to initialize
+        the next call.
+        @return Phylo tree with Clade objects annotated with sequences.
+        """
+
+        # assign root_seq to root Clade
+        self.phylo_tree.root.sequence = self.sequence
+
+        # annotate Clades with parents
+        for clade in self.phylo_tree.find_clades(order='level'):
+            for child in clade:
+                child.parent = clade
+                #print(child, child.parent)
+
+        for node in self.phylo_tree.find_clades(order='level'):
+            # TODO: skip the root (sequence already assigned)
+            # print("--", node)
+            if not hasattr(node, 'sequence'):
+                # print("second loop", node, node.parent, node.parent.sequence)
+                node.sequence = self.mutate_on_branch(node.branch_length)
+                #print('*', node.sequence)
+
+        # Cleanup to avoid RecursionError when printing the tree
+        for clade in self.phylo_tree.find_clades(order='level'):
+            for child in clade:
+                del child.parent
+
+        return self.phylo_tree
+
+    def get_alignment(self):
+        """
+        Iterates over tips (terminal nodes) of tree and returns sequence
+        """
+        #aln = open("/Users/laurabaena/projects/ovrf/HBV/test_Output.txt", "w+")
+
+        final_tree = self.traverse_tree()
+        for clade in final_tree.get_terminals():
+            seq = clade.sequence
+            #aln.write(">Sequence_{} \n{}\n".format(clade, seq) )
+            print(seq)
+
+        #aln.close()
