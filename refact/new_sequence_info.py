@@ -104,7 +104,7 @@ class Sequence:
             nt.set_my_omegas(rates[1])
             nt.set_nt_rate()
 
-        # Update event_tree to include a list of nucleotides in the tips
+        # Update event_tree to include a list of nucleotides on the tips
         self.event_tree = self.get_nts_on_tips()
 
     def get_nts_on_tips(self):

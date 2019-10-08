@@ -75,7 +75,6 @@ class Simulate:
         :param sum_values: sum all values on dict to establish the limit for the mutation
         :return: random key from dict
         """
-
         iter_object = iter(dictionary.items())
         limit = random.uniform(0, sum_values)
         s = 0
@@ -117,9 +116,6 @@ class Simulate:
         while True:
             random_time = self.draw_waiting_time(instant_rate)
             times_sum += random_time
-            #print("Random time: ",random_time)
-            #print("Instant_rate", instant_rate)
-
             if times_sum > branch_length:
                 break
 
@@ -143,6 +139,9 @@ class Simulate:
                                 self.remove_nt(adj_nt)
                                 self.update_nucleotide(adj_nt, adj_nt.state)
                                 break
+
+            # Update event_tree to include a list of nucleotides on the tips
+            self.event_tree = self.sequence.get_nts_on_tips()
 
         return self.sequence.get_string_sequence()
 
