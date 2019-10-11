@@ -95,7 +95,7 @@ class Sequence:
                     # Tell Nucleotide which Codon(s) it belongs to
                     for codon in codons:
                         for i, nt in enumerate(codon.nts_in_codon):
-                            nt.add_codon(codon)
+                            nt.codons.append(codon)
 
         # Calculate mutation rates for each nucleotide in sequence, populate the event tree which each nucleotide
         for nt in iter(self.nt_sequence):
@@ -142,18 +142,6 @@ class Sequence:
         updated_event_tree['total_events'] = total_events
         return updated_event_tree
 
-    def create_keys(self, my_omegas):
-        """
-        Create omega keys according to how many times a given omega was used to calculate a substitution rate
-        :param my_omegas: list of omega values
-        :return: key of omegas as tuple (e.i, (1, 0, 2): first value was used once, second value wasn't used, third value was used twice)
-        """
-        omega_key = []
-        for value in self.omega_values:
-            count = my_omegas.count(value)
-            omega_key.append(count)
-        return tuple(omega_key)
-
     def get_substitution_rates(self, nt):
         """
         Calculates substitution rates for each mutation and populates Event tree
@@ -175,24 +163,25 @@ class Sequence:
                 if self.is_transv(current_nt, to_nt):
                     sub_rates[to_nt] *= self.kappa
 
-                omegas_in_subs = []  # omegas applied given a substitution from current_nt to to_nt
+                chosen_omegas = [0, 0, 0, 0]      # omegas applied given a substitution from current_nt to to_nt
                 for codon in nt.codons:
                     pos_in_codon = codon.nt_in_pos(nt)
-                    if codon.is_nonsyn(pos_in_codon, to_nt): # Apply omega when mutation is non-synonymous
-                        omega = random.choice(self.omega_values)
-                        sub_rates[to_nt] *= omega
-                        omegas_in_subs.append(omega)  # store the omegas used to calculate this rate
+                    if codon.is_nonsyn(pos_in_codon, to_nt):    # Apply omega when mutation is non-synonymous
+                        omega_index = random.randrange(len(self.omega_values))
+                        sub_rates[to_nt] *= self.omega_values[omega_index]
+                        chosen_omegas[omega_index] += 1
 
-                key = self.create_keys(omegas_in_subs)
-                my_omega_keys[to_nt] = key
+                omegas_in_sub = tuple(chosen_omegas)
+                # key = self.create_keys(omegas_in_subs)
+                my_omega_keys[to_nt] = omegas_in_sub
                 # Populate even tree using omega_keys
-                if omegas_in_subs:  # At least one omega was used
+                if any(omegas_in_sub):  # At least one omega was used
                     current_event = self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_nonsyn']
                     # Create key if needed, associate it with the current nucleotide
-                    if key not in current_event:
-                        self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_nonsyn'][key] = [nt]
+                    if omegas_in_sub not in current_event:
+                        self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_nonsyn'][omegas_in_sub] = [nt]
                     else:
-                        self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_nonsyn'][key].append(nt)
+                        self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_nonsyn'][omegas_in_sub].append(nt)
 
                 else:  # If mutation is syn in all codons
                     self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_syn'].append(nt)
@@ -310,7 +299,6 @@ class Sequence:
         return seq_as_string
 
 
-
 class Nucleotide:
     """
     Stores information about the base, the open reading frames to which a Nucleotide belongs,
@@ -336,7 +324,7 @@ class Nucleotide:
         self.codons = []
         self.complement_state = COMPLEMENT_DICT[self.state]
         self.rates = {}  # Mutation rates
-        self.my_omegas = [] # omegas that have used for this nucleotide when creating rates
+        self.my_omegas = []  # omegas that have used for this nucleotide when creating rates
 
     def __repr__(self):
         return self.state
@@ -491,7 +479,6 @@ class Codon:
         :param frame: the reading frame (+0, +1, +2, -0, -1, -2)
         :param orf: a tuple containing the reading frame and the coordinates of the orf
         :param ptrs_to_nts: a list of pointers to the Nucleotides in the Codon
-        :param omega_values: list of omega values
         """
 
         self.frame = frame

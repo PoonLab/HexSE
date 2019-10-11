@@ -49,40 +49,6 @@ class TestSequences(unittest.TestCase):
 # ==========================================
 # Tests for Sequence
 # ==========================================
-class TestCreateKeys(TestSequences):
-
-    def testOmegas(self):
-        my_omegas = [0.29327471612351436,
-                     0.6550136761581515,
-                     1.0699896623909886,
-                     1.9817219453273531]
-        result = self.sequence7.create_keys(my_omegas)
-        expected = (1, 1, 1, 1)
-        self.assertEqual(expected, result)
-
-    def testSixOmegaValues(self):
-        my_omegas = [0.29327471612351436,
-                     0.6550136761581515,
-                     1.0699896623909886,
-                     1.9817219453273531,
-                     1.0699896623909886,
-                     1.9817219453273531]
-        result = self.sequence7.create_keys(my_omegas)
-        expected = (1, 1, 2, 2)
-        self.assertEqual(expected, result)
-
-    def testNoOmegas(self):
-        my_omegas = []
-        result = self.sequence7.create_keys(my_omegas)
-        expected = (0, 0, 0, 0)
-        self.assertEqual(expected, result)
-
-    def testThreeValues(self):
-        my_omegas = [1.9817219453273531, 0.29327471612351436, 0.29327471612351436]
-        result = self.sequence7.create_keys(my_omegas)
-        expected = (2, 0, 0, 1)
-        self.assertEqual(expected, result)
-
 
 class TestGetSubstitutionRates(unittest.TestCase):
 
@@ -124,13 +90,27 @@ class TestGetSubstitutionRates(unittest.TestCase):
         nt = seq.nt_sequence.slice_sequence(6, 6)
         result = seq.get_substitution_rates(nt[0])
         expected = ({'A': 0.012317538077187603,
-                         'C': 0.09170191466214123,
-                         'G': 0.04493956582042152,
-                         'T': None},
-                        {'A': (1, 0, 0, 0), 'C': (0, 1, 0, 0), 'G': (0, 0, 1, 0), 'T': None})
+                     'C': 0.09170191466214123,
+                     'G': 0.04493956582042152,
+                     'T': None},
+                    {'A': (1, 0, 0, 0), 'C': (0, 1, 0, 0), 'G': (0, 0, 1, 0), 'T': None})
 
         self.assertEqual(expected, result)
 
+    def testSynAndNonSyn(self):
+        random.seed(1000)   # Set seed value to initialize pseudo-random number generator
+        s = 'AATTCATGAACGAAAATCTGTTCGCTTCATTCATTGCCCCCACAATCTAGGCCTACCC'
+        orfs = {'+0': [(5, 49)], '+1': [], '+2': [], '-0': [], '-1': [], '-2': [(29, 3)]}
+        seq = Sequence(s, None, orfs, 0.5, None, 0.3)
+        nt = seq.nt_sequence.slice_sequence(7, 7)
+        result = seq.get_substitution_rates(nt[0])
+        expected = ({'A': 0.12722531971401765,
+                     'C': 0.005648416460870618,
+                     'G': None,
+                     'T': 0.012615441519850935},
+                    {'A': (0, 0, 1, 1), 'C': (1, 0, 1, 0), 'G': None, 'T': (0, 1, 1, 0)})
+
+        self.assertEqual(expected, result)
 
 
 class TestIsTransversion(TestSequences):
@@ -198,8 +178,6 @@ class TestFindCodons(TestSequences):
         expected = [['C', 'G', 'A'], ['T', 'C', 'G'], ['T', 'A', 'G'],
                     ['C', 'T', 'A'], ['G', 'C', 'T'], ['A', 'G', 'C'], ['A', 'T', 'G']]
         result = self.sequence7.find_codons('-0', (20, 0))
-        for res in result:
-            print(res.nts_in_codon)
         self.assertEqual(len(expected), len(result))
 
         for idx, codon in enumerate(result):
@@ -329,45 +307,6 @@ class TestSliceSequence(TestSequences):
 # ==========================================
 # Tests for Nucleotide
 # ==========================================
-class TestGetNonsynSubs(TestSequences):
-
-    def testNoORFs(self):
-        s = Sequence('ATGCCGTATGC', rcseq=None, sorted_orfs=[], mu=0.5, pi=None, kappa=0.3, )
-        s.nt_sequence = DoubleLinkedList()
-        for pos, nt in enumerate(s.original_seq):
-            s.nt_sequence.insert_nt(nt, pos)
-
-        s.nt_sequence.print_seq()
-
-        nt = s.nt_sequence.nucleotide_at_pos(2)
-
-        expected = {'+0': {'A': None, 'T': None, 'G': None, 'C': None},
-                    '+1': {'A': None, 'T': None, 'G': None, 'C': None},
-                    '+2': {'A': None, 'T': None, 'G': None, 'C': None},
-                    '-0': {'A': None, 'T': None, 'G': None, 'C': None},
-                    '-1': {'A': None, 'T': None, 'G': None, 'C': None},
-                    '-2': {'A': None, 'T': None, 'G': None, 'C': None}}
-
-        result = nt.get_nonsyn_subs()
-        self.assertEqual(expected, result)
-
-    def testOneOrf(self):
-        s = Sequence('ATGCCCTGA', rcseq=None, sorted_orfs=None, mu=0.5, pi=None, kappa=0.3)
-        seq = DoubleLinkedList()
-        for pos, nt in enumerate(s.nt_sequence):
-            seq.insert_nt(nt, pos)
-
-        nt = s.nt_sequence.nucleotide_at_pos(0)
-
-        expected = {'+0': {'A': False, 'T': True, 'G': True, 'C': True},
-                    '+1': {'A': None,  'T': None, 'G': None, 'C': None},
-                    '+2': {'A': None,  'T': None, 'G': None, 'C': None},
-                    '-0': {'A': None,  'T': None, 'G': None, 'C': None},
-                    '-1': {'A': None,  'T': None, 'G': None, 'C': None},
-                    '-2': {'A': None,  'T': None, 'G': None, 'C': None}}
-
-        result = nt.get_nonsyn_subs()
-        self.assertEqual(expected, result)
 
 
 if __name__ == '__main__':
