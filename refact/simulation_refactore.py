@@ -3,18 +3,20 @@ import numpy as np
 import random
 from new_sequence_info import Sequence
 from Bio import Phylo
+import copy
 
-
-class Simulate:
+class SimulateOnBranch:
     """
-    Simulate evolution within a sequence throughout a phylogeny
-    :ivar seq: list of nucleotides. Each nucleotide stores information about their reading frames and evolutionary rates
-    :ivar tree: rooted phylogenetic tree over which seq evolves
+    Simulate evolution within a sequence throughout a branch in a phylogeny
     """
 
-    def __init__(self, sequence , phylo_tree = None):
-        self.sequence  = sequence # Object of class Sequence (Double Linked list of Nucleotides)
-        self.phylo_tree = phylo_tree
+    def __init__(self, sequence , branch_length):
+        """
+        :param sequence: object of class Sequence (Double Linked list of Nucleotides)  in the parental node
+        :param branch_length: length of the branch over which evolution is happening
+        """
+        self.sequence  = sequence
+        self.branch_length = branch_length
         self.event_tree = self.sequence.event_tree # Tree of class EventTree (all possible mutations related to sequence)
 
 
@@ -105,7 +107,7 @@ class Simulate:
         time = np.random.exponential(scale=instant_rate)
         return time
 
-    def mutate_on_branch(self, branch_length):
+    def mutate_on_branch(self):
         """
         Simulate molecular evolution in sequence given a branch length
         """
@@ -116,17 +118,21 @@ class Simulate:
         while True:
             random_time = self.draw_waiting_time(instant_rate)
             times_sum += random_time
-            if times_sum > branch_length:
+            if times_sum > self.branch_length:
                 break
 
             # Draw a mutation
             mutation = self.get_substitution()
             my_nt = mutation[0]
             to_state = mutation[1]
+            # Subtract the mutation rate of the nucleotide to mutate
+            instant_rate = instant_rate - my_nt.mutation_rate
 
             # Remove the mutated nucleotide from the event tree and update information in Nucleotide
             self.remove_nt(my_nt)
             self.update_nucleotide(my_nt, to_state)
+            # Add the mutation rate of the mutated nucletoide
+            instant_rate = instant_rate + my_nt.mutation_rate
 
             # Update information about adjacent nucleotides
             if my_nt.codons:  # If the mutated nucleotide belongs to at least one codon
@@ -137,13 +143,16 @@ class Simulate:
                         for codon in adj_nt.codons:
                             if codon in my_nt.codons:  # If adjacent nucleotide and mutated nucleotide share at least one codon
                                 self.remove_nt(adj_nt)
+                                instant_rate = instant_rate - adj_nt.mutation_rate
                                 self.update_nucleotide(adj_nt, adj_nt.state)
+                                # Update instant rate for adjacent nucleotide
+                                instant_rate = instant_rate + adj_nt.mutation_rate
                                 break
 
             # Update event_tree to include a list of nucleotides on the tips
             self.event_tree = self.sequence.get_nts_on_tips()
 
-        return self.sequence.get_string_sequence()
+        return self.sequence
 
     def remove_nt(self, nt):
         """
@@ -173,37 +182,50 @@ class Simulate:
         nt.set_my_omegas(rates[1]) # Update omega keys
         nt.set_nt_rate()
 
+class SimulateOnTree:
+    """
+    Simulate evolution within a sequence throughout an entire phylogeny
+    """
+
+    def __init__(self, root_sequence , phylo_tree):
+        self.root_sequence  = root_sequence # Object of class Sequence (Double Linked list of Nucleotides)
+        self.phylo_tree = phylo_tree # Phylogenetic tree over which sequence will evolve
+
+
+    def get_parent_clade(self, child_clade):
+        """
+        :param child_clade: current clade
+        :return: path to the parent clade
+        """
+        node_path = self.phylo_tree.get_path(child_clade)
+        return node_path[-2] if len(node_path) > 1 else self.phylo_tree.root
+
     def traverse_tree(self):
         """
-        Post-order traversal of tree from the root.
-        Call simulate_on_branch on each branch and feed the resulting sequence to initialize
-        the next call.
+        Level order traversal of tree from the root.
+        Call mutate_on_branch() form SimulateOnBranch on each branch and feed the resulting sequence
+        to initialize the next call.
         @return Phylo tree with Clade objects annotated with sequences.
         """
 
         # assign root_seq to root Clade
-        self.phylo_tree.root.sequence = self.sequence
+        self.phylo_tree.root.sequence = self.root_sequence
+        root = self.phylo_tree.root
 
-        # annotate Clades with parents
+        # Annotate clades with evolved sequences
         for clade in self.phylo_tree.find_clades(order='level'):
-            for child in clade:
-                child.parent = clade
-                #print(child, child.parent)
-
-        for node in self.phylo_tree.find_clades(order='level'):
-            # TODO: skip the root (sequence already assigned)
-            # print("--", node)
-            if not hasattr(node, 'sequence'):
-                # print("second loop", node, node.parent, node.parent.sequence)
-                node.sequence = self.mutate_on_branch(node.branch_length)
-                #print('*', node.sequence)
-
-        # Cleanup to avoid RecursionError when printing the tree
-        for clade in self.phylo_tree.find_clades(order='level'):
-            for child in clade:
-                del child.parent
+            if clade is root:
+                continue
+            # deep clone parent Sequence
+            parent = self.get_parent_clade(clade)
+            parent_sequence = copy.deepcopy(parent.sequence)
+            # Mutate sequence
+            simulation = SimulateOnBranch(parent_sequence, clade.branch_length)
+            # Store sequence on clade
+            clade.sequence = simulation.mutate_on_branch()
 
         return self.phylo_tree
+
 
     def get_alignment(self):
         """
@@ -213,8 +235,9 @@ class Simulate:
 
         final_tree = self.traverse_tree()
         for clade in final_tree.get_terminals():
-            seq = clade.sequence
+            seq = clade.sequence.get_string_sequence()
             #aln.write(">Sequence_{} \n{}\n".format(clade, seq) )
             print(seq)
 
         #aln.close()
+
