@@ -6,7 +6,7 @@ from run_simulate import reverse_and_complement
 from run_simulate import sort_orfs
 from run_simulate import valid_orfs
 from simulation_refactore import SimulateOnBranch, SimulateOnTree
-from Bio import Phylo
+from Bio import Phylo, SeqIO
 
 tree = Phylo.read('test_tree.txt','newick', rooted=True)
 orfs = [(0,5), (9,1), (7,18)]
@@ -17,6 +17,16 @@ mu = 0.0005
 pi = None
 kappa = 0.3
 
-sequence = Sequence(ori_seq, rcseq, sorted_orfs, mu, pi, kappa)
+# sequence = Sequence(ori_seq, rcseq, sorted_orfs, mu, pi, kappa)
+# sim_tree = SimulateOnTree(sequence, tree)
+# print(sim_tree.get_alignment())
+
+
+######
+# TEST with most realistic data
+tree = Phylo.read('/home/lmunoz/Projects/ovrf/HBV/abayomi_tree.nwk', 'newick', rooted = True)
+seq = [seq_record.seq for seq_record in SeqIO.parse('/home/lmunoz/Projects/ovrf/HBV/HBV.fasta' , "fasta")][0]
+sequence = Sequence(seq, rcseq, sorted_orfs, mu, pi, kappa)
 sim_tree = SimulateOnTree(sequence, tree)
 print(sim_tree.get_alignment())
+

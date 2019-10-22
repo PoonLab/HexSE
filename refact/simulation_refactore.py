@@ -229,13 +229,13 @@ class SimulateOnTree:
         """
         Iterates over tips (terminal nodes) of tree and returns sequence
         """
-        #aln = open("/Users/laurabaena/projects/ovrf/HBV/test_Output.txt", "w+")
+        aln = open('/home/lmunoz/Projects/ovrf/HBV/NEWtest_Output.txt', "w+")
 
         final_tree = self.traverse_tree()
         for clade in final_tree.get_terminals():
             seq = clade.sequence.get_string_sequence()
-            #aln.write(">Sequence_{} \n{}\n".format(clade, seq) )
-            print(seq)
+            aln.write(">Sequence_{} \n{}\n".format(clade, seq))
+            #print(seq)
 
-        #aln.close()
+        aln.close()
 
