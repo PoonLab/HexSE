@@ -202,26 +202,24 @@ class SimulateOnTree:
 
     def traverse_tree(self):
         """
-        Level order traversal of tree from the root.
-        Call mutate_on_branch() form SimulateOnBranch on each branch and feed the resulting sequence
-        to initialize the next call.
+        Mutate a sequence along a phylogeny by traversing it in level-order
         @return Phylo tree with Clade objects annotated with sequences.
         """
 
-        # assign root_seq to root Clade
+        # Assign root_seq to root Clade
         self.phylo_tree.root.sequence = self.root_sequence
         root = self.phylo_tree.root
 
-        # Annotate clades with evolved sequences
         for clade in self.phylo_tree.find_clades(order='level'):
+            # skip the root
             if clade is root:
                 continue
-            # deep clone parent Sequence
+
             parent = self.get_parent_clade(clade)
+            #Create a deep copy of the parent sequence
             parent_sequence = copy.deepcopy(parent.sequence)
-            # Mutate sequence
+            # Mutate sequence and store it on clade
             simulation = SimulateOnBranch(parent_sequence, clade.branch_length)
-            # Store sequence on clade
             clade.sequence = simulation.mutate_on_branch()
 
         return self.phylo_tree
