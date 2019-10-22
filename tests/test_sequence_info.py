@@ -18,8 +18,8 @@ def make_dll(original_sequence):
 class TestSequences(unittest.TestCase):
     def setUp(self):
         s1 = make_dll('ATTTTTTTTTTTTT')
-        self.seq1 = s1.nt_sequence
-        self.sequence1 = s1
+        self.seq1 = s1.nt_sequence  # Double-linked list (attribute of sequence)
+        self.sequence1 = s1         # Sequence object
 
         s2 = make_dll('TTTTTTTTTTTTTG')
         self.seq2 = s2.nt_sequence
@@ -49,7 +49,6 @@ class TestSequences(unittest.TestCase):
 # ==========================================
 # Tests for Sequence
 # ==========================================
-
 class TestGetSubstitutionRates(unittest.TestCase):
 
     def testDefaultPi(self):
@@ -109,6 +108,21 @@ class TestGetSubstitutionRates(unittest.TestCase):
                      'G': None,
                      'T': 0.012615441519850935},
                     {'A': (0, 0, 1, 1), 'C': (1, 0, 1, 0), 'G': None, 'T': (0, 1, 1, 0)})
+
+        self.assertEqual(expected, result)
+
+    def testSynSub(self):
+        random.seed(555)    # Set seed value to initialize pseudo-random number generator
+        s = 'ATGACGTGGTGA'
+        orfs = {'+0': [(0, 11)], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
+        seq = Sequence(s, None, orfs, 0.5, None, 0.3)
+        nt = seq.nt_sequence.slice_sequence(5, 5)
+        result = seq.get_substitution_rates(nt[0])
+        expected = ({'A': 0.21,
+                     'C': 0.063,
+                     'G': None,
+                     'T': 0.063},
+                    {'A': (0, 0, 0, 0), 'C': (0, 0, 0, 0), 'G': None, 'T': (0, 0, 0, 0)})
 
         self.assertEqual(expected, result)
 
@@ -212,6 +226,14 @@ class TestGetFrequencyRates(unittest.TestCase):
         self.assertEqual(expected, result)
 
 
+class TestGetStringSequence(unittest.TestCase):
+
+    def testShortSeq(self):
+        seq = Sequence('GTACGATCGATCGATGCTAGC', None, {'+0': [(0, 20)]}, 0.5, None, 0.3)
+        expected = 'GTACGATCGATCGATGCTAGC'
+        result = seq.get_string_sequence()
+        self.assertEqual(expected, result)
+
 
 # ==========================================
 # Tests for DoubleLinkedList
@@ -305,8 +327,18 @@ class TestSliceSequence(TestSequences):
 
 
 # ==========================================
-# Tests for Nucleotide
+# Tests for Codon
 # ==========================================
+
+class TestIsNonSyn(TestSequences):
+
+    def testSimpleUse(self):
+        seq = Sequence('GTACGATCGATCGATGCTAGC', None, {'+0': [(0, 20)]}, 0.5, None, 0.3)
+        nt = seq.nt_sequence.nucleotide_at_pos(2)
+        codon = nt.codons[0]    # codon: GTA = Valine
+        expected = False
+        result = codon.is_nonsyn(pos_in_codon=2, to_nt=nt)
+        self.assertEqual(expected, result)
 
 
 if __name__ == '__main__':
