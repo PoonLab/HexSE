@@ -1,17 +1,19 @@
 import argparse
-import sys
 import re
+import sys
 
+import numpy as np
+import scipy
+import scipy.stats as ss
 from Bio import Phylo
-
-from new_sequence_info import NUCLEOTIDES
-from new_sequence_info import COMPLEMENT_DICT
+from new_sequence_info import NUCLEOTIDES, COMPLEMENT_DICT
 from new_sequence_info import Sequence
+from simulation_refactore import SimulateOnTree
 
 
 def get_args(parser):
     parser.add_argument(
-        'seq', type=argparse.FileType('r'),
+        'seq',
         help='Path to the file containing the query sequence.'
     )
     parser.add_argument(
@@ -19,31 +21,28 @@ def get_args(parser):
         help='Path to file containing phylogenetic tree in Newick format.'
     )
     parser.add_argument(
-        'outfile', type=argparse.FileType('w'),
-        help='Path to the alignment file.'
+        '--outfile', default=None, help='Path to the alignment file.'
     )
     parser.add_argument(
-        '--orfs', type=argparse.FileType('r'), default=None,
+        '--orfs', default=None,
         help='Path to a csv file containing the start and end coordinates of the open reading frames'
     )
     parser.add_argument(
-        '--mu', type=float,
+        '--mu', type=float, default=0.0005,
         help='Global substitution rate per site per unit time'
     )
     parser.add_argument(
-        '--kappa', nargs="6", type=float, default=[1, 1, 1, 1, 1, 1],
-        help='List of transversion/ transition rates assuming time reversibility. '
-             'Format: [AC, AG, AT, CG, CT, GT]'
+        '--kappa', type=float, default=0.3,
+        help='Transversion/ transition rate assuming time reversibility.'
     )
     parser.add_argument(
-        '--pi', nargs="4", type=float, default=[None, None, None, None],
+        '--pi', type=float, default=[None, None, None, None],
         help='Vector of stationary nucleotide frequencies. If no value is specified, '
              'the program will use the empirical frequencies in the sequence. Format: [A, T, G, C]'
     )
     parser.add_argument(
-        '--omega', nargs="6", type=float, default=[None, None, None, None, None, None],
-        help='List of dN/dS ratios for each reading frame along the length of the sequence. '
-             'Format: [+0, +1, +2, -0, -1, -2]'
+        '--omega', type=float, default=[None, None, None, None],
+        help='List of dN/dS ratios along the length of the sequence. '
     )
 
     return parser.parse_args()
@@ -256,6 +255,42 @@ def sort_orfs(unsorted_orfs):
     return sorted_orfs
 
 
+def get_omega_values(alpha, ncat):
+    """
+    Draw ncat number of omega values from a discretized gamma distribution
+    :param alpha: shape parameter
+    :param ncat: Number of categories (expected omegas)
+    :return: list of ncat number of omega values (e.i. if ncat = 3, omega_values = [0.29, 0.65, 1.06])
+    """
+    values = discretize_gamma(alpha=alpha, ncat=ncat)
+    omega_values = list(values)
+    return omega_values
+
+
+def discretize_gamma(alpha, ncat, dist=ss.gamma):
+    """
+    Divide the gamma distribution into a number of intervals with equal probability and get the mid point of those intervals
+    From https://gist.github.com/kgori/95f604131ce92ec15f4338635a86dfb9
+    :param alpha: shape parameter
+    :param ncat: Number of categories
+    :param dist: function from scipy stats
+    :return: array with ncat number of values
+    """
+    if dist == ss.gamma:
+        dist = dist(alpha, scale=1 / alpha)
+
+    elif dist == ss.lognorm:
+        dist = dist(s=alpha, scale=np.exp(0.5 * alpha ** 2))
+
+    quantiles = dist.ppf(np.arange(0, ncat) / ncat)
+    rates = np.zeros(ncat, dtype=np.double)  # return a new array of shape ncat and type double
+
+    for i in range(ncat - 1):
+        rates[i] = ncat * scipy.integrate.quad(lambda x: x * dist.pdf(x), quantiles[i], quantiles[i + 1])[0]
+    rates[ncat - 1] = ncat * scipy.integrate.quad(lambda x: x * dist.pdf(x), quantiles[ncat - 1], np.inf)[0]
+    return rates
+
+
 def main():
     parser = argparse.ArgumentParser(
         description='Simulates and visualizes the evolution of a sequence through a phylogeny'
@@ -263,67 +298,64 @@ def main():
     args = get_args(parser)
 
     # Read in the sequence
-    s = ''
-    for line in args.seq:
-        # Skip header if the file is a FASTA file
-        if not (line.startswith(">") or line().startswith("#")):
-            s += line.strip('\n\r').upper()
+    with open(args.seq) as seq_file:
+        s = ''
+        for line in seq_file:
+            # Skip header if the file is a FASTA file
+            if not (line.startswith(">") or line.startswith("#")):
+                s += line.strip('\n\r').upper()
 
     # Check if sequence is valid
     if not valid_sequence(s):
         print("Invalid sequence: {}".format(s))
         sys.exit(0)
 
-    # Read in ORFs as a list of tuples
-    unsorted_orfs = []
-    for line in args.orfs:
-        line = line.split(',')
-        orf = (line[0], line[1])
-        unsorted_orfs.append(orf)
+    # Check if the user specified orfs
+    if args.orfs is None:
+        unsorted_orfs = get_open_reading_frames(s)
+        orfs = sort_orfs(unsorted_orfs)
 
-    # Check if ORFs are valid
-    if unsorted_orfs is not None:
+    # Read in ORFs as a list of tuples
+    else:
+        unsorted_orfs = []
+        for line in args.orfs:
+            line = line.split(',')
+            orf = (line[0], line[1])
+            unsorted_orfs.append(orf)
+
+        # Check if ORFs are valid
         if not valid_orfs(unsorted_orfs, s):
             sys.exit(0)
         # Since ORFs are valid, sort the ORFs by reading frame
         orfs = sort_orfs(unsorted_orfs)
 
-    # If the user did not specify ORFs
-    else:
-        unsorted_orfs = get_open_reading_frames(s)
-        orfs = sort_orfs(unsorted_orfs)
-
-    # Read in the tree
-    tree = Phylo.read(args.tree, 'newick', rooted=True)
-
-    # Check that all stationary frequencies are non-None
-    if args.pi is not None:
-        for value in args.pi:
-            if value is None:
-                print("Invalid input: Missing stationary frequencies.")
-                sys.exit(0)
-
-            # Since input pi is valid, reformat the values into a dictionary
-            keys = ['A', 'T', 'G', 'C']
-            pi = dict(zip(keys, args.pi))
-
-    # If the user does not specify pi values
-    else:
+    # If the user did not specified stationary frequencies
+    if all(freq is None for freq in args.pi):
         pi = Sequence.get_frequency_rates(s)
 
-    # Make Sequence object
-    seq = Sequence(s, reverse_and_complement(s), orfs, args.mu, pi, args.kappa)
+    # If the user specified stationary frequencies
+    elif all(freq is type(float) for freq in args.pi):
+        keys = ['A', 'T', 'G', 'C']
+        pi = dict(zip(keys, args.pi))
 
-    # Reformat omega into a dictionary
-    # TODO: check that there is a check for all non-None values in omega
-    # keys = ['+0', '+1', '+2', '-0', '-1', '-2']
-    # omega = dict(zip(keys, args.omega))
+    else:
+        print("Invalid input: {}".format(args.pi))
+        exit(0)
+
+    # If user did not specify omega values
+    if all(v is None for v in args.omega):
+        # Draw omega values from gamma distribution
+        omegas = get_omega_values(2, 4)
+
+    # Read in the tree
+    phylo_tree = Phylo.read(args.tree, 'newick', rooted=True)
+
+    # Make Sequence object
+    root_sequence = Sequence(s, orfs, args.kappa, args.mu, pi, omegas)
 
     # Run simulation
-    # sim = Simulate(rates, tree)
-    #
-    # sim.traverse_tree()
-    # sim.get_alignment(args.outfile)
+    simulation = SimulateOnTree(root_sequence, phylo_tree, args.outfile)
+    simulation.get_alignment(args.outfile)
 
 
 if __name__ == '__main__':
