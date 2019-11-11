@@ -218,7 +218,7 @@ class SimulateOnTree:
             parent = self.get_parent_clade(clade)
             #Create a deep copy of the parent sequence
             parent_sequence = copy.deepcopy(parent.sequence)
-            print(parent_sequence)
+            #print(parent_sequence)
             # Mutate sequence and store it on clade
             simulation = SimulateOnBranch(parent_sequence, clade.branch_length)
             clade.sequence = simulation.mutate_on_branch()
@@ -233,7 +233,7 @@ class SimulateOnTree:
         #aln = open('/home/lmunoz/Projects/ovrf/HBV/NEWtest_Output.txt', "w+")
 
         final_tree = self.traverse_tree()
-        print(final_tree)
+        #print(final_tree)
         for clade in final_tree.get_terminals():
             seq = clade.sequence.get_string_sequence()
             #aln.write(">Sequence_{} \n{}\n".format(clade, seq))

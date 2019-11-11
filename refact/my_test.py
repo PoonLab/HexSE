@@ -19,19 +19,23 @@ mu = 0.0005
 pi = None
 kappa = 0.3
 
-# sequence = Sequence(ori_seq, rcseq, sorted_orfs, mu, pi, kappa)
-# sim_tree = SimulateOnTree(sequence, tree)
-# print(sim_tree.get_alignment())
+sequence = Sequence(ori_seq, rcseq, sorted_orfs, mu, pi, kappa)
+sim_tree = SimulateOnTree(sequence, tree)
+print(sim_tree.get_alignment())
 
 
 
 ######
 # TEST with most realistic data
-tree = Phylo.read('../HBV/abayomi_tree.nwk', 'newick', rooted = True)
-seq = str([seq_record.seq for seq_record in SeqIO.parse('../HBV/HBV.fasta' , "fasta")][0])
-print(seq)
-print(type(seq))
-sequence = Sequence(seq, rcseq, sorted_orfs, mu, pi, kappa)
-copy_seq = copy.deepcopy(sequence)
+# tree = Phylo.read('../HBV/abayomi_tree.nwk', 'newick', rooted = True)
+# seq = str([seq_record.seq for seq_record in SeqIO.parse('../HBV/HBV.fasta' , "fasta")][0])
+# print(seq)
+# print(type(seq))
+# sequence = Sequence(seq, rcseq, sorted_orfs, mu, pi, kappa)
+# #print(getattr(sequence, 'event_tree'))
+# event_tree = getattr(sequence, 'event_tree')
+# print(event_tree)
+#copy_tree = copy.deepcopy(event_tree)
+#copy_seq = copy.deepcopy(sequence)
 # sim_tree = SimulateOnTree(sequence, tree)
 # print(sim_tree.get_alignment())

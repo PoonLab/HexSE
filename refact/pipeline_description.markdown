@@ -21,5 +21,7 @@
 - Finds positition of the Nucleotide in the condon
 - Checks if a mutation on that nucleotide is syn or nonsyn
 
-
+**EvenTree ckass**
+- Dictionary with all posible mutations that may occur in the sequence
+-- First level is 'to_nt' and second level is 'from_nt', this last one contains a list of all nucleotides that can be part of that category (ie., A can change to T, C or G, so every A on sequence is going to be in the tips with the path event_tree['to_nt'][C]['from_nt']['A'], event_tree['to_nt'][G]['from_nt']['A'] ,event_tree['to_nt'][T]['from_nt']['A'])
 
