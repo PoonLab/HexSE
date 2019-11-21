@@ -5,6 +5,7 @@ from refact.new_sequence_info import Sequence
 from refact.new_sequence_info import DoubleLinkedList
 from refact.new_sequence_info import Nucleotide
 
+
 # ==========================================
 # Tests for Sequence
 # ==========================================
@@ -13,6 +14,7 @@ class TestSequenceInfo(unittest.TestCase):
     def setUp(self):
 
         self.maxDiff = None
+        random.seed(90)     # Set seed for pseudo-random number generator
 
         s1 = 'GTACGATCGATCGATGCTAGC'
         kappa = 0.3
@@ -224,6 +226,154 @@ class TestSequenceInfo(unittest.TestCase):
                                                 'T': None},
                                     'stationary_frequency': 0.25}}}
         self.assertEqual(expected, result)
+
+    def testNtsOnTips(self):
+
+        # Get the Nucleotide objects
+        a0 = self.sequence4.nt_sequence.nucleotide_at_pos(0)
+        t1 = self.sequence4.nt_sequence.nucleotide_at_pos(1)
+        g2 = self.sequence4.nt_sequence.nucleotide_at_pos(2)
+        a3 = self.sequence4.nt_sequence.nucleotide_at_pos(3)
+        c4 = self.sequence4.nt_sequence.nucleotide_at_pos(4)
+        g5 = self.sequence4.nt_sequence.nucleotide_at_pos(5)
+        t6 = self.sequence4.nt_sequence.nucleotide_at_pos(6)
+        g7 = self.sequence4.nt_sequence.nucleotide_at_pos(7)
+        g8 = self.sequence4.nt_sequence.nucleotide_at_pos(8)
+        t9 = self.sequence4.nt_sequence.nucleotide_at_pos(9)
+        g10 = self.sequence4.nt_sequence.nucleotide_at_pos(10)
+        a11 = self.sequence4.nt_sequence.nucleotide_at_pos(11)
+
+        expected = {'to_nt': {'A': {'events_for_nt': 2,
+                                    'from_nt': {'A': None,
+                                                'C': {'is_nonsyn': {(0, 0, 1, 0): [c4]},
+                                                      'is_syn': [],
+                                                      'is_trv': True,
+                                                      'kappa': 0.3,
+                                                      'nts_in_subs': [c4],
+                                                      'number_of_events': 0},
+                                                'G': {'is_nonsyn': {(0, 0, 1, 0): [g2],
+                                                                    (0, 1, 0, 0): [g7],
+                                                                    (1, 0, 0, 0): [g8]},
+                                                      'is_syn': [g5, g10],
+                                                      'is_trv': False,
+                                                      'kappa': 1,
+                                                      'nts_in_subs': [g5, g10, g2, g7, g8],
+                                                      'number_of_events': 2},
+                                                'T': {'is_nonsyn': {(0, 0, 0, 1): [t6],
+                                                                    (0, 0, 1, 0): [t1, t9]},
+                                                      'is_syn': [],
+                                                      'is_trv': True,
+                                                      'kappa': 0.3,
+                                                      'nts_in_subs': [t1, t9, t6],
+                                                      'number_of_events': 0}},
+                                    'stationary_frequency': 0.25},
+                              'C': {'events_for_nt': 1,
+                                    'from_nt': {'A': {'is_nonsyn': {(0, 0, 0, 1): [a0],
+                                                                    (0, 0, 1, 0): [a3],
+                                                                    (1, 0, 0, 0): [a11]},
+                                                      'is_syn': [],
+                                                      'is_trv': True,
+                                                      'kappa': 0.3,
+                                                      'nts_in_subs': [a0, a3, a11],
+                                                      'number_of_events': 0},
+                                                'C': None,
+                                                'G': {'is_nonsyn': {(0, 0, 1, 0): [g8],
+                                                                    (0, 1, 0, 0): [g2, g10],
+                                                                    (1, 0, 0, 0): [g7]},
+                                                      'is_syn': [g5],
+                                                      'is_trv': True,
+                                                      'kappa': 0.3,
+                                                      'nts_in_subs': [g5, g2, g10, g7, g8],
+                                                      'number_of_events': 1},
+                                                'T': {'is_nonsyn': {(0, 0, 0, 1): [t6],
+                                                                    (0, 0, 1, 0): [t1],
+                                                                    (1, 0, 0, 0): [t9]},
+                                                      'is_syn': [],
+                                                      'is_trv': False,
+                                                      'kappa': 1,
+                                                      'nts_in_subs': [t1, t6, t9],
+                                                      'number_of_events': 0}},
+                                    'stationary_frequency': 0.08},
+                              'G': {'events_for_nt': 0,
+                                    'from_nt': {'A': {'is_nonsyn': {(0, 0, 0, 1): [a0, a3],
+                                                                    (1, 0, 0, 0): [a11]},
+                                                      'is_syn': [],
+                                                      'is_trv': False,
+                                                      'kappa': 1,
+                                                      'nts_in_subs': [a0, a3, a11],
+                                                      'number_of_events': 0},
+                                                'C': {'is_nonsyn': {(0, 0, 1, 0): [c4]},
+                                                      'is_syn': [],
+                                                      'is_trv': True,
+                                                      'kappa': 0.3,
+                                                      'nts_in_subs': [c4],
+                                                      'number_of_events': 0},
+                                                'G': None,
+                                                'T': {'is_nonsyn': {(0, 0, 0, 1): [t1],
+                                                                    (0, 1, 0, 0): [t6, t9]},
+                                                      'is_syn': [],
+                                                      'is_trv': True,
+                                                      'kappa': 0.3,
+                                                      'nts_in_subs': [t1, t6, t9],
+                                                      'number_of_events': 0}},
+                                    'stationary_frequency': 0.42},
+                              'T': {'events_for_nt': 1,
+                                    'from_nt': {'A': {'is_nonsyn': {(0, 1, 0, 0): [a0, a11],
+                                                                    (1, 0, 0, 0): [a3]},
+                                                      'is_syn': [],
+                                                      'is_trv': True,
+                                                      'kappa': 0.3,
+                                                      'nts_in_subs': [a0, a11, a3],
+                                                      'number_of_events': 0},
+                                                'C': {'is_nonsyn': {(1, 0, 0, 0): [c4]},
+                                                      'is_syn': [],
+                                                      'is_trv': False,
+                                                      'kappa': 1,
+                                                      'nts_in_subs': [c4],
+                                                      'number_of_events': 0},
+                                                'G': {'is_nonsyn': {(0, 0, 0, 1): [g7, g10],
+                                                                    (0, 0, 1, 0): [g2, g8]},
+                                                      'is_syn': [g5],
+                                                      'is_trv': True,
+                                                      'kappa': 0.3,
+                                                      'nts_in_subs': [g5, g2, g8, g7, g10],
+                                                      'number_of_events': 1},
+                                                'T': None},
+                                    'stationary_frequency': 0.25}},
+                    'total_events': 4}
+
+        result = self.sequence4.get_nts_on_tips()
+        self.assertEqual(expected, result)
+
+
+# ==========================================
+# Tests for Nucleotide
+# ==========================================
+class TestNucleotide(unittest.TestCase):
+
+    def setUp(self):
+        random.seed(9001)  # Set seed value to initialize pseudo-random number generator
+
+        s1 = 'GTACGATCGATCGATGCTAGC'
+        kappa = 0.3
+        mu = 0.0005
+        pi1 = Sequence.get_frequency_rates(s1)
+        omegas = [0.29327471612351436, 0.6550136761581515, 1.0699896623909886, 1.9817219453273531]
+        self.nt_seq1 = Sequence(s1, {'+0': [(0, 20)]}, kappa, mu, pi1, omegas).nt_sequence
+
+    def testGetMutationRate(self):
+
+        expected_rates = [0.0001356139344659256,  0.00014951453904781168, 0.000192,
+                          0.00020291838733299422, 0.0002541108558198061,  0.000192,
+                          0.00033272911581276056, 0.00028496761812266927, 0.000232,
+                          0.00017555974417030556, 0.00033272911581276056, 0.00019451962784607557,
+                          0.00022772643797867983, 0.00025892241300017537, 0.00015413838212213998,
+                          0.0003466516825378471,  0.00014505458381268202, 0.000192,
+                          0.00019049887967468768, 0.00021445050151207423, 0.0002298616178778603]
+
+        for pos, exp_rate in enumerate(expected_rates):
+            nt = self.nt_seq1.nucleotide_at_pos(pos)
+            self.assertEqual(exp_rate, nt.mutation_rate)
 
 
 # ==========================================

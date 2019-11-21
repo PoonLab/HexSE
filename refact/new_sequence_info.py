@@ -311,8 +311,11 @@ class Nucleotide:
         self.my_omegas = []                                  # Omegas chosen when calculating rates
         self.mutation_rate = 0                               # The total mutation rate
 
-    def __repr__(self):
+    def __str__(self):
         return self.state
+
+    def __repr__(self):
+        return self.state.lower() + str(self.pos_in_seq)
 
     def get_state(self):
         return self.state
