@@ -50,6 +50,18 @@ class TestSimulateOnBranch(unittest.TestCase):
         result = self.sim_on_branch1.sum_rates()
         self.assertEqual(expected, result)
 
+        expected = 0.00954128577225131
+        result = self.sim_on_branch2.sum_rates()
+        self.assertEqual(expected, result)
+
+        expected = 0.013399271035090315
+        result = self.sim_on_branch3.sum_rates()
+        self.assertEqual(expected, result)
+
+        expected = 0.0030337488758443035
+        result = self.sim_on_branch4.sum_rates()
+        self.assertEqual(expected, result)
+
 
 # ==========================================
 # Tests for SimulateOnTree
