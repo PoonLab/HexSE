@@ -45,6 +45,25 @@ class TestSimulateOnBranch(unittest.TestCase):
         sequence4 = Sequence(s4, sorted_orfs, kappa, mu, pi4, omegas)
         self.sim_on_branch4 = SimulateOnBranch(sequence4, branch_length)
 
+    def testGetSubstitution(self):
+        random.seed(9001)       # Set seed for pseudo-random number generator
+
+        expected = (self.sim_on_branch1.sequence.nt_sequence.nucleotide_at_pos(7), 'A')
+        result = self.sim_on_branch1.get_substitution()
+        self.assertEqual(expected, result)
+
+        expected = (self.sim_on_branch2.sequence.nt_sequence.nucleotide_at_pos(0), 'C')
+        result = self.sim_on_branch2.get_substitution()
+        self.assertEqual(expected, result)
+
+        expected = (self.sim_on_branch3.sequence.nt_sequence.nucleotide_at_pos(6), 'C')
+        result = self.sim_on_branch3.get_substitution()
+        self.assertEqual(expected, result)
+
+        expected = (self.sim_on_branch4.sequence.nt_sequence.nucleotide_at_pos(10), 'G')
+        result = self.sim_on_branch4.get_substitution()
+        self.assertEqual(expected, result)
+
     def testSumRates(self):
         expected = 0.004637967436947257
         result = self.sim_on_branch1.sum_rates()
