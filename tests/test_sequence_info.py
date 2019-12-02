@@ -38,6 +38,7 @@ class TestSequenceInfo(unittest.TestCase):
         self.sequence4 = Sequence(s4, sorted_orfs, kappa, mu, pi4, omegas)
 
     def testGetFrequencyRates(self):
+        random.seed(9001)
         result = Sequence.get_frequency_rates('AAAAAAAAA')
         expected = {'A': 1, 'C': 0, 'T': 0, 'G': 0}
         self.assertEqual(expected, result)
@@ -48,7 +49,17 @@ class TestSequenceInfo(unittest.TestCase):
 
     def testGetSubstitutionRates(self):
         random.seed(9001)  # Set seed value to initialize pseudo-random number generator
-        nt = self.sequence1.nt_sequence.slice_sequence(1, 1)  # First nucleotide is G
+        nt = self.sequence1.nt_sequence.slice_sequence(0, 0)  # First nucleotide is G
+        result = self.sequence1.get_substitution_rates(nt[0])
+        expected = ({'A': 4.252483383790958e-05,
+                     'C': 4.654455031400801e-05,
+                     'G': None,
+                     'T': 4.654455031400801e-05},
+                    {'A': (1, 0, 0, 0), 'C': (0, 0, 1, 0), 'G': None, 'T': (0, 0, 1, 0)})
+        self.assertEqual(expected, result)
+
+        random.seed(9001)  # Set seed value to initialize pseudo-random number generator
+        nt = self.sequence1.nt_sequence.slice_sequence(1, 1)  # Second nucleotide is T
         result = self.sequence1.get_substitution_rates(nt[0])
         expected = ({'A': 1.0557889780446518e-05,
                      'C': 0.00012839875948691864,

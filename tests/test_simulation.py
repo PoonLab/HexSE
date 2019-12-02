@@ -60,7 +60,7 @@ class TestSimulateOnBranch(unittest.TestCase):
         result = self.sim_on_branch3.get_substitution()
         self.assertEqual(expected, result)
 
-        expected = (self.sim_on_branch4.sequence.nt_sequence.nucleotide_at_pos(10), 'G')
+        expected = (self.sim_on_branch4.sequence.nt_sequence.nucleotide_at_pos(8), 'A')
         result = self.sim_on_branch4.get_substitution()
         self.assertEqual(expected, result)
 
@@ -100,3 +100,23 @@ class TestSimulateOnTree(unittest.TestCase):
 
         phylo_tree = Phylo.read(TEST_TREE, 'newick', rooted=True)
         self.sim_on_tree1 = SimulateOnTree(sequence1, phylo_tree)
+
+    def testGetParentClade(self):
+        # Label each clade
+        ch = 'a'
+        for child_clade in self.sim_on_tree1.phylo_tree.find_clades(order='level'):
+            child_clade.name = ch
+            ch = chr(ord(ch) + 1)
+
+        results = []
+        for child_clade in self.sim_on_tree1.phylo_tree.find_clades(order='level'):
+            result = self.sim_on_tree1.get_parent_clade(child_clade)
+            print(result)
+            results.append(result.name)
+
+        expected = ['a', 'a', 'a', 'a', 'd', 'd']
+        self.assertEqual(expected, results)
+
+
+if __name__ == '__main__':
+    unittest.main()
