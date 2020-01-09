@@ -139,6 +139,133 @@ class TestSimulateOnBranch(unittest.TestCase):
 
     def testRemoveNt(self):
 
+        # Testing sequence 2
+        a0 = self.sim_on_branch4.sequence.nt_sequence.nucleotide_at_pos(0)
+        t1 = self.sim_on_branch4.sequence.nt_sequence.nucleotide_at_pos(1)
+        g2 = self.sim_on_branch4.sequence.nt_sequence.nucleotide_at_pos(2)
+        a3 = self.sim_on_branch4.sequence.nt_sequence.nucleotide_at_pos(3)
+        c4 = self.sim_on_branch4.sequence.nt_sequence.nucleotide_at_pos(4)
+        g5 = self.sim_on_branch4.sequence.nt_sequence.nucleotide_at_pos(5)
+        t6 = self.sim_on_branch4.sequence.nt_sequence.nucleotide_at_pos(6)
+        g7 = self.sim_on_branch4.sequence.nt_sequence.nucleotide_at_pos(7)
+        g8 = self.sim_on_branch4.sequence.nt_sequence.nucleotide_at_pos(8)
+        t9 = self.sim_on_branch4.sequence.nt_sequence.nucleotide_at_pos(9)
+        g10 = self.sim_on_branch4.sequence.nt_sequence.nucleotide_at_pos(10)
+        a11 = self.sim_on_branch4.sequence.nt_sequence.nucleotide_at_pos(11)
+
+        # Remove nucleotide t17 from the sequence 1 event tree
+        random.seed(9001)
+        self.sim_on_branch1.remove_nt(a11)
+
+        expected_event_tree = \
+            {'to_nt': {'A': {'events_for_nt': 2,
+                             'from_nt': {
+                                 'A': None,
+                                 'C': {'is_nonsyn': {(0, 0, 0, 1): [c4]},
+                                       'is_syn': [],
+                                       'is_trv': True,
+                                       'kappa': 0.3,
+                                       'nts_in_subs': [c4],
+                                       'number_of_events': 0},
+                                 'G': {'is_nonsyn': {(0, 0, 0, 1): [g7],
+                                                     (0, 0, 1, 0): [g8],
+                                                     (0, 1, 0, 0): [g2]},
+                                       'is_syn': [g5, g10],
+                                       'is_trv': False,
+                                       'kappa': 1,
+                                       'nts_in_subs': [g5, g10, g2, g7, g8],
+                                       'number_of_events': 2},
+                                 'T': {'is_nonsyn': {(0, 0, 1, 0): [t6],
+                                                     (0, 1, 0, 0): [t9],
+                                                     (1, 0, 0, 0): [t1]},
+                                       'is_syn': [],
+                                       'is_trv': True,
+                                       'kappa': 0.3,
+                                       'nts_in_subs': [t1, t6, t9],
+                                       'number_of_events': 0}},
+                             'stationary_frequency': 0.25},
+
+                       'C': {'events_for_nt': 1,
+                             'from_nt': {'A': {'is_nonsyn': {(0, 0, 0, 1): [a11],
+                                                             (0, 0, 1, 0): [a0, a3]},
+                                               'is_syn': [],
+                                               'is_trv': True,
+                                               'kappa': 0.3,
+                                               'nts_in_subs': [a0, a3, a11],
+                                               'number_of_events': 0},
+                                         'C': None,
+                                         'G': {'is_nonsyn': {(0, 0, 1, 0): [g10],
+                                                             (0, 1, 0, 0): [g2],
+                                                             (1, 0, 0, 0): [g7, g8]},
+                                               'is_syn': [g5],
+                                               'is_trv': True,
+                                               'kappa': 0.3,
+                                               'nts_in_subs': [g5, g2, g7, g8, g10],
+                                               'number_of_events': 1},
+                                         'T': {'is_nonsyn': {(0, 0, 1, 0): [t1],
+                                                             (0, 1, 0, 0): [t6],
+                                                             (1, 0, 0, 0): [t9]},
+                                               'is_syn': [],
+                                               'is_trv': False,
+                                               'kappa': 1,
+                                               'nts_in_subs': [t1, t6, t9],
+                                               'number_of_events': 0}},
+                             'stationary_frequency': 0.08},
+
+                       'G': {'events_for_nt': 0,
+                             'from_nt': {'A': {'is_nonsyn': {(0, 0, 1, 0): [a0, a3],
+                                                             (0, 1, 0, 0): [a11]},
+                                               'is_syn': [],
+                                               'is_trv': False,
+                                               'kappa': 1,
+                                               'nts_in_subs': [a0, a3, a11],
+                                               'number_of_events': 0},
+                                         'C': {'is_nonsyn': {(0, 0, 0, 1): [c4]},
+                                               'is_syn': [],
+                                               'is_trv': True,
+                                               'kappa': 0.3,
+                                               'nts_in_subs': [c4],
+                                               'number_of_events': 0},
+                                         'G': None,
+                                         'T': {'is_nonsyn': {(0, 0, 0, 1): [t1, t6],
+                                                             (1, 0, 0, 0): [t9]},
+                                               'is_syn': [],
+                                               'is_trv': True,
+                                               'kappa': 0.3,
+                                               'nts_in_subs': [t1, t6, t9],
+                                               'number_of_events': 0}},
+                             'stationary_frequency': 0.42},
+
+                       'T': {'events_for_nt': 1,
+                             'from_nt': {'A': {'is_nonsyn': {(0, 0, 0, 1): [a3],
+                                                             (0, 1, 0, 0): [a0, a11]},
+                                               'is_syn': [],
+                                               'is_trv': True,
+                                               'kappa': 0.3,
+                                               'nts_in_subs': [a0, a11, a3],
+                                               'number_of_events': 0},
+                                         'C': {'is_nonsyn': {(0, 0, 1, 0): [c4]},
+                                               'is_syn': [],
+                                               'is_trv': False,
+                                               'kappa': 1,
+                                               'nts_in_subs': [c4],
+                                               'number_of_events': 0},
+                                         'G': {'is_nonsyn': {(0, 0, 0, 1): [g7, g8],
+                                                             (0, 0, 1, 0): [g2],
+                                                             (0, 1, 0, 0): [g10]},
+                                               'is_syn': [g5],
+                                               'is_trv': True,
+                                               'kappa': 0.3,
+                                               'nts_in_subs': [g5, g2, g7, g8, g10],
+                                               'number_of_events': 1},
+                                         'T': None},
+                             'stationary_frequency': 0.25}},
+             'total_events': 4}
+
+        result_event_tree = self.sim_on_branch4.event_tree
+        self.assertEqual(expected_event_tree, result_event_tree)
+
+        # Testing sequence 1
         g0 = self.sim_on_branch1.sequence.nt_sequence.nucleotide_at_pos(0)
         t1 = self.sim_on_branch1.sequence.nt_sequence.nucleotide_at_pos(1)
         a2 = self.sim_on_branch1.sequence.nt_sequence.nucleotide_at_pos(2)
@@ -289,11 +416,40 @@ class TestSimulateOnBranch(unittest.TestCase):
                               'number_of_events': 0},
                           'G': None},
                       'events_for_nt': 2}},
-                'total_events': 14}
+            'total_events': 14}
 
         result_event_tree = self.sim_on_branch1.event_tree
-
         self.assertEqual(expected_event_tree, result_event_tree)
+
+    def testUpdateNt(self):
+
+        # Testing sequence 4: ATGACGTGGTGA
+        random.seed(9001)
+
+        # Mutate the first nucleotide
+        nt_to_mutate = self.sim_on_branch4.sequence.nt_sequence.nucleotide_at_pos(0)
+        selected_mutation = self.sim_on_branch4.get_substitution()
+        new_state = str(selected_mutation[0])
+
+        # Previous values
+        # State: A
+        # Complement State: T
+        # Rates: {'A': None, 'C': 4.012461233966207e-05, 'G': 0.00013374870779887357, 'T': 2.456301285593068e-05}
+        # Omegas: {'A': None, 'C': (0, 0, 1, 0), 'G': (0, 0, 1, 0), 'T': (0, 1, 0, 0)}
+        # Mutation Rate: 0.00019843633299446633
+
+        self.sim_on_branch4.update_nucleotide(nt_to_mutate, new_state)
+
+        expected_rates = {'A': 6.158769038593801e-05,
+                          'C': 6.740934873063228e-05,
+                          'G': None,
+                          'T': 6.740934873063228e-05}
+        expected_omegas = {'A': (1, 0, 0, 0), 'C': (0, 0, 1, 0), 'G': None, 'T': (0, 0, 1, 0)}
+
+        self.assertEqual('G', nt_to_mutate.get_state())
+        self.assertEqual('C', nt_to_mutate.get_complement_state())
+        self.assertEqual(expected_rates, nt_to_mutate.rates)
+        self.assertEqual(expected_omegas, nt_to_mutate.my_omegas)
 
 
 # ==========================================
