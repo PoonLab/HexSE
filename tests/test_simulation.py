@@ -424,21 +424,16 @@ class TestSimulateOnBranch(unittest.TestCase):
     def testUpdateNt(self):
 
         # Testing sequence 4: ATGACGTGGTGA
-        random.seed(9001)
+        random.seed(9)
+        print(self.sim_on_branch4.event_tree)
 
-        # Mutate the first nucleotide
-        nt_to_mutate = self.sim_on_branch4.sequence.nt_sequence.nucleotide_at_pos(0)
+        # Mutate the last position in the second codon (synonymous mutation)
+        nt_to_mutate = self.sim_on_branch4.sequence.nt_sequence.nucleotide_at_pos(5)
         selected_mutation = self.sim_on_branch4.get_substitution()
-        new_state = str(selected_mutation[0])
-
-        # Previous values
-        # State: A
-        # Complement State: T
-        # Rates: {'A': None, 'C': 4.012461233966207e-05, 'G': 0.00013374870779887357, 'T': 2.456301285593068e-05}
-        # Omegas: {'A': None, 'C': (0, 0, 1, 0), 'G': (0, 0, 1, 0), 'T': (0, 1, 0, 0)}
-        # Mutation Rate: 0.00019843633299446633
+        new_state = str(selected_mutation[1])
 
         self.sim_on_branch4.update_nucleotide(nt_to_mutate, new_state)
+        print(self.sim_on_branch4.event_tree)
 
         expected_rates = {'A': 6.158769038593801e-05,
                           'C': 6.740934873063228e-05,

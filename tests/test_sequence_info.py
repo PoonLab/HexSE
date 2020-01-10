@@ -14,7 +14,7 @@ class TestSequenceInfo(unittest.TestCase):
     def setUp(self):
 
         self.maxDiff = None
-        random.seed(90)     # Set seed for pseudo-random number generator
+        random.seed(9001)     # Set seed for pseudo-random number generator
 
         s1 = 'GTACGATCGATCGATGCTAGC'
         kappa = 0.3
@@ -35,6 +35,7 @@ class TestSequenceInfo(unittest.TestCase):
         s4 = 'ATGACGTGGTGA'
         sorted_orfs = {'+0': [(0, 11)], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
         pi4 = Sequence.get_frequency_rates(s4)
+        random.seed(9001)
         self.sequence4 = Sequence(s4, sorted_orfs, kappa, mu, pi4, omegas)
 
     def testGetFrequencyRates(self):
@@ -47,10 +48,14 @@ class TestSequenceInfo(unittest.TestCase):
         expected = {'A': 0.24, 'C': 0.24, 'T': 0.24, 'G': 0.29}
         self.assertEqual(expected, result)
 
+        result = Sequence.get_frequency_rates('ATGACGTGGTGA')
+        expected = {'A': 0.25, 'C': 0.08, 'T': 0.25, 'G': 0.42}
+        self.assertEqual(expected, result)
+
     def testGetSubstitutionRates(self):
         random.seed(9001)  # Set seed value to initialize pseudo-random number generator
-        nt = self.sequence1.nt_sequence.slice_sequence(0, 0)  # First nucleotide is G
-        result = self.sequence1.get_substitution_rates(nt[0])
+        nt = self.sequence1.nt_sequence.nucleotide_at_pos(0)  # First nucleotide is G
+        result = self.sequence1.get_substitution_rates(nt)
         expected = ({'A': 4.252483383790958e-05,
                      'C': 4.654455031400801e-05,
                      'G': None,
@@ -59,8 +64,8 @@ class TestSequenceInfo(unittest.TestCase):
         self.assertEqual(expected, result)
 
         random.seed(9001)  # Set seed value to initialize pseudo-random number generator
-        nt = self.sequence1.nt_sequence.slice_sequence(1, 1)  # Second nucleotide is T
-        result = self.sequence1.get_substitution_rates(nt[0])
+        nt = self.sequence1.nt_sequence.nucleotide_at_pos(1)  # Second nucleotide is T
+        result = self.sequence1.get_substitution_rates(nt)
         expected = ({'A': 1.0557889780446518e-05,
                      'C': 0.00012839875948691864,
                      'G': 3.851962784607559e-05,
@@ -70,8 +75,8 @@ class TestSequenceInfo(unittest.TestCase):
 
         # Tests a sequence composed only of pyrimidines
         random.seed(900)  # Set seed value to initialize pseudo-random number generator
-        nt = self.sequence2.nt_sequence.slice_sequence(1, 1)
-        result = self.sequence2.get_substitution_rates(nt[0])
+        nt = self.sequence2.nt_sequence.nucleotide_at_pos(1)
+        result = self.sequence2.get_substitution_rates(nt)
         expected = ({'A': 9.137440782406214e-05,
                      'C': 0.0004975451930118097,
                      'G': 4.091182289923025e-05,
@@ -81,8 +86,8 @@ class TestSequenceInfo(unittest.TestCase):
 
         # Tests a nucleotide involved in multiple orfs (non-syn mutations)
         random.seed(7)  # Set seed value to initialize pseudo-random number generator
-        nt = self.sequence3.nt_sequence.slice_sequence(6, 6)
-        result = self.sequence3.get_substitution_rates(nt[0])
+        nt = self.sequence3.nt_sequence.nucleotide_at_pos(6)
+        result = self.sequence3.get_substitution_rates(nt)
         expected = ({'A': 4.493956582042153e-05,
                      'C': 9.170191466214123e-05,
                      'G': 8.323232170374884e-05,
@@ -92,8 +97,8 @@ class TestSequenceInfo(unittest.TestCase):
 
         # Tests a nucleotide involved in multiple orfs (syn and non-syn mutations)
         random.seed(1000)  # Set seed value to initialize pseudo-random number generator
-        nt = self.sequence3.nt_sequence.slice_sequence(7, 7)
-        result = self.sequence3.get_substitution_rates(nt[0])
+        nt = self.sequence3.nt_sequence.nucleotide_at_pos(7)
+        result = self.sequence3.get_substitution_rates(nt)
         expected = ({'A': 3.4871336457097086e-05,
                      'C': 3.81675959142053e-05,
                      'G': None,
@@ -103,8 +108,8 @@ class TestSequenceInfo(unittest.TestCase):
 
         # Tests a nucleotide position that would result in a synonymous mutation
         random.seed(555)  # Set seed value to initialize pseudo-random number generator
-        nt = self.sequence4.nt_sequence.slice_sequence(5, 5)
-        result = self.sequence4.get_substitution_rates(nt[0])
+        nt = self.sequence4.nt_sequence.nucleotide_at_pos(5)
+        result = self.sequence4.get_substitution_rates(nt)
         expected = ({'A': 0.00021,
                      'C': 6.3e-05,
                      'G': None,
@@ -239,7 +244,6 @@ class TestSequenceInfo(unittest.TestCase):
         self.assertEqual(expected, result)
 
     def testNtsOnTips(self):
-
         # Get the Nucleotide objects
         a0 = self.sequence4.nt_sequence.nucleotide_at_pos(0)
         t1 = self.sequence4.nt_sequence.nucleotide_at_pos(1)
@@ -256,72 +260,71 @@ class TestSequenceInfo(unittest.TestCase):
 
         expected = {'to_nt': {'A': {'events_for_nt': 2,
                                     'from_nt': {'A': None,
-                                                'C': {'is_nonsyn': {(0, 0, 1, 0): [c4]},
+                                                'C': {'is_nonsyn': {(0, 0, 0, 1): [c4]},
                                                       'is_syn': [],
                                                       'is_trv': True,
                                                       'kappa': 0.3,
                                                       'nts_in_subs': [c4],
                                                       'number_of_events': 0},
-                                                'G': {'is_nonsyn': {(0, 0, 1, 0): [g2],
-                                                                    (0, 1, 0, 0): [g7],
-                                                                    (1, 0, 0, 0): [g8]},
+                                                'G': {'is_nonsyn': {(0, 0, 0, 1): [g8],
+                                                                    (0, 0, 1, 0): [g2, g7]},
                                                       'is_syn': [g5, g10],
                                                       'is_trv': False,
                                                       'kappa': 1,
                                                       'nts_in_subs': [g5, g10, g2, g7, g8],
                                                       'number_of_events': 2},
-                                                'T': {'is_nonsyn': {(0, 0, 0, 1): [t6],
-                                                                    (0, 0, 1, 0): [t1, t9]},
+                                                'T': {'is_nonsyn': {(0, 1, 0, 0): [t6, t9],
+                                                                    (1, 0, 0, 0): [t1]},
                                                       'is_syn': [],
                                                       'is_trv': True,
                                                       'kappa': 0.3,
-                                                      'nts_in_subs': [t1, t9, t6],
+                                                      'nts_in_subs': [t1, t6, t9],
                                                       'number_of_events': 0}},
                                     'stationary_frequency': 0.25},
                               'C': {'events_for_nt': 1,
-                                    'from_nt': {'A': {'is_nonsyn': {(0, 0, 0, 1): [a0],
-                                                                    (0, 0, 1, 0): [a3],
-                                                                    (1, 0, 0, 0): [a11]},
+                                    'from_nt': {'A': {'is_nonsyn': {(1, 0, 0, 0): [a0, a3, a11]},
                                                       'is_syn': [],
                                                       'is_trv': True,
                                                       'kappa': 0.3,
                                                       'nts_in_subs': [a0, a3, a11],
                                                       'number_of_events': 0},
                                                 'C': None,
-                                                'G': {'is_nonsyn': {(0, 0, 1, 0): [g8],
-                                                                    (0, 1, 0, 0): [g2, g10],
-                                                                    (1, 0, 0, 0): [g7]},
+                                                'G': {'is_nonsyn': {(0, 0, 0, 1): [g8],
+                                                                    (0, 0, 1, 0): [g2],
+                                                                    (0, 1, 0, 0): [g7],
+                                                                    (1, 0, 0, 0): [g10]},
                                                       'is_syn': [g5],
                                                       'is_trv': True,
                                                       'kappa': 0.3,
-                                                      'nts_in_subs': [g5, g2, g10, g7, g8],
+                                                      'nts_in_subs': [g5, g2, g7, g8, g10],
                                                       'number_of_events': 1},
                                                 'T': {'is_nonsyn': {(0, 0, 0, 1): [t6],
-                                                                    (0, 0, 1, 0): [t1],
-                                                                    (1, 0, 0, 0): [t9]},
+                                                                    (0, 0, 1, 0): [t1, t9]},
                                                       'is_syn': [],
                                                       'is_trv': False,
                                                       'kappa': 1,
-                                                      'nts_in_subs': [t1, t6, t9],
+                                                      'nts_in_subs': [t1, t9, t6],
                                                       'number_of_events': 0}},
                                     'stationary_frequency': 0.08},
                               'G': {'events_for_nt': 0,
-                                    'from_nt': {'A': {'is_nonsyn': {(0, 0, 0, 1): [a0, a3],
-                                                                    (1, 0, 0, 0): [a11]},
+                                    'from_nt': {'A': {'is_nonsyn': {(0, 0, 0, 1): [a3],
+                                                                    (0, 0, 1, 0): [a0],
+                                                                    (0, 1, 0, 0): [a11]},
                                                       'is_syn': [],
                                                       'is_trv': False,
                                                       'kappa': 1,
                                                       'nts_in_subs': [a0, a3, a11],
                                                       'number_of_events': 0},
-                                                'C': {'is_nonsyn': {(0, 0, 1, 0): [c4]},
+                                                'C': {'is_nonsyn': {(0, 0, 0, 1): [c4]},
                                                       'is_syn': [],
                                                       'is_trv': True,
                                                       'kappa': 0.3,
                                                       'nts_in_subs': [c4],
                                                       'number_of_events': 0},
                                                 'G': None,
-                                                'T': {'is_nonsyn': {(0, 0, 0, 1): [t1],
-                                                                    (0, 1, 0, 0): [t6, t9]},
+                                                'T': {'is_nonsyn': {(0, 0, 0, 1): [t9],
+                                                                    (0, 1, 0, 0): [t6],
+                                                                    (1, 0, 0, 0): [t1]},
                                                       'is_syn': [],
                                                       'is_trv': True,
                                                       'kappa': 0.3,
@@ -329,21 +332,23 @@ class TestSequenceInfo(unittest.TestCase):
                                                       'number_of_events': 0}},
                                     'stationary_frequency': 0.42},
                               'T': {'events_for_nt': 1,
-                                    'from_nt': {'A': {'is_nonsyn': {(0, 1, 0, 0): [a0, a11],
-                                                                    (1, 0, 0, 0): [a3]},
+                                    'from_nt': {'A': {'is_nonsyn': {(0, 0, 1, 0): [a0],
+                                                                    (0, 1, 0, 0): [a3],
+                                                                    (1, 0, 0, 0): [a11]},
                                                       'is_syn': [],
                                                       'is_trv': True,
                                                       'kappa': 0.3,
-                                                      'nts_in_subs': [a0, a11, a3],
+                                                      'nts_in_subs': [a0, a3, a11],
                                                       'number_of_events': 0},
-                                                'C': {'is_nonsyn': {(1, 0, 0, 0): [c4]},
+                                                'C': {'is_nonsyn': {(0, 1, 0, 0): [c4]},
                                                       'is_syn': [],
                                                       'is_trv': False,
                                                       'kappa': 1,
                                                       'nts_in_subs': [c4],
                                                       'number_of_events': 0},
-                                                'G': {'is_nonsyn': {(0, 0, 0, 1): [g7, g10],
-                                                                    (0, 0, 1, 0): [g2, g8]},
+                                                'G': {'is_nonsyn': {(0, 0, 0, 1): [g10],
+                                                                    (0, 0, 1, 0): [g2, g8],
+                                                                    (0, 1, 0, 0): [g7]},
                                                       'is_syn': [g5],
                                                       'is_trv': True,
                                                       'kappa': 0.3,
