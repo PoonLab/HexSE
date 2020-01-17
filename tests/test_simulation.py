@@ -1,6 +1,7 @@
 import unittest
 import random
 import os
+import numpy as np
 
 from Bio import Phylo
 from refact.new_sequence_info import Sequence
@@ -25,7 +26,7 @@ class TestSimulateOnBranch(unittest.TestCase):
         pi1 = Sequence.get_frequency_rates(s1)
         omegas = [0.29327471612351436, 0.6550136761581515, 1.0699896623909886, 1.9817219453273531]
         sequence1 = Sequence(s1, {'+0': [(0, 20)]}, kappa, mu, pi1, omegas)
-        branch_length = 2
+        branch_length = 0.1
         self.sim_on_branch1 = SimulateOnBranch(sequence1, branch_length)
 
         s2 = 'TTTTTTCTTTTTTT'
@@ -430,8 +431,9 @@ class TestSimulateOnBranch(unittest.TestCase):
         nt_to_mutate = self.sim_on_branch4.sequence.nt_sequence.nucleotide_at_pos(5)
         selected_mutation = self.sim_on_branch4.get_substitution()
         new_state = str(selected_mutation[1])
-
+        print(self.sim_on_branch4.event_tree)
         self.sim_on_branch4.update_nucleotide(nt_to_mutate, new_state)
+        print(self.sim_on_branch4.event_tree)
 
         expected_rates = {'A': None,
                           'C': 3.75e-05,
@@ -445,17 +447,19 @@ class TestSimulateOnBranch(unittest.TestCase):
         self.assertEqual(expected_omegas, nt_to_mutate.my_omegas)
 
     def testMutateOnBranch(self):
+
+        np.random.seed(9001)    # Used to draw waiting times
         random.seed(9001)
 
-        print(self.sim_on_branch4.sequence.get_string_sequence())
-        random.seed(9001)
+        # Original sequence = ATGACGTGGTGA
+        expected = 'AAGCCTCGGGTG'
         print(self.sim_on_branch4.event_tree)
-
-        random.seed(9001)
         self.sim_on_branch4.mutate_on_branch()
 
-        print(self.sim_on_branch4.sequence.get_string_sequence())
+        result = self.sim_on_branch4.sequence.get_string_sequence()
         print(self.sim_on_branch4.event_tree)
+
+        self.assertEqual(expected, result)
 
 
 # ==========================================
