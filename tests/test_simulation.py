@@ -25,7 +25,7 @@ class TestSimulateOnBranch(unittest.TestCase):
         pi1 = Sequence.get_frequency_rates(s1)
         omegas = [0.29327471612351436, 0.6550136761581515, 1.0699896623909886, 1.9817219453273531]
         sequence1 = Sequence(s1, {'+0': [(0, 20)]}, kappa, mu, pi1, omegas)
-        branch_length = 10
+        branch_length = 2
         self.sim_on_branch1 = SimulateOnBranch(sequence1, branch_length)
 
         s2 = 'TTTTTTCTTTTTTT'
@@ -424,27 +424,38 @@ class TestSimulateOnBranch(unittest.TestCase):
     def testUpdateNt(self):
 
         # Testing sequence 4: ATGACGTGGTGA
-        random.seed(9)
-        print(self.sim_on_branch4.event_tree)
+        random.seed(9001)
 
-        # Mutate the last position in the second codon (synonymous mutation)
+        # Mutate the G in the 5th position
         nt_to_mutate = self.sim_on_branch4.sequence.nt_sequence.nucleotide_at_pos(5)
         selected_mutation = self.sim_on_branch4.get_substitution()
         new_state = str(selected_mutation[1])
 
         self.sim_on_branch4.update_nucleotide(nt_to_mutate, new_state)
-        print(self.sim_on_branch4.event_tree)
 
-        expected_rates = {'A': 6.158769038593801e-05,
-                          'C': 6.740934873063228e-05,
-                          'G': None,
-                          'T': 6.740934873063228e-05}
-        expected_omegas = {'A': (1, 0, 0, 0), 'C': (0, 0, 1, 0), 'G': None, 'T': (0, 0, 1, 0)}
+        expected_rates = {'A': None,
+                          'C': 3.75e-05,
+                          'G': 0.000125,
+                          'T': 3.75e-05}
+        expected_omegas = {'A': None, 'C': (0, 0, 0, 0), 'G': (0, 0, 0, 0), 'T': (0, 0, 0, 0)}
 
-        self.assertEqual('G', nt_to_mutate.get_state())
-        self.assertEqual('C', nt_to_mutate.get_complement_state())
+        self.assertEqual('A', nt_to_mutate.get_state())
+        self.assertEqual('T', nt_to_mutate.get_complement_state())
         self.assertEqual(expected_rates, nt_to_mutate.rates)
         self.assertEqual(expected_omegas, nt_to_mutate.my_omegas)
+
+    def testMutateOnBranch(self):
+        random.seed(9001)
+
+        print(self.sim_on_branch4.sequence.get_string_sequence())
+        random.seed(9001)
+        print(self.sim_on_branch4.event_tree)
+
+        random.seed(9001)
+        self.sim_on_branch4.mutate_on_branch()
+
+        print(self.sim_on_branch4.sequence.get_string_sequence())
+        print(self.sim_on_branch4.event_tree)
 
 
 # ==========================================
