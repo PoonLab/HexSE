@@ -5,6 +5,7 @@ from new_sequence_info import Sequence
 from run_simulate import reverse_and_complement
 from run_simulate import sort_orfs
 from run_simulate import valid_orfs
+from run_simulate import get_omega_values
 from simulation_refactore import SimulateOnBranch, SimulateOnTree
 from Bio import Phylo, SeqIO
 import copy
@@ -12,14 +13,16 @@ import copy
 tree = Phylo.read('test_tree.txt','newick', rooted=True)
 orfs = [(0,5), (9,1), (7,18)]
 sorted_orfs = sort_orfs(orfs)
+print(sorted_orfs)
 ori_seq = 'GTACGGGGATCGATAAACGATG'
 print(type(ori_seq))
-rcseq = reverse_and_complement(ori_seq)
 mu = 0.0005
-pi = None
+pi = Sequence.get_frequency_rates(ori_seq)
 kappa = 0.3
+omegas = get_omega_values(2, 4)
+print(omegas)
 
-sequence = Sequence(ori_seq, rcseq, sorted_orfs, mu, pi, kappa)
+sequence = Sequence(ori_seq, sorted_orfs, kappa, mu, pi, omegas)
 sim_tree = SimulateOnTree(sequence, tree)
 print(sim_tree.get_alignment())
 

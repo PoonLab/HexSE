@@ -101,14 +101,6 @@ class SimulateOnBranch:
         total_rate = sum([nt.mutation_rate for nt in iter(self.sequence.get_sequence())])
         return total_rate
 
-    @staticmethod
-    def draw_waiting_time(instant_rate):
-        """
-        Draw a time at which mutation occurs according to mutation rates.
-        :return time: The time at which the mutation occurs
-        """
-        time = np.random.exponential(scale=instant_rate)
-        return time
 
     def mutate_on_branch(self):
         """
@@ -118,7 +110,8 @@ class SimulateOnBranch:
         instant_rate = self.sum_rates()
 
         while True:
-            random_time = self.draw_waiting_time(instant_rate)
+            # Draw a time at which mutation occurs according to mutation rates
+            random_time = np.random.exponential(scale=instant_rate)
             times_sum += random_time
             if times_sum > self.branch_length:
                 break
