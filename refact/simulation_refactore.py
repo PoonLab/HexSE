@@ -101,7 +101,6 @@ class SimulateOnBranch:
         total_rate = sum([nt.mutation_rate for nt in iter(self.sequence.get_sequence())])
         return total_rate
 
-
     def mutate_on_branch(self):
         """
         Simulate molecular evolution in sequence given a branch length

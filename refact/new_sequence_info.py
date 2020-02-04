@@ -1,5 +1,6 @@
 # Store sequence information
 
+import copy
 import random
 
 TRANSITIONS_DICT = {'A': 'G', 'G': 'A', 'T': 'C', 'C': 'T'}
@@ -36,7 +37,7 @@ class Sequence:
     Store inputs and create sequence objects
     """
 
-    def __init__(self, str_sequence, sorted_orfs, kappa, mu, pi, omegas):
+    def __init__(self, str_sequence, orfs, kappa, mu, pi, omegas):
         """
         Creates a list of nucleotides, locates open reading frames, and creates a list of codons.
         :param sorted_orfs: A dictionary of ORFs, sorted by reading frame where:
@@ -49,14 +50,14 @@ class Sequence:
         :param omegas: <Dict> Numeric values drawn from gamma distribution.
                        Applied in case that a mutation is non_synonymous
         """
-        self.orfs = sorted_orfs                           # Dictionary of of ORFs sorted by reading frame
-        self.kappa = kappa                                # Transition/ transversion rate ratio
-        self.mu = mu                                      # The global rate (substitutions/site/unit time)
-        self.pi = pi                                      # Frequency of nucleotides, with nucleotide as keys
-        self.omegas = omegas                              # Numeric values drawn from gamma distribution
+        self.orfs = orfs  # Dictionary of of ORFs sorted by reading frame
+        self.kappa = kappa  # Transition/ transversion rate ratio
+        self.mu = mu  # The global rate (substitutions/site/unit time)
+        self.pi = pi  # Frequency of nucleotides, with nucleotide as keys
+        self.omegas = omegas  # Numeric values drawn from gamma distribution
 
         # Create Nucleotides
-        self.nt_sequence = DoubleLinkedList()             # A List of Nucleotide objects
+        self.nt_sequence = DoubleLinkedList()  # A List of Nucleotide objects
         for pos_in_seq, nt in enumerate(str_sequence):
             self.nt_sequence.insert_nt(nt, pos_in_seq)
 
@@ -73,7 +74,7 @@ class Sequence:
                             nt.codons.append(codon)
 
         # Create event tree containing all possible mutations and the parameters needed to calculate the rates
-        self.event_tree = self.create_event_tree()    # Nested dict containing info about all possible mutation events
+        self.event_tree = self.create_event_tree()  # Nested dict containing info about all possible mutation events
 
         # Calculate mutation rates for each nucleotide in sequence, populate the event tree which each nucleotide
         for nt in iter(self.nt_sequence):
@@ -84,6 +85,16 @@ class Sequence:
 
         # Update event_tree to include a list of nucleotides on the tips
         self.event_tree = self.get_nts_on_tips()
+
+    def __deepcopy__(self, memo):
+
+        return self.__class__(
+            str_sequence=copy.deepcopy(self.get_string_sequence(), memo),
+            orfs=copy.deepcopy(self.orfs, memo),
+            kappa=copy.deepcopy(self.kappa, memo),
+            mu=copy.deepcopy(self.mu, memo),
+            pi=copy.deepcopy(self.pi, memo),
+            omegas=copy.deepcopy(self.omegas, memo))
 
     def get_sequence(self):
         return self.nt_sequence
@@ -196,7 +207,7 @@ class Sequence:
         """
         sub_rates = {}
         my_omega_keys = {}
-        current_nt = nt.get_state()
+        current_nt = nt.state
 
         for to_nt in NUCLEOTIDES:
             if to_nt == current_nt:
@@ -301,15 +312,15 @@ class Nucleotide:
         :param left_nt : reference to the adjacent nucleotide to the left (default to None)
         :param right_nt: reference to the adjacent nucleotide to the right (default to None)
         """
-        self.state = state                                   # The nucleotide base (A, T, G, C)
-        self.pos_in_seq = pos_in_seq                         # The nt's position relative to the start of the sequence
-        self.left_nt = left_nt                               # Reference to the nucleotide's left neighbour
-        self.right_nt = right_nt                             # Reference to the nucleotide's right neighbour
-        self.codons = []                                     # A list of codon objects the
+        self.state = state  # The nucleotide base (A, T, G, C)
+        self.pos_in_seq = pos_in_seq  # The nt's position relative to the start of the sequence
+        self.codons = []  # A list of codon objects the Nucleotide is part of
         self.complement_state = COMPLEMENT_DICT[self.state]  # The complement state
-        self.rates = {}                                      # A dictionary of mutation rates
-        self.my_omegas = []                                  # Omegas chosen when calculating rates
-        self.mutation_rate = 0                               # The total mutation rate
+        self.rates = {}  # A dictionary of mutation rates
+        self.my_omegas = []  # Omegas chosen when calculating rates
+        self.mutation_rate = 0  # The total mutation rate
+        self.left_nt = right_nt  # Reference to the nucleotide's left neighbour (prev)
+        self.right_nt = left_nt  # Reference to the nucleotide's right neighbour (next)
 
     def __str__(self):
         return self.state
@@ -317,26 +328,18 @@ class Nucleotide:
     def __repr__(self):
         return self.state.lower() + str(self.pos_in_seq)
 
-    def get_state(self):
-        return self.state
+    def __deepcopy__(self, memo):
+        return self.__class__(state=copy.deepcopy(self.state, memo),
+                              pos_in_seq=copy.deepcopy(self.pos_in_seq, memo))
 
     def set_state(self, new_state):
         self.state = new_state
 
-    def get_pos_in_seq(self):
-        return self.pos_in_seq
-
     def set_pos_in_seq(self, new_pos):
         self.pos_in_seq = new_pos
 
-    def get_left_nt(self):
-        return self.left_nt
-
     def set_left_nt(self, new_left_nt):
         self.left_nt = new_left_nt
-
-    def get_right_nt(self):
-        return self.right_nt
 
     def set_right_nt(self, new_right_nt):
         self.right_nt = new_right_nt
@@ -366,48 +369,59 @@ class Nucleotide:
 
 class DoubleLinkedList:
     """
-    Double linked list linking together objects of class Nucleotide
+    Circular Double linked list linking together objects of class Nucleotide
     Default initialization with empty head node
     """
 
+    # Constructor for circular double-linked list
     def __init__(self):
-        self.head = None            # The starting nucleotide
-        self.current_nt = None      # Pointer to the current nucleotide for insertion
-        self.next_iter_nt = None    # The current state of the iteration
+        self.head = None        # First nucleotide in the sequence
+        self.tail = None        # Last nucleotide in the sequence
 
+    # Iterator for circular double-linked list
     def __iter__(self):
-        self.next_iter_nt = self.head
-        return self
+        curr_nt = self.head
+        while curr_nt is not None:
+            yield curr_nt
+            curr_nt = curr_nt.right_nt
 
+    # Iterator for circular double-linked list
     def __next__(self):
-        # Note: Not thread safe
-        if self.next_iter_nt is not None:
-            nt = self.next_iter_nt
-            self.next_iter_nt = nt.get_right_nt()
-            return nt
-        else:
+        curr_nt = self.head
+        if curr_nt is None:
             raise StopIteration
+        else:
+            curr_nt = curr_nt.right_nt
+            return curr_nt
 
+    def __deepcopy__(self):
+        return self.__class__()
+
+    # Insert for circular double linked list
     def insert_nt(self, state, position):
         """
         Insert objects of class Nucleotide to the end of the DoubleLinkedList
         :param state: Nucleotide state in sequence
         :param position: Position of nt in sequence
         """
-        new_nt = Nucleotide(state, position)  # create new Nucleotide object
+        new_nt = Nucleotide(state, position)
 
-        # Assign the first nucleotide as head
+        # If the circular double linked list is empty, assign the first nucleotide as the head
         if self.head is None:
             self.head = new_nt
-            self.current_nt = new_nt
+            new_nt.left_nt = None
+            new_nt.right_nt = None
+            self.tail = new_nt
 
         else:
-            new_nt.set_left_nt(self.current_nt)  # For the new nucleotide, create a left pointer towards the current one
-            self.current_nt.set_right_nt(new_nt)  # Create the double link between current and new
-            self.current_nt = new_nt
-
-    def get_head(self):
-        return self.head
+            # Traverse the list to find the last nucleotide
+            curr_nt = self.head
+            while curr_nt.right_nt is not None:
+                curr_nt = curr_nt.right_nt
+            # Update the references
+            curr_nt.right_nt = new_nt
+            new_nt.left_nt = curr_nt
+            self.tail = new_nt
 
     def nucleotide_at_pos(self, position):
         """
@@ -415,11 +429,11 @@ class DoubleLinkedList:
         :param position: the position of the Nucleotide
         :return: the Nucleotide object in the specified position
         """
-        current_nt = self.get_head()
+        current_nt = self.head
         while current_nt is not None:
-            if position == current_nt.get_pos_in_seq():
+            if position == current_nt.pos_in_seq:
                 return current_nt
-            current_nt = current_nt.get_right_nt()
+            current_nt = current_nt.right_nt
         return None
 
     def slice_sequence(self, start_pos, end_pos):
@@ -442,22 +456,69 @@ class DoubleLinkedList:
 
         return sub_seq
 
+    # Constructor for double linked list
+    # def __init__(self):
+    #     self.head = None            # The starting nucleotide
+    #     self.current_nt = None      # Pointer to the current nucleotide for insertion
+    #     self.next_iter_nt = None    # The current state of the iteration
+    #     self.size = 0
+
+    # Iterator for double linked list
+    # def __iter__(self):
+    #     self.next_iter_nt = self.head
+    #     return self
+
+    # Iterator for double linked list
+    # def __next__(self):
+    #     # Note: Not thread safe
+    #     if self.next_iter_nt is not None:
+    #         nt = self.next_iter_nt
+    #         self.next_iter_nt = nt.right_nt
+    #         return nt
+    #     else:
+    #         raise StopIteration
+
+    # Insert for double linked list
+    # def insert_nt(self, state, position):
+    #     """
+    #     Insert objects of class Nucleotide to the end of the DoubleLinkedList
+    #     :param state: Nucleotide state in sequence
+    #     :param position: Position of nt in sequence
+    #     """
+    #     new_nt = Nucleotide(state, position)  # create new Nucleotide object
+    #     self.size += 1
+    #
+    #     # Assign the first nucleotide as head
+    #     if self.head is None:
+    #         self.head = new_nt
+    #         self.current_nt = new_nt
+    #     else:
+    #         new_nt.set_left_nt(self.current_nt)  # For the new nucleotide, create a left pointer towards the current one
+    #         self.current_nt.set_right_nt(new_nt)  # Create the double link between current and new
+    #         self.current_nt = new_nt
+
 
 class Codon:
     """
     Stores information about the frameshift, ORF, and pointers to 3 Nucleotide objects
     """
 
-    def __init__(self, frame, orf, ptrs_to_nts):
+    def __init__(self, frame, orf, nts_in_codon):
         """
         Create a Codon
         :param frame: the reading frame (+0, +1, +2, -0, -1, -2)
         :param orf: a tuple containing the reading frame and the coordinates of the orf
-        :param ptrs_to_nts: a list of pointers to the Nucleotides in the Codon
+        :param nts_in_codon: a list of pointers to the Nucleotides in the Codon
         """
-        self.frame = frame               # The reading frame
-        self.orf = orf                   # Tuple containing the reading frame and the coordinates
-        self.nts_in_codon = ptrs_to_nts  # List of Nucleotides in the Codon
+        self.frame = frame  # The reading frame
+        self.orf = orf  # Tuple containing the reading frame and the coordinates
+        self.nts_in_codon = nts_in_codon  # List of Nucleotides in the Codon
+
+    def __deepcopy__(self, memo):
+        return self.__class__(
+            frame=copy.deepcopy(self.frame, memo),
+            orf=copy.deepcopy(self.orf, memo),
+            nts_in_codon=copy.deepcopy(self.nts_in_codon, memo))
 
     def nt_in_pos(self, query_nt):
         """

@@ -441,7 +441,7 @@ class TestSimulateOnBranch(unittest.TestCase):
                           'T': 3.75e-05}
         expected_omegas = {'A': None, 'C': (0, 0, 0, 0), 'G': (0, 0, 0, 0), 'T': (0, 0, 0, 0)}
 
-        self.assertEqual('A', nt_to_mutate.get_state())
+        self.assertEqual('A', nt_to_mutate.state)
         self.assertEqual('T', nt_to_mutate.get_complement_state())
         self.assertEqual(expected_rates, nt_to_mutate.rates)
         self.assertEqual(expected_omegas, nt_to_mutate.my_omegas)
