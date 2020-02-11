@@ -25,7 +25,9 @@ def get_args(parser):
     )
     parser.add_argument(
         '--orfs', default=None,
-        help='Path to a csv file containing the start and end coordinates of the open reading frames'
+        help='Path to a csv file containing the start and end coordinates of the open reading frames. '
+             'Format: start,end'
+             'If no ORFS are specified, the program will find ORFs automatically'
     )
     parser.add_argument(
         '--mu', type=float, default=0.0005,
@@ -67,44 +69,34 @@ def valid_orfs(orfs, seq):
     :param seq: The original sequence as a string
     :return: <True> if the ORFs are valid, <False> otherwise
     """
-    if not type(orfs) == list:
-        print("Invalid format: {} \nOpen reading frames must of the following format: [(0, 8), ...] where 0  "
-              "is the start position of the orf, and 8 is the end position.".format(orfs))
-        return False
+    invalid_orfs = []
 
     for orf in orfs:
-        # Check that each orfs is a tuple of length 2
-        if type(orf) is not tuple or len(orf) is not 2:
-            print("Invalid orf: {} \nOpen reading frames must of the following format: [(0, 8), ...] where 0  "
-                  "is the start position of the orf, and 8 is the end position.".format(orf))
-            return False
-
         # Check that the ORF range is valid
         if orf[0] == orf[1]:
             print("Invalid orf: {}".format(orf))
-            return False
+            invalid_orfs.append(orf)
 
         # Check that the start and end positions are integers
         if type(orf[0]) is not int or type(orf[1]) is not int:
             print("Invalid orf: {} \nStart and end positions must be integers.".format(orf))
-            return False
+            invalid_orfs.append(orf)
 
         # Check that the start and stop positions are in the range of the sequence
         if 0 > orf[0] or len(seq) < orf[0] or 0 > orf[1] or len(seq) < orf[1]:
             print("Invalid orf: {} \nPositions must be between 0 and {}".format(orf, len(seq)))
-            return False
+            invalid_orfs.append(orf)
 
         # Check that the ORF is composed of codons
         if orf[1] > orf[0]:  # Forward strand
-            if (orf[1] - orf[0]) % 3 != 2:
-                print("Invalid orf: {}\n ORFs must be composed of codons".format(orf))
-                return False
-        if orf[0] > orf[1]:  # Reverse strand
-            if (orf[0] - orf[1]) % 3 != 2:
-                print("Invalid orf: {}\n ORFs must be composed of codons".format(orf))
-                return False
+            if (orf[1] - orf[0]) % 3 != 0:      # Account for 0-based indexing
+                invalid_orfs.append(orf)
 
-    return True
+        if orf[0] > orf[1]:  # Reverse strand
+            if (orf[0] - orf[1]) % 3 != 0:      # Account for 0-based indexing
+                invalid_orfs.append(orf)
+
+    return invalid_orfs
 
 
 def reverse_and_complement(seq):
@@ -318,18 +310,25 @@ def main():
     # Read in ORFs as a list of tuples
     else:
         unsorted_orfs = []
-        for line in args.orfs:
-            line = line.split(',')
-            orf = (line[0], line[1])
-            unsorted_orfs.append(orf)
+        with open(args.orfs) as orf_handle:
+            for line in orf_handle:
+                line = line.split(',')
+                orf = (int(line[0]), int(line[1]))
+                unsorted_orfs.append(orf)
 
         # Check if ORFs are valid
-        if not valid_orfs(unsorted_orfs, s):
-            sys.exit(0)
+        invalid_orfs = valid_orfs(unsorted_orfs, s)
+        if invalid_orfs:
+            print("Omitting orfs:")
+
+        # Omit invalid orfs
+        for invalid_orf in invalid_orfs:
+            unsorted_orfs.remove(invalid_orf)
+
         # Since ORFs are valid, sort the ORFs by reading frame
         orfs = sort_orfs(unsorted_orfs)
 
-    # If the user did not specified stationary frequencies
+    # If the user did not specify stationary frequencies
     if all(freq is None for freq in args.pi):
         pi = Sequence.get_frequency_rates(s)
 
