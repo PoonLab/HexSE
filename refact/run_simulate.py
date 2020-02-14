@@ -89,11 +89,11 @@ def valid_orfs(orfs, seq):
 
         # Check that the ORF is composed of codons
         if orf[1] > orf[0]:  # Forward strand
-            if (orf[1] - orf[0]) % 3 != 0:      # Account for 0-based indexing
+            if (orf[1] - orf[0]) % 3 != 2:      # Inclusive range (start and end coordinates included)
                 invalid_orfs.append(orf)
 
         if orf[0] > orf[1]:  # Reverse strand
-            if (orf[0] - orf[1]) % 3 != 0:      # Account for 0-based indexing
+            if (orf[0] - orf[1]) % 3 != 2:      # Inclusive range (start and end coordinates included)
                 invalid_orfs.append(orf)
 
     return invalid_orfs
@@ -316,14 +316,16 @@ def main():
                 orf = (int(line[0]), int(line[1]))
                 unsorted_orfs.append(orf)
 
-        # Check if ORFs are valid
+        # Check if the ORFs are valid
         invalid_orfs = valid_orfs(unsorted_orfs, s)
-        if invalid_orfs:
-            print("Omitting orfs:")
 
-        # Omit invalid orfs
-        for invalid_orf in invalid_orfs:
-            unsorted_orfs.remove(invalid_orf)
+        # Omit the invalid ORFs
+        if invalid_orfs:
+            invalid_orf_msg = ""
+            for invalid_orf in invalid_orfs:
+                invalid_orf_msg += " {} ".format(invalid_orf)
+                unsorted_orfs.remove(invalid_orf)
+            print("Omitted orfs: {}\n".format(invalid_orf_msg))
 
         # Since ORFs are valid, sort the ORFs by reading frame
         orfs = sort_orfs(unsorted_orfs)
