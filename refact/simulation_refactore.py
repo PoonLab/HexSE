@@ -110,7 +110,7 @@ class SimulateOnBranch:
 
         while True:
             # Draw a time at which mutation occurs according to mutation rates
-            random_time = np.random.exponential(scale=instant_rate)
+            random_time = np.random.exponential(scale=(1 / instant_rate))
             times_sum += random_time
             if times_sum > self.branch_length:
                 break
