@@ -125,7 +125,9 @@ class SimulateOnBranch:
             # Remove the mutated nucleotide from the event tree and update information in Nucleotide
             self.remove_nt(my_nt)
             self.update_nucleotide(my_nt, to_state)
-            # Add the mutation rate of the mutated nucletoide
+            self.update_nt_on_tree(my_nt, to_state)
+
+            # Add the mutation rate of the mutated nucleotide
             instant_rate = instant_rate + my_nt.mutation_rate
 
             # Update information about adjacent nucleotides
@@ -170,6 +172,12 @@ class SimulateOnBranch:
                 # Remove nt from synonymous mutations and list of nucleotides in substitution
                 if nt in my_branch['is_syn']:
                     my_branch['is_syn'].remove(nt)
+
+                    # Update the number of events
+                    my_branch['number_of_events'] -= 1
+                    self.event_tree['to_nt'][key_to_nt]['events_for_nt'] -= 1
+                    self.event_tree['total_events'] -= 1
+
                 if nt in my_branch['nts_in_subs']:
                     my_branch['nts_in_subs'].remove(nt)
 
@@ -186,6 +194,28 @@ class SimulateOnBranch:
         nt.set_rates(rates[0])  # Update substitution rates
         nt.set_my_omegas(rates[1])  # Update omega keys
         nt.get_mutation_rate()
+
+    def update_nt_on_tree(self, nt, to_state):
+        """
+        Update the number of synonymous events in the event tree
+        """
+
+        # Update all occurrences of the nucleotide in the event tree
+        for key_to_nt, val in self.event_tree['to_nt'].items():
+
+            if key_to_nt != to_state:
+                # Find branches that contain the nucleotide
+                branch = self.event_tree['to_nt'][key_to_nt]['from_nt'][nt.state]
+
+                # Check if the mutation is synonymous
+                for codon in nt.codons:
+                    pos_in_codon = codon.nt_in_pos(nt)
+
+                    # Update the number of events
+                    if codon.is_nonsyn(pos_in_codon, nt.state):
+                        branch['number_of_events'] += 1
+                        self.event_tree['to_nt'][key_to_nt]['events_for_nt'] += 1
+                        self.event_tree['total_events'] += 1
 
 
 class SimulateOnTree:
