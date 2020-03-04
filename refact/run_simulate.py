@@ -6,9 +6,9 @@ import numpy as np
 import scipy
 import scipy.stats as ss
 from Bio import Phylo
-from new_sequence_info import NUCLEOTIDES, COMPLEMENT_DICT
-from new_sequence_info import Sequence
-from simulation_refactore import SimulateOnTree
+from refact.new_sequence_info import NUCLEOTIDES, COMPLEMENT_DICT
+from refact.new_sequence_info import Sequence
+from refact.simulation_refactore import SimulateOnTree
 
 
 def get_args(parser):
