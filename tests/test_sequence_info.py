@@ -1,9 +1,9 @@
 import random
 import unittest
 
-from refact.new_sequence_info import Sequence
-from refact.new_sequence_info import DoubleLinkedList
-from refact.new_sequence_info import Nucleotide
+from src.sequence_info import DoubleLinkedList
+from src.sequence_info import Nucleotide
+from src.sequence_info import Sequence
 
 
 # ==========================================

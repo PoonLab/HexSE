@@ -1,6 +1,9 @@
-# Store information of sequence
+# Store sequence information
 
-import re
+import copy
+import random
+
+TRANSITIONS_DICT = {'A': 'G', 'G': 'A', 'T': 'C', 'C': 'T'}
 
 NUCLEOTIDES = ['A', 'C', 'G', 'T']
 
@@ -31,302 +34,269 @@ CODON_DICT = {'TTT': 'F', 'TTC': 'F', 'TTA': 'L', 'TTG': 'L',
 
 class Sequence:
     """
-    Stores information about the sequence
-    :ivar original_seq: the nucleotide sequence as a string
-    :ivar orfs: list of ORFs classified according to their reading frame shift relative
-                        to the first orf (+0, +1, +2, -0, -1, -2)
-    :ivar sequence: list of Nucleotide objects
-    :ivar codons: for each nucleotide, a list of tuples (for each ORF) indicating:
-                        - the codon the nucleotide is part of
-                        - the nucleotide's position within the codon
+    Store inputs and create sequence objects
     """
-    def __init__(self, original_seq, orfs=None):
+
+    def __init__(self, str_sequence, orfs, kappa, mu, pi, omegas):
         """
         Creates a list of nucleotides, locates open reading frames, and creates a list of codons.
-        :param original_seq: A list of Nucleotides
-        :param orfs: <option> A dictionary of ORFs, sorted by reading frame where:
+        :param sorted_orfs: A dictionary of ORFs, sorted by reading frame where:
                         - the keys are the reading frames (+0, +1, +2, -0, -1, -2)
                         - the values are a list of tuples containing the start and end positions of the ORFs.
                         - Ex: {'+0': [(0, 8), (3, 15)], '+1': [(1, 9)], '+2': [], '-0': [], '-1': [], '-2': []}
-        :raises ValueError: If the sequence contains invalid characters or if it contains no ORFs
+        :param kappa: transition/ transversion rate ratio
+        :param mu: The global rate (substitutions/site/unit time)
+        :param pi: Frequency of nucleotides in a given sequence, with nucleotide as keys
+        :param omegas: <Dict> Numeric values drawn from gamma distribution.
+                       Applied in case that a mutation is non_synonymous
         """
-
-        # Check if sequence is valid
-        if not Sequence.valid_sequence(original_seq):
-            raise ValueError("Invalid sequence: {}".format(original_seq))
-
-        self.original_seq = original_seq
-        self.orfs = {}
-        self.sequence = []
-        self.codons = []
-
-        # Check if ORFs are valid and sort ORFs by reading frame
-        if orfs is not None and Sequence.valid_orfs(self, orfs):
-            self.orfs = self.sort_orfs(orfs)
-        else:
-            unsorted_orfs = self.get_reading_frames()
-            if unsorted_orfs:
-                self.orfs = self.sort_orfs(unsorted_orfs)
+        self.orfs = orfs  # Dictionary of of ORFs sorted by reading frame
+        self.kappa = kappa  # Transition/ transversion rate ratio
+        self.mu = mu  # The global rate (substitutions/site/unit time)
+        self.pi = pi  # Frequency of nucleotides, with nucleotide as keys
+        self.omegas = omegas  # Numeric values drawn from gamma distribution
 
         # Create Nucleotides
-        for pos, nt in enumerate(self.original_seq):
-            for reading_frame in self.orfs:
-                orf_list = self.orfs[reading_frame]
-                self.sequence.append(Nucleotide(pos, nt, orf_list, self.original_seq))
-                sequence = list(original_seq)
-                local_codon = []
+        self.nt_sequence = DoubleLinkedList()  # A List of Nucleotide objects
+        for pos_in_seq, nt in enumerate(str_sequence):
+            self.nt_sequence.insert_nt(nt, pos_in_seq)
 
-            # Get codon for every nucleotide given reading frames
-            for reading_frame in self.orfs:
-                orfs_list = self.orfs[reading_frame]
-                for orf in orfs_list:
-                    if pos in range(min(orf[0], orf[1]), max(orf[0], orf[1]) + 1):
-                        # if there is an ORF and nucleotide is in that ORF
-                        out = self.get_codon(pos, orf)
-                        local_codon.append(out)
-                    else:
-                        local_codon.append(0)
-
-        # Set codons based on the ORFs in the original sequence
-        for pos, nt in enumerate(self.original_seq):
-            local_codon = []
-            # Get the codon each nucleotide in the ORF belongs to
-            for reading_frame in self.orfs:
-                orf_list = self.orfs[reading_frame]
+        # Set Codons based on the reading frames
+        if self.orfs is not None:
+            for frame in self.orfs:
+                orf_list = self.orfs[frame]
                 for orf in orf_list:
-                    out = self.get_codon(pos, orf)
-                    local_codon.append(out)
-            self.codons.append(local_codon)
+                    codons = self.find_codons(frame, orf)
 
+                    # Tell Nucleotide which Codon(s) it belongs to
+                    for codon in codons:
+                        for i, nt in enumerate(codon.nts_in_codon):
+                            nt.codons.append(codon)
 
-    @staticmethod
-    def valid_sequence(seq):
-        """
-        Verifies that the length of the input sequence is valid and the sequence is composed of only nucleotides.
-        A valid sequence is assumed to be composed of a START codon, at least one amino acid codon, and a STOP codon.
-        :return is_valid: <True> if the sequence is valid, <False> otherwise
-        """
-        is_valid = len(seq) >= 9 and all(pos in NUCLEOTIDES for pos in seq.upper())
-        return is_valid
+        # Create event tree containing all possible mutations and the parameters needed to calculate the rates
+        self.event_tree = self.create_event_tree()  # Nested dict containing info about all possible mutation events
 
-    def valid_orfs(self, orfs):
-        """
-        Verifies that the input ORFs are a list of tuples containing the start and end positions of ORFs.
-        Example of valid input: [(1, 9), (27, 13)]
-        Example of invalid input: (1, 9), (27, 13)
-        :param orfs: The list of open reading frames
-        :return: <True> if the ORFs are valid, <False> otherwise
-        """
-        if not type(orfs) == list:
-            print("Invalid format: {} \nOpen reading frames must of the following format: [(0, 8), ...] where 0  "
-                  "is the start position of the orf, and 8 is the end position.".format(orfs))
-            return False
+        # Calculate mutation rates for each nucleotide in sequence, populate the event tree which each nucleotide
+        for nt in iter(self.nt_sequence):
+            sub_rates = self.get_substitution_rates(nt)
+            nt.set_rates(sub_rates[0])
+            nt.set_my_omegas(sub_rates[1])
+            nt.get_mutation_rate()
 
-        for orf in orfs:
-            # Check that each orfs is a tuple of length 2
-            if type(orf) is not tuple or len(orf) is not 2:
-                print("Invalid orf: {} \nOpen reading frames must of the following format: [(0, 8), ...] where 0  "
-                      "is the start position of the orf, and 8 is the end position.".format(orf))
-                return False
+        # Update event_tree to include a list of nucleotides on the tips
+        self.event_tree = self.get_nts_on_tips()
 
-            # Check that the ORF range is valid
-            if orf[0] == orf[1]:
-                print("Invalid orf: {}".format(orf))
-                return False
+    def __deepcopy__(self, memo):
 
-            # Check that the start and end positions are integers
-            if type(orf[0]) is not int or type(orf[1]) is not int:
-                print("Invalid orf: {} \nStart and end positions must be integers.".format(orf))
-                return False
+        return self.__class__(
+            str_sequence=copy.deepcopy(self.get_string_sequence(), memo),
+            orfs=copy.deepcopy(self.orfs, memo),
+            kappa=copy.deepcopy(self.kappa, memo),
+            mu=copy.deepcopy(self.mu, memo),
+            pi=copy.deepcopy(self.pi, memo),
+            omegas=copy.deepcopy(self.omegas, memo))
 
-            # Check that the start and stop positions are in te range of the sequence
-            if 0 > orf[0] or len(self.original_seq) < orf[0] or 0 > orf[1] or len(self.original_seq) < orf[1]:
-                print("Invalid orf: {} \nPositions must be between 0 and {}".format(orf, len(self.original_seq)))
-                return False
+    def get_sequence(self):
+        return self.nt_sequence
 
-        return True
+    def get_event_tree(self):
+        return self.event_tree
 
-    def reverse_and_complement(self):
-        """
-        Generates the reverse complement of a DNA sequence
-        :return rcseq: The reverse complement of the sequence
-        """
-        rseq = reversed(self.original_seq.upper())
-        rcseq = ''
-        for i in rseq:  # reverse order
-            rcseq += COMPLEMENT_DICT[i]
-        return rcseq
-
-    def get_reading_frames(self):
-        """
-        Gets positions of the START and STOP codons for each open reading frame in the forward and reverse directions.
-        Positions of the START and STOP codons indexed relative to the forward strand.
-        :return reading_frames: a list of tuples containing the index of the first nucleotide of
-                    the START codon and the index of the last nucleotide of the STOP codon
-        """
-        start_codon = re.compile('ATG', flags=re.IGNORECASE)
-        stop = re.compile('(TAG)|(TAA)|(TGA)', flags=re.IGNORECASE)
-        reading_frames = []
-
-        # Record positions of all potential START codons in the forward (positive) reading frame
-        fwd_start_positions = [match.start() for match in start_codon.finditer(self.original_seq)]
-
-        # Find open forward open reading frames
-        for position in fwd_start_positions:
-            frame = position % 3
-
-            internal_met = False
-            # If the ATG codon is an internal methionine and not an initiation codon
-            for orf in reversed(reading_frames):
-
-                # If the START codon and the potential START codon are in the same reading frame
-                # and the existing ORF ends before the potential ORF, stop searching
-                if orf[0] % 3 == frame and orf[1] < position:
-                    break
-
-                # If the potential START codon is between the range of the START and STOP codons,
-                # and it is in the same frame, the codon is an internal methionine
-                if orf[0] < position < orf[1] and orf[0] % 3 == frame:
-                    internal_met = True
-                    break
-
-            # If the ATG is a START codon and not simply methionine
-            if not internal_met:
-                for match in stop.finditer(self.original_seq, position):
-                    orf_length = match.end() - position
-                    # Find a stop codon and ensure ORF length is sufficient in the forward strand
-                    if match.start() % 3 == frame and orf_length >= 8:
-                        # Get the positions in the sequence for the first and last nt of the RF
-                        orf = (position, match.end() - 1)
-                        reading_frames.append(orf)
-                        break
-
-        # Forward (positive) reading frames of the reverse complement of the original
-        # sequence is equivalent to reverse (negative) reading frames of the original sequence
-        rcseq = self.reverse_and_complement()
-
-        # Record positions of all potential START codons in the reverse (negative) reading frame
-        rev_start_positions = [match.start() for match in start_codon.finditer(rcseq)]
-
-        # Find reverse open reading frames
-        for position in rev_start_positions:
-            frame = position % 3
-
-            internal_met = False
-            # If the ATG codon is an internal methionine and not an initiation codon
-            for orf in reversed(reading_frames):
-
-                # If the START codon and the potential START codon are in the same reading frame
-                # and the existing ORF ends before the potential ORF, stop searching
-                if orf[0] % 3 == frame and orf[1] < position:
-                    break
-
-                # If the potential START codon is between the range of the START and STOP codons,
-                # and it is in the same frame, the codon is an internal methionine
-                if orf[0] < position < orf[1] and orf[0] % 3 == frame:
-                    internal_met = True
-                    break
-
-            # If the ATG is a START codon and not simply methionine
-            if not internal_met:
-                for match in stop.finditer(rcseq, position):
-                    orf_length = match.end() - position
-                    # Find a stop codon and ensure ORF length is sufficient in the forward strand
-                    if match.start() % 3 == frame and orf_length >= 8:
-                        # Get the positions in the sequence for the first and last nt of the RF
-                        orf = (len(rcseq) - 1 - position, len(rcseq) - match.end())
-                        reading_frames.append(orf)
-                        break
-
-        return reading_frames
+    def get_string_sequence(self):
+        seq_as_string = ''
+        for nt in iter(self.nt_sequence):
+            seq_as_string += nt.state
+        return seq_as_string
 
     @staticmethod
-    def sort_orfs(unsorted_orfs):
+    def get_frequency_rates(seq):
         """
-        Store ORFs in position according to plus zero ORF (first of the list).
-        They will be classified as (+0, +1, +2, -0, -1, -2)
-        :return orf_position: List of ORFs classified according to their shift relative to
-                    the plus zero reading frame  (+0, +1, +2, -0, -1, -2)
+        Frequency of nucleotides in the DNA sequence
+        :param seq: the DNA sequence
+        :return frequencies: a dictionary frequencies where the key is the nucleotide and the value is the frequency
         """
-        plus_zero, plus_one, plus_two, minus_zero, minus_one, minus_two = [], [], [], [], [], []
+        frequencies = {'A': 0, 'C': 0, 'T': 0, 'G': 0}
 
-        if unsorted_orfs:
-            plus_zero_orf = unsorted_orfs[0]
+        for nucleotide in frequencies:
+            frequencies[nucleotide] = round((float(seq.count(nucleotide)) / (len(seq))), 2)
 
-            for orf in unsorted_orfs:
-                difference = abs(orf[0] - plus_zero_orf[0]) % 3
-                if orf[0] < orf[1]:     # positive strand
-                    if difference == 0:
-                        plus_zero.append(orf)
-                    elif difference == 1:     # plus one
-                        plus_one.append(orf)
-                    elif difference == 2:   # plus two
-                        plus_two.append(orf)
+        return frequencies
 
-                elif orf[0] > orf[1]:   # negative strand
-                    if difference == 0 or difference == plus_zero_orf[0] % 3:
-                        minus_zero.append(orf)
-                    elif difference == 1:
-                        minus_one.append(orf)
-                    elif difference == 2:
-                        minus_two.append(orf)
-
-        sorted_orfs = {'+0': plus_zero, '+1': plus_one, '+2': plus_two,
-                       '-0': minus_zero, '-1': minus_one, '-2': minus_two}
-
-        return sorted_orfs
-
-    def get_codon(self, position, orf):
+    def create_event_tree(self):
         """
-        Get codon sequence, and position of my_nt in the codon
-        :param position: position of the nucleotide in the sequence
-        :param orf: tuple indicating first and last nucleotide of an open reading frame
-        :return codon, position_in_codon: tuple with nucleotide triplet and position of the nucleotide in the codon
+        Create an event tree (nested dictionaries) that stores pi, kappa, mu,
+        and information about whether a mutation is a transition or transversion.
+        :return event tree: a nested dictionary containing information about the mutation event
         """
-        if orf[1] > orf[0]:  # positive strand
-            my_orf = self.original_seq[orf[0]:orf[1] + 1]
-            position_in_orf = position - orf[0]
-        else:  # negative strand
-            rseq = self.reverse_and_complement()
-            my_orf = rseq[orf[1]:orf[0] + 1]
-            position_in_orf = orf[0] - position
+        event_tree = {'to_nt': {'A': {}, 'T': {}, 'C': {}, 'G': {}}}
 
-        try:
-            position_in_orf < 0
-        except ValueError as e:
-            raise ValueError("Invalid position: {}".format(position_in_orf))
+        for to_nt in self.pi.keys():
+            if to_nt in event_tree['to_nt'].keys():
+                # Add stationary frequencies to every nucleotide in the event tree
+                event_tree['to_nt'][to_nt]['stationary_frequency'] = self.pi[to_nt]
+                # Update nucleotides with possible mutations
+                event_tree['to_nt'][to_nt].update([('from_nt', {'A': {}, 'T': {}, 'C': {}, 'G': {}})])
 
-        if position_in_orf % 3 == 0:
-            position_in_codon = 0
-            codon = my_orf[position_in_orf: position_in_orf + 3]
-        elif position_in_orf % 3 == 1:
-            position_in_codon = 1
-            codon = my_orf[position_in_orf - 1: position_in_orf + 2]
+                # For possible mutations, check if they are a transition or a transversion
+                for from_nt in event_tree['to_nt'][to_nt]['from_nt'].keys():
+                    # Nucleotide cannot change to itself
+                    if from_nt == to_nt:
+                        event_tree['to_nt'][to_nt]['from_nt'][from_nt] = None
+                    else:
+                        trv_dict = {'is_trv': True, 'kappa': self.kappa}
+                        # If the mutation is a transition, set kappa to 1
+                        if not self.is_transv(from_nt, to_nt):
+                            trv_dict['is_trv'] = False
+                            trv_dict['kappa'] = 1
+
+                        event_tree['to_nt'][to_nt]['from_nt'][from_nt] = trv_dict
+
+                        # Create key that will store information about nucleotides affected by nonsyn mutations
+                        event_tree['to_nt'][to_nt]['from_nt'][from_nt].update([('is_nonsyn', {})])
+                        event_tree['to_nt'][to_nt]['from_nt'][from_nt].update([('is_syn', [])])
+
+        return event_tree
+
+    def get_nts_on_tips(self):
+        """
+        Look at the tips of the event tree and create keys and values for nucleotides in substitution and number of events
+        :return: update_event_tree: A nested dictionary containing:
+                                    - List of nucleotides for each tip
+                                    - Total number of events
+                                    - Number of events leading to each to_nt
+        """
+        updated_event_tree = self.event_tree
+        my_tree = updated_event_tree['to_nt']
+
+        total_events = 0  # Number of all possible events on the tree
+        for key1, to_nt in my_tree.items():
+            subset = to_nt['from_nt']
+            events_for_to_nt = 0  # Number of all events that can lead to a mutation
+
+            for key2, from_nt in subset.items():
+                if from_nt:
+                    nt_in_substitution = []  # Nucleotides associated with each substitution event
+
+                    # Add nucleotides that are not involved in any non-syn substitution
+                    if from_nt['is_syn']:
+                        nt_in_substitution.extend([nts for nts in from_nt['is_syn']])
+
+                    # Add nucleotides involved in non-syn substitutions
+                    nt_subs_length = len(nt_in_substitution)
+                    non_syn_subs = from_nt['is_nonsyn']
+                    for key3, nts in non_syn_subs.items():
+                        nt_in_substitution.extend([nt for nt in nts])
+
+                    updated_event_tree['to_nt'][key1]['from_nt'][key2].update([('nts_in_subs', nt_in_substitution)])
+                    updated_event_tree['to_nt'][key1]['from_nt'][key2].update([('number_of_events', nt_subs_length)])
+                    events_for_to_nt += nt_subs_length
+                    total_events += nt_subs_length
+
+            updated_event_tree['to_nt'][key1].update([('events_for_nt', events_for_to_nt)])
+
+        updated_event_tree['total_events'] = total_events
+
+        return updated_event_tree
+
+    def get_substitution_rates(self, nt):
+        """
+        Calculates substitution rates for each mutation and populates Event tree
+        :param nt: object of class Nucleotide
+        :return: 1. Dictionary of substitutions rates, keyed by nt subs
+                 2. Dictionary with omega keys
+        """
+        sub_rates = {}
+        my_omega_keys = {}
+        current_nt = nt.state
+
+        for to_nt in NUCLEOTIDES:
+            if to_nt == current_nt:
+                sub_rates[to_nt] = None
+                my_omega_keys[to_nt] = None
+            else:
+                # Apply global substitution rate and stationary nucleotide frequency
+                sub_rates[to_nt] = self.mu * self.pi[current_nt]
+                if self.is_transv(current_nt, to_nt):
+                    sub_rates[to_nt] *= self.kappa
+
+                chosen_omegas = [0, 0, 0, 0]  # omegas applied given a substitution from current_nt to to_nt
+                for codon in nt.codons:
+                    pos_in_codon = codon.nt_in_pos(nt)
+                    if codon.is_nonsyn(pos_in_codon, to_nt):  # Apply omega when mutation is non-synonymous
+                        omega_index = random.randrange(len(self.omegas))
+                        sub_rates[to_nt] *= self.omegas[omega_index]
+                        chosen_omegas[omega_index] += 1
+
+                omegas_in_sub = tuple(chosen_omegas)
+                my_omega_keys[to_nt] = omegas_in_sub
+
+                # Populate even tree using omega_keys
+                if any(omegas_in_sub):  # At least one omega was used
+                    current_event = self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_nonsyn']
+
+                    # Create key if needed, associate it with the current nucleotide
+                    if omegas_in_sub not in current_event:
+                        self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_nonsyn'][omegas_in_sub] = [nt]
+                    else:
+                        self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_nonsyn'][omegas_in_sub].append(nt)
+
+                else:  # If mutation is syn in all codons
+                    self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_syn'].append(nt)
+
+        return sub_rates, my_omega_keys
+
+    @staticmethod
+    def is_transv(from_nt, to_nt):
+        """
+        Checks if a mutation is a transition or a transversion
+        :param from_nt: the current nucleotide
+        :param to_nt: the new nucleotide
+        :return transv: True if the mutation is a transversion,
+                        False if the mutation is a transition,
+                        None if the current and new nucleotides are the same
+        """
+        if from_nt == to_nt:
+            transv = None
         else:
-            position_in_codon = 2
-            codon = my_orf[position_in_orf - 2: position_in_orf + 1]
+            transv = True
+            if TRANSITIONS_DICT[from_nt] == to_nt:
+                transv = False
+        return transv
 
-        return codon, position_in_codon
+    @staticmethod
+    def codon_iterator(my_orf, start_pos, end_pos):
+        """
+        Generator to move every three nucleotides (codon)
+        :param my_orf: A list of Nucleotides in the ORF
+        :param start_pos: The start position of the ORF
+        :param end_pos: The end position of the ORF
+        :yield codon
+        """
+        if start_pos > end_pos:  # Negative strand
+            my_orf.reverse()
+        i = 0
+        while i < len(my_orf):
+            yield my_orf[i:i + 3]
+            i += 3
 
-    def nt_in_orfs(self, position):
+    def find_codons(self, frame, orf):
         """
-        Checks which open reading frames the nucleotide is part of
-        :return: True if the nucleotide is part of the ORF, False otherwise
+        Gets the Codon sequence
+        :param frame: the frame of the ORF
+        :param orf: tuple containing the coordinates of the ORF
+        :return: a list of Codon objects for the specified ORF
         """
-        if 0 > position or len(self.original_seq) < position:
-            raise ValueError("Invalid position {} \n "
-                             "Position must be between 0 and {}".format(position, len(self.original_seq)))
-        in_orf = []
-        for reading_frame in self.orfs:
-            orfs_list = self.orfs[reading_frame]
-            for orf in orfs_list:
-                if orf[0] < orf[1]:  # positive strand
-                    if orf[0] <= position <= orf[1]:
-                        in_orf.append(orf)
-                elif orf[0] > orf[1]:  # negative strand
-                    if orf[0] >= position >= orf[0]:
-                        in_orf.append(orf)
-        return in_orf
+        codons = []
+        start_pos = orf[0]
+        end_pos = orf[1]
+        my_orf = self.nt_sequence.slice_sequence(start_pos, end_pos)
+
+        # Iterate over list by threes and create Codons
+        for cdn in self.codon_iterator(my_orf, start_pos, end_pos):
+            codon = Codon(frame, orf, cdn)
+            codons.append(codon)
+
+        return codons
 
 
 class Nucleotide:
@@ -335,31 +305,249 @@ class Nucleotide:
     and references to the previous and next base in the sequence.
     """
 
-    def __init__(self, letter, position, sorted_orfs):
+    def __init__(self, state, pos_in_seq, left_nt=None, right_nt=None):
         """
-        To which orfs does the nucleotide belong to
-        :param letter: Nucleotide A, C, G or T
-        :param position: Position of the nucleotide in the sequence
-        :param sorted_orfs: <option> A dictionary of ORFs, sorted by reading frame where:
-                        - the keys are the reading frames (+0, +1, +2, -0, -1, -2)
-                        - the values are a list of tuples containing the start and end positions of the ORFs.
-                        - Ex: {'+0': [(0, 8), (3, 15)], '+1': [(1, 9)], '+2': [], '-0': [], '-1': [], '-2': []}
+        :param state: Nucleotide A, C, G or T
+        :param pos_in_seq: Position of the nucleotide in the sequence
+        :param left_nt : reference to the adjacent nucleotide to the left (default to None)
+        :param right_nt: reference to the adjacent nucleotide to the right (default to None)
         """
+        self.state = state  # The nucleotide base (A, T, G, C)
+        self.pos_in_seq = pos_in_seq  # The nt's position relative to the start of the sequence
+        self.codons = []  # A list of codon objects the Nucleotide is part of
+        self.complement_state = COMPLEMENT_DICT[self.state]  # The complement state
+        self.rates = {}  # A dictionary of mutation rates
+        self.my_omegas = []  # Omegas chosen when calculating rates
+        self.mutation_rate = 0  # The total mutation rate
+        self.left_nt = right_nt  # Reference to the nucleotide's left neighbour (prev)
+        self.right_nt = left_nt  # Reference to the nucleotide's right neighbour (next)
 
-        self.letter = letter
-        self.position = position
+    def __str__(self):
+        return self.state
 
-        in_orf = [False,] * 6
-        for i in range(len(sorted_orfs)):
-            orf = sorted_orfs[i]
-            if type(orf) == tuple:
-                if orf[0] < orf[1]:  # positive strand
-                    if self.position in range(orf[0], orf[1]+1):
-                        in_orf[i] = True
-                elif orf[0] > orf[1]:  # negative strand
-                    if self.position in range(orf[1], orf[0]+1):
-                        in_orf[i] = True
-        self.in_orf = in_orf
+    def __repr__(self):
+        return self.state.lower() + str(self.pos_in_seq)
+
+    def __deepcopy__(self, memo):
+        return self.__class__(state=copy.deepcopy(self.state, memo),
+                              pos_in_seq=copy.deepcopy(self.pos_in_seq, memo))
+
+    def set_state(self, new_state):
+        self.state = new_state
+
+    def set_pos_in_seq(self, new_pos):
+        self.pos_in_seq = new_pos
+
+    def set_left_nt(self, new_left_nt):
+        self.left_nt = new_left_nt
+
+    def set_right_nt(self, new_right_nt):
+        self.right_nt = new_right_nt
+
+    def get_complement_state(self):
+        return self.complement_state
+
+    def set_complement_state(self):
+        self.complement_state = COMPLEMENT_DICT[self.state]
+
+    def set_rates(self, rates):
+        self.rates = rates
+
+    def set_my_omegas(self, omegas):
+        self.my_omegas = omegas
+
+    def add_codon(self, codon):
+        self.codons.append(codon)
+
+    def get_mutation_rate(self):
+        total_rate = 0
+        for to_nt, value in self.rates.items():
+            if value:
+                total_rate += value
+        self.mutation_rate = total_rate
 
 
+class DoubleLinkedList:
+    """
+    Circular Double linked list linking together objects of class Nucleotide
+    Default initialization with empty head node
+    """
 
+    # Constructor for circular double-linked list
+    def __init__(self):
+        self.head = None        # First nucleotide in the sequence
+        self.tail = None        # Last nucleotide in the sequence
+
+    # Iterator for circular double-linked list
+    def __iter__(self):
+        curr_nt = self.head
+        while curr_nt is not None:
+            yield curr_nt
+            curr_nt = curr_nt.right_nt
+
+    # Iterator for circular double-linked list
+    def __next__(self):
+        curr_nt = self.head
+        if curr_nt is None:
+            raise StopIteration
+        else:
+            curr_nt = curr_nt.right_nt
+            return curr_nt
+
+    def __deepcopy__(self):
+        return self.__class__()
+
+    # Insert for circular double linked list
+    def insert_nt(self, state, position):
+        """
+        Insert objects of class Nucleotide to the end of the DoubleLinkedList
+        :param state: Nucleotide state in sequence
+        :param position: Position of nt in sequence
+        """
+        new_nt = Nucleotide(state, position)
+
+        # If the circular double linked list is empty, assign the first nucleotide as the head
+        if self.head is None:
+            self.head = new_nt
+            new_nt.left_nt = None
+            new_nt.right_nt = None
+            self.tail = new_nt
+
+        else:
+            # Traverse the list to find the last nucleotide
+            curr_nt = self.head
+            while curr_nt.right_nt is not None:
+                curr_nt = curr_nt.right_nt
+            # Update the references
+            curr_nt.right_nt = new_nt
+            new_nt.left_nt = curr_nt
+            self.tail = new_nt
+
+    def nucleotide_at_pos(self, position):
+        """
+        Traverse sequence to find the Nucleotide object at a specific position
+        :param position: the position of the Nucleotide
+        :return: the Nucleotide object in the specified position
+        """
+        current_nt = self.head
+        while current_nt is not None:
+            if position == current_nt.pos_in_seq:
+                return current_nt
+            current_nt = current_nt.right_nt
+        return None
+
+    def slice_sequence(self, start_pos, end_pos):
+        """
+        Slices the Nucleotide sequence from the start position, up to and including the end position (inclusive slicing)
+        :param start_pos: the start position
+        :param end_pos: the end position
+        :return sub_seq: a list of Nucleotides between the start and end positions (in 5', 3' direction)
+        """
+        sub_seq = []
+        if start_pos < end_pos:  # Positive strand
+            curr_nt = self.nucleotide_at_pos(start_pos)
+        else:  # Negative strand
+            curr_nt = self.nucleotide_at_pos(end_pos)
+            end_pos = start_pos
+
+        while curr_nt is not None and curr_nt.pos_in_seq <= end_pos:
+            sub_seq.append(curr_nt)
+            curr_nt = curr_nt.right_nt
+
+        return sub_seq
+
+    # Constructor for double linked list
+    # def __init__(self):
+    #     self.head = None            # The starting nucleotide
+    #     self.current_nt = None      # Pointer to the current nucleotide for insertion
+    #     self.next_iter_nt = None    # The current state of the iteration
+    #     self.size = 0
+
+    # Iterator for double linked list
+    # def __iter__(self):
+    #     self.next_iter_nt = self.head
+    #     return self
+
+    # Iterator for double linked list
+    # def __next__(self):
+    #     # Note: Not thread safe
+    #     if self.next_iter_nt is not None:
+    #         nt = self.next_iter_nt
+    #         self.next_iter_nt = nt.right_nt
+    #         return nt
+    #     else:
+    #         raise StopIteration
+
+    # Insert for double linked list
+    # def insert_nt(self, state, position):
+    #     """
+    #     Insert objects of class Nucleotide to the end of the DoubleLinkedList
+    #     :param state: Nucleotide state in sequence
+    #     :param position: Position of nt in sequence
+    #     """
+    #     new_nt = Nucleotide(state, position)  # create new Nucleotide object
+    #     self.size += 1
+    #
+    #     # Assign the first nucleotide as head
+    #     if self.head is None:
+    #         self.head = new_nt
+    #         self.current_nt = new_nt
+    #     else:
+    #         new_nt.set_left_nt(self.current_nt)  # For the new nucleotide, create a left pointer towards the current one
+    #         self.current_nt.set_right_nt(new_nt)  # Create the double link between current and new
+    #         self.current_nt = new_nt
+
+
+class Codon:
+    """
+    Stores information about the frameshift, ORF, and pointers to 3 Nucleotide objects
+    """
+
+    def __init__(self, frame, orf, nts_in_codon):
+        """
+        Create a Codon
+        :param frame: the reading frame (+0, +1, +2, -0, -1, -2)
+        :param orf: a tuple containing the reading frame and the coordinates of the orf
+        :param nts_in_codon: a list of pointers to the Nucleotides in the Codon
+        """
+        self.frame = frame  # The reading frame
+        self.orf = orf  # Tuple containing the reading frame and the coordinates
+        self.nts_in_codon = nts_in_codon  # List of Nucleotides in the Codon
+
+    def __deepcopy__(self, memo):
+        return self.__class__(
+            frame=copy.deepcopy(self.frame, memo),
+            orf=copy.deepcopy(self.orf, memo),
+            nts_in_codon=copy.deepcopy(self.nts_in_codon, memo))
+
+    def nt_in_pos(self, query_nt):
+        """
+        Finds the position of the Nucleotide in the Codon
+        :param query_nt: the Nucleotide of interest
+        :return: the position of the Nucleotide in the Codon
+        """
+        for idx, nt in enumerate(self.nts_in_codon):
+            if query_nt is nt:
+                return idx
+
+    def is_nonsyn(self, pos_in_codon, to_nt):
+        """
+        Finds if a substitution at the specified position results in a non-synonymous mutation
+        :param pos_in_codon: the position in the Codon
+        :param to_nt: the new state of the Nucleotide (A, T, G, C)
+        :return: True if the substitution leads to a non-synonymous mutation,
+                 False if the substitution leads to a synonymous mutation
+        """
+        if self.orf[0] < self.orf[1]:  # Positive strand
+            codon = [str(nt) for nt in self.nts_in_codon]  # Cast all Nucleotides in the Codon to strings
+        else:
+            codon = [nt.complement_state for nt in self.nts_in_codon]
+            to_nt = COMPLEMENT_DICT[to_nt]
+
+        mutated_codon = codon.copy()
+        mutated_codon[pos_in_codon] = to_nt
+
+        if CODON_DICT[''.join(mutated_codon)] != CODON_DICT[''.join(codon)]:
+            return True
+        else:
+            return False

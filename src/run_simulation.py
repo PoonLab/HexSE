@@ -6,9 +6,10 @@ import numpy as np
 import scipy
 import scipy.stats as ss
 from Bio import Phylo
-from refact.new_sequence_info import NUCLEOTIDES, COMPLEMENT_DICT
-from refact.new_sequence_info import Sequence
-from refact.simulation_refactore import SimulateOnTree
+
+from src.sequence_info import NUCLEOTIDES, COMPLEMENT_DICT
+from src.sequence_info import Sequence
+from src.simulation import SimulateOnTree
 
 
 def get_args(parser):
@@ -74,7 +75,6 @@ def valid_orfs(orfs, seq):
     for orf in orfs:
         # Check that the ORF range is valid
         if orf[0] == orf[1]:
-            print("Invalid orf: {}".format(orf))
             invalid_orfs.append(orf)
 
         # Check that the start and end positions are integers

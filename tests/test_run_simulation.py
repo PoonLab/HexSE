@@ -1,9 +1,10 @@
 import unittest
-from refact.run_simulate import valid_sequence
-from refact.run_simulate import valid_orfs
-from refact.run_simulate import reverse_and_complement
-from refact.run_simulate import get_open_reading_frames
-from refact.run_simulate import sort_orfs
+
+from src.run_simulation import get_open_reading_frames
+from src.run_simulation import reverse_and_complement
+from src.run_simulation import sort_orfs
+from src.run_simulation import valid_orfs
+from src.run_simulation import valid_sequence
 
 
 class TestValidSequence(unittest.TestCase):
@@ -39,53 +40,46 @@ class TestValidORFs(unittest.TestCase):
     """
     Tests valid_orfs
     """
-    def testBadInput(self):
-        s = "ATGCATGCATGC"
-        orf = "90, 1010"
-        expected = False
-        result = valid_orfs(orf, s)
-        self.assertEqual(expected, result)
-
-    def testNotTuple(self):
-        s = "AAAAAAAATGCGTCGA"
-        orf = (9, 15)
-        expected = False
-        result = valid_orfs(orf, s)
-        self.assertEqual(expected, result)
-
     def testCorrectInput(self):
         s = "ATGCGTAAACGGGCTAGAGCTAGCA"
         orfs = [(0, 8)]
-        expected = True
+        expected = []
         result = valid_orfs(orfs, s)
         self.assertEqual(expected, result)
 
-    def testNotOrfs(self):
+    def testNotOrf(self):
         s = "ATGCGCGCATGACGA"
-        orf = [(1, 1)]
-        expected = False
-        result = valid_orfs(s, orf)
+        orfs = [(1, 1)]
+        expected = [(1, 1)]
+        result = valid_orfs(orfs, s)
         self.assertEqual(expected, result)
 
     def testInvalidFormat(self):
         s = "ATGCGCGATGACGA"
-        orf = [(1, 7, "j")]
-        expected = False
-        result = valid_orfs(orf, s)
+        orfs = [(1, 7, "j")]
+        expected = [(1, 7, "j")]
+        result = valid_orfs(orfs, s)
         self.assertEqual(expected, result)
 
     def testInvalidFormat2(self):
         s = "ATGTCGATGCATGC"
-        orf = [(1, 2, 4)]
-        expected = False
-        result = valid_orfs(orf, s)
+        orfs = [(1, 2, 4)]
+        expected = [(1, 2, 4)]
+        result = valid_orfs(orfs, s)
         self.assertEqual(expected, result)
 
-    def testNotIntegers(self):
-        s = "ATCGATCGATGC"
-        orf = [("8", "89")]
-        expected = False
-        result = valid_orfs(orf, s)
+    def testOrfTooShort(self):
+        s = "ATGTCGATGCATGC"
+        orfs = [(0, 3)]
+        expected = [(0, 3)]
+        result = valid_orfs(orfs, s)
+        self.assertEqual(expected, result)
+
+    def testNotMultipleOfThree(self):
+        s = "ATGTCGATGCATGC"
+        orfs = [(1, 2)]
+        expected = [(1, 2)]
+        result = valid_orfs(orfs, s)
         self.assertEqual(expected, result)
 
 
