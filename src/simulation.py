@@ -118,7 +118,6 @@ class SimulateOnBranch:
             # Draw a mutation
             mutation = self.get_substitution()
             my_nt = mutation[0]
-            print(my_nt)
             to_state = mutation[1]
             # Subtract the mutation rate of the nucleotide to mutate
             instant_rate = instant_rate - my_nt.mutation_rate
