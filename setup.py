@@ -1,14 +1,12 @@
-import setuptools
+#!/usr/bin/env python3
+from distutils.core import setup
+from setuptools.command.install import install
 
-with open('README.md', 'r') as fh:
-    long_description = fh.read()
 
-setuptools.setup(
+setup(
     name='ovrf',
     description='Simulation of molecular evolution with overlapping reading frames',
-    long_description=long_description,
-    long_description_content_type='text/markdown',
-    packages=setuptools.find_packages(),
+    packages=['src'],
     classifiers=[
         'Programming Language :: Python :: 3',
         'Operating System :: OS Independent'
@@ -18,5 +16,5 @@ setuptools.setup(
         'numpy',
         'biopython'
     ],
-    python_requires='>=3.6',
+    python_requires='>=3.6'
 )
