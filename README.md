@@ -10,55 +10,8 @@ OvRFs is a bioinformatic pipeline to simulate evolution within Overlapping Readi
 To display the input options you can run:
 ```console
 $ python3 run_simulation.py --help
-usage: run_simulation.py [-h] [--outfile OUTFILE] [--orfs ORFS] [--mu MU]
-
-[--kappa KAPPA] [--pi PI] [--omega OMEGA]
-
-seq tree
-
-  
-
-Simulates and visualizes the evolution of a sequence through a phylogeny
-
-  
-
-positional arguments:
-
-seq  Path to the file containing the query sequence.
-
-tree Path to file containing phylogenetic tree in Newick
-
-format.
-
-  
-
-optional arguments:
-
--h, --help show this help message and exit
-
---outfile OUTFILE  Path to the alignment file.
-
---orfs ORFS  Path to a csv file containing the start and end
-
-coordinates of the open reading frames. Format:
-
-start,endIf no ORFS are specified, the program will find
-
-ORFs automatically
-
---mu MU  Global substitution rate per site per unit time
-
---kappa KAPPA  Transversion/ transition rate assuming time
-
-reversibility.
-
---pi PI  Vector of stationary nucleotide frequencies. If no value
-
-is specified, the program will use the empirical
-
-frequencies in the sequence. Format: [A, T, G, C]
-
---omega OMEGA  List of dN/dS ratios along the length of the sequence.
+usage: run_simulation.py [-h] [--outfile OUTFILE] [--orfs ORFS]
+[--mu MU][--kappa KAPPA] [--pi PI] [--omega OMEGA]
  
 ```
 ### Input options
