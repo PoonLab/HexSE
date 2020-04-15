@@ -6,10 +6,11 @@ import numpy as np
 import scipy
 import scipy.stats as ss
 from Bio import Phylo
+from Bio import SeqIO
 
-from src.sequence_info import NUCLEOTIDES, COMPLEMENT_DICT
-from src.sequence_info import Sequence
-from src.simulation import SimulateOnTree
+from sequence_info import NUCLEOTIDES, COMPLEMENT_DICT
+from sequence_info import Sequence
+from simulation import SimulateOnTree
 
 
 def get_args(parser):
@@ -79,21 +80,23 @@ def valid_orfs(orfs, seq):
 
         # Check that the start and end positions are integers
         if type(orf[0]) is not int or type(orf[1]) is not int:
-            print("Invalid orf: {} \nStart and end positions must be integers.".format(orf))
+            print("Invalid orf: {}; Start and end positions must be integers.".format(orf))
             invalid_orfs.append(orf)
 
         # Check that the start and stop positions are in the range of the sequence
         if 0 > orf[0] or len(seq) < orf[0] or 0 > orf[1] or len(seq) < orf[1]:
-            print("Invalid orf: {} \nPositions must be between 0 and {}".format(orf, len(seq)))
+            print("Invalid orf: {}; Positions must be between 0 and {}".format(orf, len(seq)))
             invalid_orfs.append(orf)
 
         # Check that the ORF is composed of codons
         if orf[1] > orf[0]:  # Forward strand
             if (orf[1] - orf[0]) % 3 != 2:      # Inclusive range (start and end coordinates included)
+                print("Invalid orf: {}; Not mutiple of three".format(orf))
                 invalid_orfs.append(orf)
 
         if orf[0] > orf[1]:  # Reverse strand
             if (orf[0] - orf[1]) % 3 != 2:      # Inclusive range (start and end coordinates included)
+                print("Invalid orf: {}; Not mutiple of three".format(orf))
                 invalid_orfs.append(orf)
 
     return invalid_orfs
@@ -283,52 +286,93 @@ def discretize_gamma(alpha, ncat, dist=ss.gamma):
     return rates
 
 
-def main():
-    parser = argparse.ArgumentParser(
-        description='Simulates and visualizes the evolution of a sequence through a phylogeny'
-    )
-    args = get_args(parser)
+def parse_genbank(in_seq):
+    """
+    When input is in <genbank> format, extract nucleotide sequence and open reading frames from it.
+    :return tuple: (sequence, orfs)
+    """
+    unsorted_orfs = []
+    # Loop trough records
+    for rec in SeqIO.parse(in_seq, format = "genbank"):
+        seq = rec.seq  #  TO DO: deal with multipartite viruses?
+        cds = [feat for feat in rec.features if feat.type=="CDS"]
+        for cd in cds:
+            coord = ([(int(loc.start), int(loc.end)) for loc in cd.location.parts])
+            #TO DO: This is not the best way to deal with introns. Which is?
+            if len(coord) == 1:  # cds splited into introns
+                start = coord[0][0]
+                end = coord[0][1]
+            else:
+                start = coord[0][0]
+                end = coord[len(coord)-1][1]
 
+            orf = (start,end)
+            unsorted_orfs.append(orf)
+
+    return seq, unsorted_orfs
+
+
+def parse_fasta(in_seq, in_orfs):
+    """
+    If input is a fasta file, retrieve the sequence and check orfs
+    :return tuple (sequence, sorted orfs)
+    """
     # Read in the sequence
-    with open(args.seq) as seq_file:
+    with open(in_seq) as seq_file:
         s = ''
         for line in seq_file:
             # Skip header if the file is a FASTA file
             if not (line.startswith(">") or line.startswith("#")):
                 s += line.strip('\n\r').upper()
 
-    # Check if sequence is valid
-    if not valid_sequence(s):
-        print("Invalid sequence: {}".format(s))
-        sys.exit(0)
-
     # Check if the user specified orfs
-    if args.orfs is None:
+    if in_orfs is None:
         unsorted_orfs = get_open_reading_frames(s)
         orfs = sort_orfs(unsorted_orfs)
 
-    # Read in ORFs as a list of tuples
+    # Read ORFs as a list of tuples
     else:
         unsorted_orfs = []
-        with open(args.orfs) as orf_handle:
+        with open(in_orfs) as orf_handle:
             for line in orf_handle:
                 line = line.split(',')
                 orf = (int(line[0]), int(line[1]))
                 unsorted_orfs.append(orf)
 
-        # Check if the ORFs are valid
-        invalid_orfs = valid_orfs(unsorted_orfs, s)
+    return s, unsorted_orfs
 
-        # Omit the invalid ORFs
-        if invalid_orfs:
-            invalid_orf_msg = ""
-            for invalid_orf in invalid_orfs:
-                invalid_orf_msg += " {} ".format(invalid_orf)
-                unsorted_orfs.remove(invalid_orf)
-            print("Omitted orfs: {}\n".format(invalid_orf_msg))
 
-        # Since ORFs are valid, sort the ORFs by reading frame
-        orfs = sort_orfs(unsorted_orfs)
+def main():
+    parser = argparse.ArgumentParser(
+        description='Simulates and visualizes the evolution of a sequence through a phylogeny'
+    )
+    args = get_args(parser)
+
+    # Check input format
+    input = args.seq.lower()
+    if input.endswith(".gb") or input.endswith("genbank"): # If genbank file
+        s, unsorted_orfs = parse_genbank(args.seq)
+    elif input.endswith(".fasta") or input.endswith(".fa"):  # If fasta file
+        s, unsorted_orfs = parse_fasta(args.seq, args.orfs)
+
+    # Check if the ORFs are valid
+    invalid_orfs = valid_orfs(unsorted_orfs, s)
+
+    # Omit the invalid ORFs
+    if invalid_orfs:
+        invalid_orf_msg = ""
+        for invalid_orf in invalid_orfs:
+            invalid_orf_msg += " {} ".format(invalid_orf)
+            unsorted_orfs.remove(invalid_orf)
+        print("\nOmitted orfs: {}\n".format(invalid_orf_msg))
+
+    # Since ORFs are valid, sort the ORFs by reading frame
+    orfs = sort_orfs(unsorted_orfs)
+
+    # Check if sequence is valid
+    if not valid_sequence(s):
+        print("Invalid sequence: {}".format(s))
+        sys.exit(0)
 
     # If the user did not specify stationary frequencies
     if all(freq is None for freq in args.pi):
