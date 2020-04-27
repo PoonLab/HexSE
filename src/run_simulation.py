@@ -90,12 +90,12 @@ def valid_orfs(orfs, seq):
 
         # Check that the ORF is composed of codons
         if orf[1] > orf[0]:  # Forward strand
-            if (orf[1] - orf[0]) % 3 != 2:      # Inclusive range (start and end coordinates included)
+            if (orf[1] - orf[0]) % 3 != 0:      # Inclusive range (start and end coordinates included)
                 print("Invalid orf: {}; Not mutiple of three".format(orf))
                 invalid_orfs.append(orf)
 
         if orf[0] > orf[1]:  # Reverse strand
-            if (orf[0] - orf[1]) % 3 != 2:      # Inclusive range (start and end coordinates included)
+            if (orf[0] - orf[1]) % 3 != 0:      # Inclusive range (start and end coordinates included)
                 print("Invalid orf: {}; Not mutiple of three".format(orf))
                 invalid_orfs.append(orf)
 
@@ -286,35 +286,30 @@ def discretize_gamma(alpha, ncat, dist=ss.gamma):
     return rates
 
 
-def parse_genbank(in_seq):
+def parse_genbank(in_seq, in_orfs = None):
     """
-    When input is in <genbank> format, extract nucleotide sequence and open reading frames from it.
+    When input is in <genbank> format, extract nucleotide sequence and orfs (in case user does not specify).
+    :param in_seq: sequence in genbank Format
     :return tuple: (sequence, orfs)
     """
-    unsorted_orfs = []
     # Loop trough records
     for rec in SeqIO.parse(in_seq, format = "genbank"):
         seq = rec.seq  #  TO DO: deal with multipartite viruses?
-        cds = [feat for feat in rec.features if feat.type=="CDS"]
-        for cd in cds:
-            coord = ([(int(loc.start), int(loc.end)) for loc in cd.location.parts])
-            #TO DO: This is not the best way to deal with introns. Which is?
-            if len(coord) == 1:  # cds splited into introns
-                start = coord[0][0]
-                end = coord[0][1]
-            else:
-                start = coord[0][0]
-                end = coord[len(coord)-1][1]
-
-            orf = (start,end)
-            unsorted_orfs.append(orf)
+        if in_orfs is None:  # User did not specify orfs
+            unsorted_orfs = []
+            cds = [feat for feat in rec.features if feat.type=="CDS"]
+            for cd in cds:
+                coord = ([(int(loc.start), int(loc.end)) for loc in cd.location.parts])
+                unsorted_orfs.extend(coord)
+        else:
+            unsorted_orfs = check_orfs(in_orfs)
 
     return seq, unsorted_orfs
 
 
 def parse_fasta(in_seq, in_orfs):
     """
-    If input is a fasta file, retrieve the sequence and check orfs
+    If input is a fasta file, retrieve nucleotide sequence
     :return tuple (sequence, sorted orfs)
     """
     # Read in the sequence
@@ -325,10 +320,14 @@ def parse_fasta(in_seq, in_orfs):
             if not (line.startswith(">") or line.startswith("#")):
                 s += line.strip('\n\r').upper()
 
+    return s
+
+
+def check_orfs(in_orfs = None):
+
     # Check if the user specified orfs
     if in_orfs is None:
         unsorted_orfs = get_open_reading_frames(s)
-        orfs = sort_orfs(unsorted_orfs)
 
     # Read ORFs as a list of tuples
     else:
@@ -339,7 +338,7 @@ def parse_fasta(in_seq, in_orfs):
                 orf = (int(line[0]), int(line[1]))
                 unsorted_orfs.append(orf)
 
-    return s, unsorted_orfs
+    return unsorted_orfs
 
 
 def main():
@@ -351,9 +350,9 @@ def main():
     # Check input format
     input = args.seq.lower()
     if input.endswith(".gb") or input.endswith("genbank"): # If genbank file
-        s, unsorted_orfs = parse_genbank(args.seq)
+        s, unsorted_orfs = parse_genbank(args.seq, args.orfs)
     elif input.endswith(".fasta") or input.endswith(".fa"):  # If fasta file
-        s, unsorted_orfs = parse_fasta(args.seq, args.orfs)
+        s, unsorted_orfs = parse_fasta(args.seq), check_orfs(args.orfs)
 
     # Check if the ORFs are valid
     invalid_orfs = valid_orfs(unsorted_orfs, s)
@@ -368,6 +367,7 @@ def main():
 
     # Since ORFs are valid, sort the ORFs by reading frame
     orfs = sort_orfs(unsorted_orfs)
+    print("Valid sorted orfs: ", orfs)
 
     # Check if sequence is valid
     if not valid_sequence(s):
