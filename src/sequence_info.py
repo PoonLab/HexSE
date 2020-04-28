@@ -291,7 +291,12 @@ class Sequence:
         codons = []
         start_pos = orf[0]
         end_pos = orf[1]
-        my_orf = self.nt_sequence.slice_sequence(start_pos, end_pos-1)
+
+        # Reverse stand ORF
+        if start_pos > end_pos:
+            my_orf = self.nt_sequence.slice_sequence(start_pos-1, end_pos)
+        else:
+            my_orf = self.nt_sequence.slice_sequence(start_pos, end_pos-1)
 
         # Iterate over list by threes and create Codons
         for cdn in self.codon_iterator(my_orf, start_pos, end_pos-1):
@@ -555,24 +560,24 @@ class Codon:
             return False
 
     def is_stop(self, pos_in_codon, to_nt):
-            """
-            Finds if a substitution at the specified position results in a stop codon
-            :param pos_in_codon: the position in the Codon
-            :param to_nt: the new state of the Nucleotide (A, T, G, C)
-            :return: True if the substitution leads to stop codon,
-                     False if the substitution doesn't lead to a stop codon
-            """
-            if self.orf[0] < self.orf[1]:  # Positive strand
-                codon = [str(nt) for nt in self.nts_in_codon]  # Cast all Nucleotides in the Codon to strings
-            else:
-                codon = [nt.complement_state for nt in self.nts_in_codon]
-                to_nt = COMPLEMENT_DICT[to_nt]
+        """
+        Finds if a substitution at the specified position results in a stop codon
+        :param pos_in_codon: the position in the Codon
+        :param to_nt: the new state of the Nucleotide (A, T, G, C)
+        :return: True if the substitution leads to stop codon,
+                 False if the substitution doesn't lead to a stop codon
+        """
+        if self.orf[0] < self.orf[1]:  # Positive strand
+            codon = [str(nt) for nt in self.nts_in_codon]  # Cast all Nucleotides in the Codon to strings
+        else:
+            codon = [nt.complement_state for nt in self.nts_in_codon]
+            to_nt = COMPLEMENT_DICT[to_nt]
 
-            mutated_codon = codon.copy()
-            mutated_codon[pos_in_codon] = to_nt
+        mutated_codon = codon.copy()
+        mutated_codon[pos_in_codon] = to_nt
 
-            if CODON_DICT[''.join(mutated_codon)] == "*":
-                return True
-            else:
-                #print(''.join(mutated_codon))
-                return False
+        if CODON_DICT[''.join(mutated_codon)] == "*":
+            return True
+        else:
+            #print(''.join(mutated_codon))
+            return False
