@@ -222,7 +222,9 @@ class Sequence:
                 chosen_omegas = [0, 0, 0, 0]  # omegas applied given a substitution from current_nt to to_nt
                 for codon in nt.codons:
                     pos_in_codon = codon.nt_in_pos(nt)
-                    if codon.is_nonsyn(pos_in_codon, to_nt):  # Apply omega when mutation is non-synonymous
+                    if codon.is_stop(pos_in_codon, to_nt): # If mutation leads to a stop codon
+                        sub_rates[to_nt] *= 0
+                    elif codon.is_nonsyn(pos_in_codon, to_nt):  # Apply omega when mutation is non-synonymous
                         omega_index = random.randrange(len(self.omegas))
                         sub_rates[to_nt] *= self.omegas[omega_index]
                         chosen_omegas[omega_index] += 1
@@ -289,10 +291,10 @@ class Sequence:
         codons = []
         start_pos = orf[0]
         end_pos = orf[1]
-        my_orf = self.nt_sequence.slice_sequence(start_pos, end_pos)
+        my_orf = self.nt_sequence.slice_sequence(start_pos, end_pos-1)
 
         # Iterate over list by threes and create Codons
-        for cdn in self.codon_iterator(my_orf, start_pos, end_pos):
+        for cdn in self.codon_iterator(my_orf, start_pos, end_pos-1):
             codon = Codon(frame, orf, cdn)
             codons.append(codon)
 
@@ -551,3 +553,26 @@ class Codon:
             return True
         else:
             return False
+
+    def is_stop(self, pos_in_codon, to_nt):
+            """
+            Finds if a substitution at the specified position results in a stop codon
+            :param pos_in_codon: the position in the Codon
+            :param to_nt: the new state of the Nucleotide (A, T, G, C)
+            :return: True if the substitution leads to stop codon,
+                     False if the substitution doesn't lead to a stop codon
+            """
+            if self.orf[0] < self.orf[1]:  # Positive strand
+                codon = [str(nt) for nt in self.nts_in_codon]  # Cast all Nucleotides in the Codon to strings
+            else:
+                codon = [nt.complement_state for nt in self.nts_in_codon]
+                to_nt = COMPLEMENT_DICT[to_nt]
+
+            mutated_codon = codon.copy()
+            mutated_codon[pos_in_codon] = to_nt
+
+            if CODON_DICT[''.join(mutated_codon)] == "*":
+                return True
+            else:
+                #print(''.join(mutated_codon))
+                return False

@@ -396,9 +396,10 @@ def main():
     phylo_tree = Phylo.read(args.tree, 'newick', rooted=True)
 
     # Make Sequence object
+    print("Creating root sequence")
     root_sequence = Sequence(s, orfs, args.kappa, args.mu, pi, omegas)
-
     # Run simulation
+    print("running simulation")
     simulation = SimulateOnTree(root_sequence, phylo_tree, args.outfile)
     simulation.get_alignment(args.outfile)
 
