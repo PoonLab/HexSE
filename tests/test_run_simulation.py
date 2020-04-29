@@ -1,10 +1,6 @@
 import unittest
 
-from src.run_simulation import get_open_reading_frames
-from src.run_simulation import reverse_and_complement
-from src.run_simulation import sort_orfs
-from src.run_simulation import valid_orfs
-from src.run_simulation import valid_sequence
+from src.run_simulation import *
 
 
 class TestValidSequence(unittest.TestCase):
@@ -42,44 +38,23 @@ class TestValidORFs(unittest.TestCase):
     """
     def testCorrectInput(self):
         s = "ATGCGTAAACGGGCTAGAGCTAGCA"
-        orfs = [(0, 8)]
+        orfs = [(0, 9)]     # 0-based exclusive indexing
         expected = []
-        result = valid_orfs(orfs, s)
+        result = valid_orfs(orfs, len(s))
         self.assertEqual(expected, result)
 
     def testNotOrf(self):
         s = "ATGCGCGCATGACGA"
         orfs = [(1, 1)]
         expected = [(1, 1)]
-        result = valid_orfs(orfs, s)
-        self.assertEqual(expected, result)
-
-    def testInvalidFormat(self):
-        s = "ATGCGCGATGACGA"
-        orfs = [(1, 7, "j")]
-        expected = [(1, 7, "j")]
-        result = valid_orfs(orfs, s)
-        self.assertEqual(expected, result)
-
-    def testInvalidFormat2(self):
-        s = "ATGTCGATGCATGC"
-        orfs = [(1, 2, 4)]
-        expected = [(1, 2, 4)]
-        result = valid_orfs(orfs, s)
-        self.assertEqual(expected, result)
-
-    def testOrfTooShort(self):
-        s = "ATGTCGATGCATGC"
-        orfs = [(0, 3)]
-        expected = [(0, 3)]
-        result = valid_orfs(orfs, s)
+        result = valid_orfs(orfs, len(s))
         self.assertEqual(expected, result)
 
     def testNotMultipleOfThree(self):
         s = "ATGTCGATGCATGC"
-        orfs = [(1, 2)]
-        expected = [(1, 2)]
-        result = valid_orfs(orfs, s)
+        orfs = [(1, 11)]
+        expected = [(1, 11)]
+        result = valid_orfs(orfs, len(s))
         self.assertEqual(expected, result)
 
 
@@ -107,7 +82,7 @@ class TestGetOpenReadingFrames(unittest.TestCase):
     def testOneORF(self):
         # Tests one ORF (ATG AAA TAG)
         s = "ATGAAATAG"
-        expected = [(0, 8)]
+        expected = [(0, 9)]
         result = get_open_reading_frames(s)
         self.assertEqual(expected, result)
 
@@ -134,7 +109,7 @@ class TestGetOpenReadingFrames(unittest.TestCase):
         # ORF (forward direction): ATG AAC GAA AAT CTG TTC GCT TCA TTC ATT GCC CCC ACA ATC TAG
         # ORF (reverse direction): ATG AAG CGA ACA GAT TTT CGT TCA TGA
         s = "AATTCATGAACGAAAATCTGTTCGCTTCATTCATTGCCCCCACAATCTAGGCCTACCC"
-        expected = [(5, 49), (29, 3)]
+        expected = [(5, 50), (30, 3)]
         result = get_open_reading_frames(s)
         self.assertEqual(expected, result)
 
@@ -150,7 +125,7 @@ class TestGetOpenReadingFrames(unittest.TestCase):
         # Tests scenario when two ATGs are present in the same reading frame
         # ORF: ATG CCC ATG CCC TAA TAA
         s = "ATGCCCATGCCCTAATAA"
-        expected = [(0, 14)]
+        expected = [(0, 15)]
         result = get_open_reading_frames(s)
         self.assertEqual(expected, result)
 
@@ -159,20 +134,20 @@ class TestGetOpenReadingFrames(unittest.TestCase):
         # ORF1: ATG AAA GTG CAA CAT GGG TAA
         # ORF2: ATG GGT AAA TA
         s = "ATGAAAGTGCAACATGGGTAAATAG"
-        expected = [(0, 20), (13, 24)]
+        expected = [(0, 21), (13, 25)]
         result = get_open_reading_frames(s)
         self.assertEqual(expected, result)
 
     def testLowerCaseInput(self):
         s = "atgaaatag"
-        expected = [(0, 8)]
+        expected = [(0, 9)]
         result = get_open_reading_frames(s)
         self.assertEqual(expected, result)
 
     def testStopBeforeStart(self):
         # Tests scenario when a stop codon precedes a start codon
         s = "TAGATGAAATAG"
-        expected = [(3, 11)]
+        expected = [(3, 12)]
         result = get_open_reading_frames(s)
         self.assertEqual(expected, result)
 
@@ -181,7 +156,7 @@ class TestGetOpenReadingFrames(unittest.TestCase):
         # ORF1: ATG TTT TAA
         # ORF2: ATG CAC TAA
         s = "ATGTTTTAGATGCACTAA"
-        expected = [(0, 8), (9, 17)]
+        expected = [(0, 9), (9, 18)]
         result = get_open_reading_frames(s)
         self.assertEqual(expected, result)
 
@@ -190,7 +165,7 @@ class TestGetOpenReadingFrames(unittest.TestCase):
         # ORF1: ATG TTT TGA
         # ORF2: ATG CAC TAA
         s = "ATGTTTTGACCCAAAATGCACTAA"
-        expected = [(0, 8), (15, 23)]
+        expected = [(0, 9), (15, 24)]
         result = get_open_reading_frames(s)
         self.assertEqual(expected, result)
 
@@ -199,7 +174,7 @@ class TestGetOpenReadingFrames(unittest.TestCase):
         # ORF1: ATG TTT TGA
         # ORF2: ATG CAC TAA
         s = "ATGTTTTGACCCAAATGCACTAA"
-        expected = [(0, 8), (14, 22)]
+        expected = [(0, 9), (14, 23)]
         result = get_open_reading_frames(s)
         self.assertEqual(expected, result)
 
@@ -208,7 +183,7 @@ class TestGetOpenReadingFrames(unittest.TestCase):
         # ORF1: ATG GAG TGA
         # ORF2: ATG GAG TGA
         s = "AATGGAGTGACCCGGGATGGAGTAG"
-        expected = [(1, 9), (16, 24)]
+        expected = [(1, 10), (16, 25)]
         result = get_open_reading_frames(s)
         self.assertEqual(expected, result)
 
@@ -217,7 +192,7 @@ class TestGetOpenReadingFrames(unittest.TestCase):
         # ORF1: ATG AGA TGG CAC AAG TGT AAC TAG
         # ORF2: ATG GCA CAA GTG TAA
         s = "ATGAGATGGCACAAGTGTAACTAG"
-        expected = [(0, 23), (5, 19)]
+        expected = [(0, 24), (5, 20)]
         result = get_open_reading_frames(s)
         self.assertEqual(expected, result)
 
@@ -251,6 +226,39 @@ class TestSortOrfs(unittest.TestCase):
                     '-0': [(8, 0)], '-1': [(10, 2)], '-2': [(9, 1)]}
         result = sort_orfs([(0, 8), (8, 0), (1, 9), (9, 1), (2, 10), (10, 2)])
         self.assertEqual(expected, result)
+
+
+class TestParseInput(unittest.TestCase):
+
+    def testParseGenbank(self):
+        in_seq = 'fixtures/NC_003977.2_HBV.gb'
+        exp_seq = 'AATTCCACAACCTTCCACCAAACTCTGCAAGATCCCAGAGTGAGAGGCCTGTATTTCCCTGCTGGTGGCT'
+        exp_orfs = [(2308, 3182), (0, 1625), (2849, 3182), (0, 837), (3173, 3182), (156, 837),
+                    (1375, 1840), (1815, 2454), (1853, 1922), (1902, 2454)]
+
+        res_seq, res_orfs = parse_genbank(in_seq)
+        self.assertEqual(exp_seq, res_seq[:70])     # First 70 nucleotides of the HBV genome
+        self.assertEqual(exp_orfs, res_orfs)
+
+    def testParseFasta(self):
+        in_seq = 'fixtures/HBV.fasta'
+        exp_seq = 'CATTCGGGCTGGGTTTCACCCCACCGCACGGAGGCCTTTTGGGGTGGAGCCCTCAGGCTCAGGGCATACTACAAACTTTGCCAGCAAATCCGCC' \
+                  'TCCTGCCTCCACCAATCGCCAGTCAGGAAGGCAGCCTACCCCGCTGTCTCCACCTTTGAGAAACACTCATCCTCAGGCCATGCAGTGG'
+        res_seq = parse_fasta(in_seq)
+        self.assertEqual(exp_seq, res_seq[3000:])   # Last 182 nucleotides of the HBV genome
+
+    def testCheckOrfs(self):
+        #  If user specified ORFs
+        in_orfs = 'fixtures/test_HBV_orfs.csv'
+        exp_orfs = [(2308, 3182), (0, 1625), (2849, 3182), (0, 837), (3173, 3182), (156, 837),
+                    (1375, 1840), (1815, 2454), (1853, 1922), (1902, 2454)]
+        self.assertEqual(exp_orfs, check_orfs(in_orfs))
+
+        # If user did not specify ORFs
+        in_orfs = None
+        s = 'ATGAAAGTGCAACATGGGTAAATAG'
+        exp_orfs = [(0, 21), (13, 25)]
+        self.assertEqual(exp_orfs, check_orfs(in_orfs, s))
 
 
 if __name__ == '__main__':

@@ -9,9 +9,9 @@ from Bio import Phylo
 from Bio import SeqIO
 from datetime import datetime
 
-from sequence_info import NUCLEOTIDES, COMPLEMENT_DICT
-from sequence_info import Sequence
-from simulation import SimulateOnTree
+from src.sequence_info import NUCLEOTIDES, COMPLEMENT_DICT
+from src.sequence_info import Sequence
+from src.simulation import SimulateOnTree
 
 
 def get_args(parser):
@@ -63,13 +63,13 @@ def valid_sequence(seq):
     return is_valid
 
 
-def valid_orfs(orfs, seq):
+def valid_orfs(orfs, seq_length):
     """
     Verifies that the input ORFs are a list of tuples containing the start and end positions of ORFs.
     Example of valid input: [(1, 9), (27, 13)]
     Example of invalid input: (1, 9), (27, 13)
     :param orfs: The list of open reading frames
-    :param seq: The original sequence as a string
+    :param seq_length: The length of the original sequence
     :return: <True> if the ORFs are valid, <False> otherwise
     """
     invalid_orfs = []
@@ -80,24 +80,24 @@ def valid_orfs(orfs, seq):
             invalid_orfs.append(orf)
 
         # Check that the start and end positions are integers
-        if type(orf[0]) is not int or type(orf[1]) is not int:
+        if type(orf[0]) is not int or type(orf[1]) is not int and orf not in invalid_orfs:
             print("Invalid orf: {}; Start and end positions must be integers.".format(orf))
             invalid_orfs.append(orf)
 
         # Check that the start and stop positions are in the range of the sequence
-        if 0 > orf[0] or len(seq) < orf[0] or 0 > orf[1] or len(seq) < orf[1]:
-            print("Invalid orf: {}; Positions must be between 0 and {}".format(orf, len(seq)))
+        if 0 > orf[0] or seq_length < orf[0] or 0 > orf[1] or seq_length < orf[1] and orf not in invalid_orfs:
+            print("Invalid orf: {}; Positions must be between 0 and {}".format(orf, seq_length))
             invalid_orfs.append(orf)
 
         # Check that the ORF is composed of codons
         if orf[1] > orf[0]:  # Forward strand
             if (orf[1] - orf[0]) % 3 != 0:      # Inclusive range (start and end coordinates included)
-                print("Invalid orf: {}; Not mutiple of three".format(orf))
+                print("Invalid orf: {}; Not multiple of three".format(orf))
                 invalid_orfs.append(orf)
 
         if orf[0] > orf[1]:  # Reverse strand
             if (orf[0] - orf[1]) % 3 != 0:      # Inclusive range (start and end coordinates included)
-                print("Invalid orf: {}; Not mutiple of three".format(orf))
+                print("Invalid orf: {}; Not multiple of three".format(orf))
                 invalid_orfs.append(orf)
 
     return invalid_orfs
@@ -156,7 +156,7 @@ def get_open_reading_frames(seq):
                 # Find a stop codon and ensure ORF length is sufficient in the forward strand
                 if match.start() % 3 == frame and orf_length >= 8:
                     # Get the positions in the sequence for the first and last nt of the RF
-                    orf = (position, match.end() - 1)
+                    orf = (position, match.end())
                     reading_frames.append(orf)
                     break
 
@@ -193,7 +193,7 @@ def get_open_reading_frames(seq):
                 # Find a stop codon and ensure ORF length is sufficient in the forward strand
                 if match.start() % 3 == frame and orf_length >= 8:
                     # Get the positions in the sequence for the first and last nt of the RF
-                    orf = (len(rcseq) - 1 - position, len(rcseq) - match.end())
+                    orf = (len(rcseq) - position, len(rcseq) - match.end())
                     reading_frames.append(orf)
                     break
 
@@ -287,31 +287,39 @@ def discretize_gamma(alpha, ncat, dist=ss.gamma):
     return rates
 
 
-def parse_genbank(in_seq, in_orfs = None):
+def parse_genbank(in_seq, in_orfs=None):
     """
     When input is in <genbank> format, extract nucleotide sequence and orfs (in case user does not specify).
     :param in_seq: sequence in genbank Format
+    :param in_orfs: file handle containing the orfs
     :return tuple: (sequence, orfs)
     """
-    # Loop trough records
-    for rec in SeqIO.parse(in_seq, format = "genbank"):
-        seq = rec.seq  #  TO DO: deal with multipartite viruses?
-        if in_orfs is None:  # User did not specify orfs
+    # Loop through records
+    for rec in SeqIO.parse(in_seq, format="genbank"):
+        seq = rec.seq  # TODO: deal with multipartite viruses?
+        if in_orfs is None:  # User did not specify ORFs
             unsorted_orfs = []
-            cds = [feat for feat in rec.features if feat.type=="CDS"]
+            cds = [feat for feat in rec.features if feat.type == "CDS"]
+
+            # Record the first occurrence of the ORFs
             for cd in cds:
-                coord = ([(int(loc.start), int(loc.end)) for loc in cd.location.parts])
-                unsorted_orfs.extend(coord)
+                for loc in cd.location.parts:
+                    coord = (int(loc.start), int(loc.end))
+                    if coord not in unsorted_orfs:
+                        unsorted_orfs.append(coord)
+                    else:
+                        print("ORF {} is common to multiple coding sequences.".format(coord))
         else:
             unsorted_orfs = check_orfs(in_orfs)
 
     return seq, unsorted_orfs
 
 
-def parse_fasta(in_seq, in_orfs):
+def parse_fasta(in_seq):
     """
     If input is a fasta file, retrieve nucleotide sequence
-    :return tuple (sequence, sorted orfs)
+    :param in_seq: the sequence
+    :return s: the nucleotide sequence
     """
     # Read in the sequence
     with open(in_seq) as seq_file:
@@ -320,11 +328,15 @@ def parse_fasta(in_seq, in_orfs):
             # Skip header if the file is a FASTA file
             if not (line.startswith(">") or line.startswith("#")):
                 s += line.strip('\n\r').upper()
-
     return s
 
 
-def check_orfs(in_orfs = None):
+def check_orfs(in_orfs=None, s=None):
+    """
+    :param in_orfs: orfs specified by the user, default (None)
+    :param s: the original sequence
+    :return: ORFs as a list of tuples
+    """
 
     # Check if the user specified orfs
     if in_orfs is None:
@@ -352,13 +364,18 @@ def main():
 
     # Check input format
     input = args.seq.lower()
-    if input.endswith(".gb") or input.endswith("genbank"): # If genbank file
+    if input.endswith(".gb") or input.endswith("genbank"):  # If genbank file
         s, unsorted_orfs = parse_genbank(args.seq, args.orfs)
-    elif input.endswith(".fasta") or input.endswith(".fa"):  # If fasta file
-        s, unsorted_orfs = parse_fasta(args.seq), check_orfs(args.orfs)
+    elif input.endswith(".fasta") or input.endswith(".fa"):   # If fasta file
+        s = parse_fasta(args.seq)
+        unsorted_orfs = check_orfs(args.orfs, s)
+        print(unsorted_orfs)
+    else:
+        print("Sequence files must end in '.fa', '.fasta', '.gb', 'genbank'")
+        sys.exit()
 
     # Check if the ORFs are valid
-    invalid_orfs = valid_orfs(unsorted_orfs, s)
+    invalid_orfs = valid_orfs(unsorted_orfs, len(s))
 
     # Omit the invalid ORFs
     if invalid_orfs:
