@@ -256,6 +256,7 @@ class SimulateOnTree:
             # Create a deep copy of the parent sequence
             parent_sequence = copy.deepcopy(parent.sequence)
             # Mutate sequence and store it on clade
+            print("Simulating on one Branch")
             simulation = SimulateOnBranch(parent_sequence, clade.branch_length)
             clade.sequence = simulation.mutate_on_branch()
 

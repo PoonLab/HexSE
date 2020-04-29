@@ -7,6 +7,7 @@ import scipy
 import scipy.stats as ss
 from Bio import Phylo
 from Bio import SeqIO
+from datetime import datetime
 
 from sequence_info import NUCLEOTIDES, COMPLEMENT_DICT
 from sequence_info import Sequence
@@ -342,6 +343,8 @@ def check_orfs(in_orfs = None):
 
 
 def main():
+    start_time = datetime.now()
+    print("Started at: ", datetime.now())
     parser = argparse.ArgumentParser(
         description='Simulates and visualizes the evolution of a sequence through a phylogeny'
     )
@@ -396,12 +399,14 @@ def main():
     phylo_tree = Phylo.read(args.tree, 'newick', rooted=True)
 
     # Make Sequence object
-    print("Creating root sequence")
+    print("\nCreating root sequence")
     root_sequence = Sequence(s, orfs, args.kappa, args.mu, pi, omegas)
     # Run simulation
-    print("running simulation")
+    print("\nRunning simulation")
     simulation = SimulateOnTree(root_sequence, phylo_tree, args.outfile)
     simulation.get_alignment(args.outfile)
+
+    print("Simulation runed during {} seconds".format(datetime.now() - start_time))
 
 
 if __name__ == '__main__':
