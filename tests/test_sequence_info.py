@@ -640,6 +640,12 @@ class TestCodon(unittest.TestCase):
         omegas = [0.29327471612351436, 0.6550136761581515, 1.0699896623909886, 1.9817219453273531]
         self.nt_seq1 = Sequence(s1, {'+0': [(0, 21)]}, kappa, mu, pi1, omegas)
 
+        s4 = 'ATGACGTGGTGA'
+        sorted_orfs = {'+0': [(0, 12)], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
+        pi4 = Sequence.get_frequency_rates(s4)
+        random.seed(9001)
+        self.nt_seq4 = Sequence(s4, sorted_orfs, kappa, mu, pi4, omegas)
+
     def testNtInPos(self):
         codons = self.nt_seq1.find_codons('+0', (0, 12))
         codon = codons[0]
@@ -671,13 +677,28 @@ class TestCodon(unittest.TestCase):
         nt = self.nt_seq1.nt_sequence.nucleotide_at_pos(20)  # C
 
         # Mutation at wobble position
-        expected = False
+        expected = False    # Synonymous
         result = codon.is_nonsyn(2, nt.state)
         self.assertEqual(expected, result)
 
         # Mutation at first position
-        expected = True
+        expected = True     # Non-synonymous
         result = codon.is_nonsyn(0, nt.state)
+        self.assertEqual(expected, result)
+
+        # Testing sequence ATGACGTGGTGA
+        codons = self.nt_seq4.find_codons('+0', (0, 12))
+        codon = codons[2]   # TGG = Trp
+        nt = self.nt_seq1.nt_sequence.nucleotide_at_pos(0)  # A
+
+        # Mutation at second position TGA --> TAG
+        expected = True     # Non-synonymous
+        result = codon.is_nonsyn(1, 'A')
+        self.assertEqual(expected, result)
+
+        # Mutation at last position
+        expected = True     # Non-synonymous
+        result = codon.is_nonsyn(2, 'A')
         self.assertEqual(expected, result)
 
     def testIsStop(self):

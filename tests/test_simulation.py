@@ -25,23 +25,23 @@ class TestSimulateOnBranch(unittest.TestCase):
         mu = 0.0005
         pi1 = Sequence.get_frequency_rates(s1)
         omegas = [0.29327471612351436, 0.6550136761581515, 1.0699896623909886, 1.9817219453273531]
-        sequence1 = Sequence(s1, {'+0': [(0, 20)]}, kappa, mu, pi1, omegas)
+        sequence1 = Sequence(s1, {'+0': [(0, 21)]}, kappa, mu, pi1, omegas)
         branch_length = 0.1
         self.sim_on_branch1 = SimulateOnBranch(sequence1, branch_length)
 
         s2 = 'TTTTTTCTTTTTTT'
         pi2 = Sequence.get_frequency_rates(s2)
-        sequence2 = Sequence(s2, {'+0': [(0, 11)]}, kappa, mu, pi2, omegas)
+        sequence2 = Sequence(s2, {'+0': [(0, 12)]}, kappa, mu, pi2, omegas)
         self.sim_on_branch2 = SimulateOnBranch(sequence2, branch_length)
 
         s3 = 'AATTCATGAACGAAAATCTGTTCGCTTCATTCATTGCCCCCACAATCTAGGCCTACCC'
-        sorted_orfs = {'+0': [(5, 49)], '+1': [], '+2': [], '-0': [], '-1': [], '-2': [(29, 3)]}
+        sorted_orfs = {'+0': [(5, 50)], '+1': [], '+2': [], '-0': [], '-1': [], '-2': [(30, 3)]}
         pi3 = Sequence.get_frequency_rates(s3)
         sequence3 = Sequence(s3, sorted_orfs, kappa, mu, pi3, omegas)
         self.sim_on_branch3 = SimulateOnBranch(sequence3, branch_length)
 
         s4 = 'ATGACGTGGTGA'
-        sorted_orfs = {'+0': [(0, 11)], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
+        sorted_orfs = {'+0': [(0, 12)], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
         pi4 = Sequence.get_frequency_rates(s4)
         sequence4 = Sequence(s4, sorted_orfs, kappa, mu, pi4, omegas)
         self.sim_on_branch4 = SimulateOnBranch(sequence4, branch_length)
@@ -49,19 +49,19 @@ class TestSimulateOnBranch(unittest.TestCase):
     def testGetSubstitution(self):
         random.seed(9001)       # Set seed for pseudo-random number generator
 
-        expected = (self.sim_on_branch1.sequence.nt_sequence.nucleotide_at_pos(7), 'A')
+        expected = (self.sim_on_branch1.sequence.nt_sequence.nucleotide_at_pos(16), 'A')
         result = self.sim_on_branch1.get_substitution()
         self.assertEqual(expected, result)
 
-        expected = (self.sim_on_branch2.sequence.nt_sequence.nucleotide_at_pos(0), 'C')
+        expected = (self.sim_on_branch2.sequence.nt_sequence.nucleotide_at_pos(1), 'C')
         result = self.sim_on_branch2.get_substitution()
         self.assertEqual(expected, result)
 
-        expected = (self.sim_on_branch3.sequence.nt_sequence.nucleotide_at_pos(6), 'C')
+        expected = (self.sim_on_branch3.sequence.nt_sequence.nucleotide_at_pos(29), 'C')
         result = self.sim_on_branch3.get_substitution()
         self.assertEqual(expected, result)
 
-        expected = (self.sim_on_branch4.sequence.nt_sequence.nucleotide_at_pos(8), 'A')
+        expected = (self.sim_on_branch4.sequence.nt_sequence.nucleotide_at_pos(2), 'A')
         result = self.sim_on_branch4.get_substitution()
         self.assertEqual(expected, result)
 
@@ -600,7 +600,7 @@ class TestSimulateOnTree(unittest.TestCase):
         mu = 0.0005
         pi1 = Sequence.get_frequency_rates(s1)
         omegas = [0.29327471612351436, 0.6550136761581515, 1.0699896623909886, 1.9817219453273531]
-        sequence1 = Sequence(s1, {'+0': [(0, 20)]}, kappa, mu, pi1, omegas)
+        sequence1 = Sequence(s1, {'+0': [(0, 21)]}, kappa, mu, pi1, omegas)
 
         phylo_tree = Phylo.read(TEST_TREE, 'newick', rooted=True)
         self.sim_on_tree1 = SimulateOnTree(sequence1, phylo_tree)
