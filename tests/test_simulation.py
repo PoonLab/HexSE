@@ -22,7 +22,7 @@ class TestSimulateOnBranch(unittest.TestCase):
 
         s1 = 'GTACGATCGATCGATGCTAGC'
         kappa = 0.3
-        mu = 0.0005
+        mu = 0.5
         pi1 = Sequence.get_frequency_rates(s1)
         omegas = [0.29327471612351436, 0.6550136761581515, 1.0699896623909886, 1.9817219453273531]
         sequence1 = Sequence(s1, {'+0': [(0, 21)]}, kappa, mu, pi1, omegas)
@@ -49,6 +49,8 @@ class TestSimulateOnBranch(unittest.TestCase):
     def testGetSubstitution(self):
         random.seed(9001)       # Set seed for pseudo-random number generator
 
+        # GTA CGA TCG ATC GAT GCT AGC
+        # Expected GCT --> GAT substitution
         expected = (self.sim_on_branch1.sequence.nt_sequence[16], 'A')
         result = self.sim_on_branch1.get_substitution()
         self.assertEqual(expected, result)
@@ -61,24 +63,26 @@ class TestSimulateOnBranch(unittest.TestCase):
         result = self.sim_on_branch3.get_substitution()
         self.assertEqual(expected, result)
 
-        expected = (self.sim_on_branch4.sequence.nt_sequence[2], 'A')
+        # ATG ACG TGG TGA
+        # expected TGG -> TTG substitution
+        expected = (self.sim_on_branch4.sequence.nt_sequence[7], 'T')
         result = self.sim_on_branch4.get_substitution()
         self.assertEqual(expected, result)
 
     def testSumRates(self):
-        expected = 0.004637967436947257
+        expected = 4.25294227720946
         result = self.sim_on_branch1.sum_rates()
         self.assertEqual(expected, result)
 
-        expected = 0.00954128577225131
+        expected = 10.771830262362425
         result = self.sim_on_branch2.sum_rates()
         self.assertEqual(expected, result)
 
-        expected = 0.013399271035090315
+        expected = 12.48467014546256
         result = self.sim_on_branch3.sum_rates()
         self.assertEqual(expected, result)
 
-        expected = 0.0030337488758443035
+        expected = 2.716842288378799
         result = self.sim_on_branch4.sum_rates()
         self.assertEqual(expected, result)
 
@@ -154,31 +158,29 @@ class TestSimulateOnBranch(unittest.TestCase):
         g10 = self.sim_on_branch4.sequence.nt_sequence[10]
         a11 = self.sim_on_branch4.sequence.nt_sequence[11]
 
-        # Remove nucleotide t17 from the sequence 1 event tree
+        # Remove nucleotide all from the sequence 4 event tree
         random.seed(9001)
-        self.sim_on_branch1.remove_nt(a11)
+        self.sim_on_branch4.remove_nt(a11)
 
         expected_event_tree = \
-            {'to_nt': {'A': {'events_for_nt': 2,
+            {'to_nt': {'A': {'events_for_nt': 1,
                              'from_nt': {
                                  'A': None,
-                                 'C': {'is_nonsyn': {(0, 0, 0, 1): [c4]},
+                                 'C': {'is_nonsyn': {(1, 0, 0, 0): [c4]},
                                        'is_syn': [],
                                        'is_trv': True,
                                        'kappa': 0.3,
                                        'nts_in_subs': [c4],
                                        'number_of_events': 0},
-                                 'G': {'is_nonsyn': {(0, 0, 0, 1): [g7],
-                                                     (0, 0, 1, 0): [g8],
-                                                     (0, 1, 0, 0): [g2]},
-                                       'is_syn': [g5, g10],
+                                 'G': {'is_nonsyn': {(0, 0, 1, 0): [g2]},
+                                       'is_syn': [g5],
                                        'is_trv': False,
                                        'kappa': 1,
-                                       'nts_in_subs': [g5, g10, g2, g7, g8],
-                                       'number_of_events': 2},
-                                 'T': {'is_nonsyn': {(0, 0, 1, 0): [t6],
-                                                     (0, 1, 0, 0): [t9],
-                                                     (1, 0, 0, 0): [t1]},
+                                       'nts_in_subs': [g5, g2],
+                                       'number_of_events': 1},
+                                 'T': {'is_nonsyn': {(0, 0, 0, 1): [t9],
+                                                     (0, 0, 1, 0): [t1],
+                                                     (0, 1, 0, 0): [t6]},
                                        'is_syn': [],
                                        'is_trv': True,
                                        'kappa': 0.3,
@@ -187,49 +189,50 @@ class TestSimulateOnBranch(unittest.TestCase):
                              'stationary_frequency': 0.25},
 
                        'C': {'events_for_nt': 1,
-                             'from_nt': {'A': {'is_nonsyn': {(0, 0, 0, 1): [a11],
-                                                             (0, 0, 1, 0): [a0, a3]},
+                             'from_nt': {'A': {'is_nonsyn': {  # (0, 0, 0, 1): [],      # a11 was here
+                                                             (0, 0, 1, 0): [a3],
+                                                             (1, 0, 0, 0): [a0]},
                                                'is_syn': [],
                                                'is_trv': True,
                                                'kappa': 0.3,
-                                               'nts_in_subs': [a0, a3, a11],
+                                               'nts_in_subs': [a0, a3],
                                                'number_of_events': 0},
                                          'C': None,
-                                         'G': {'is_nonsyn': {(0, 0, 1, 0): [g10],
-                                                             (0, 1, 0, 0): [g2],
-                                                             (1, 0, 0, 0): [g7, g8]},
+                                         'G': {'is_nonsyn': {(0, 0, 0, 1): [g2, g8],
+                                                             (0, 0, 1, 0): [g7],
+                                                             (0, 1, 0, 0): [g10]},
                                                'is_syn': [g5],
                                                'is_trv': True,
                                                'kappa': 0.3,
-                                               'nts_in_subs': [g5, g2, g7, g8, g10],
+                                               'nts_in_subs': [g5, g2, g8, g7, g10],
                                                'number_of_events': 1},
-                                         'T': {'is_nonsyn': {(0, 0, 1, 0): [t1],
-                                                             (0, 1, 0, 0): [t6],
-                                                             (1, 0, 0, 0): [t9]},
+                                         'T': {'is_nonsyn': {(0, 0, 1, 0): [t1, t9],
+                                                             (0, 1, 0, 0): [t6]},
                                                'is_syn': [],
                                                'is_trv': False,
                                                'kappa': 1,
-                                               'nts_in_subs': [t1, t6, t9],
+                                               'nts_in_subs': [t1, t9, t6],
                                                'number_of_events': 0}},
                              'stationary_frequency': 0.08},
 
                        'G': {'events_for_nt': 0,
-                             'from_nt': {'A': {'is_nonsyn': {(0, 0, 1, 0): [a0, a3],
-                                                             (0, 1, 0, 0): [a11]},
+                             'from_nt': {'A': {'is_nonsyn': {(0, 0, 0, 1): [a0],
+                                                             (0, 0, 1, 0): [a3]},
+                                                             #  (1, 0, 0, 0): []},     # a11 was here
                                                'is_syn': [],
                                                'is_trv': False,
                                                'kappa': 1,
-                                               'nts_in_subs': [a0, a3, a11],
+                                               'nts_in_subs': [a0, a3],
                                                'number_of_events': 0},
-                                         'C': {'is_nonsyn': {(0, 0, 0, 1): [c4]},
+                                         'C': {'is_nonsyn': {(0, 0, 1, 0): [c4]},
                                                'is_syn': [],
                                                'is_trv': True,
                                                'kappa': 0.3,
                                                'nts_in_subs': [c4],
                                                'number_of_events': 0},
                                          'G': None,
-                                         'T': {'is_nonsyn': {(0, 0, 0, 1): [t1, t6],
-                                                             (1, 0, 0, 0): [t9]},
+                                         'T': {'is_nonsyn': {(0, 0, 1, 0): [t6, t9],
+                                                             (0, 1, 0, 0): [t1]},
                                                'is_syn': [],
                                                'is_trv': True,
                                                'kappa': 0.3,
@@ -238,30 +241,29 @@ class TestSimulateOnBranch(unittest.TestCase):
                              'stationary_frequency': 0.42},
 
                        'T': {'events_for_nt': 1,
-                             'from_nt': {'A': {'is_nonsyn': {(0, 0, 0, 1): [a3],
-                                                             (0, 1, 0, 0): [a0, a11]},
+                             'from_nt': {'A': {'is_nonsyn': {  # (0, 0, 0, 1): [],   a11 was here
+                                                             (0, 1, 0, 0): [a0, a3]},
                                                'is_syn': [],
                                                'is_trv': True,
                                                'kappa': 0.3,
-                                               'nts_in_subs': [a0, a11, a3],
+                                               'nts_in_subs': [a0, a3],
                                                'number_of_events': 0},
-                                         'C': {'is_nonsyn': {(0, 0, 1, 0): [c4]},
+                                         'C': {'is_nonsyn': {(0, 0, 0, 1): [c4]},
                                                'is_syn': [],
                                                'is_trv': False,
                                                'kappa': 1,
                                                'nts_in_subs': [c4],
                                                'number_of_events': 0},
-                                         'G': {'is_nonsyn': {(0, 0, 0, 1): [g7, g8],
-                                                             (0, 0, 1, 0): [g2],
-                                                             (0, 1, 0, 0): [g10]},
+                                         'G': {'is_nonsyn': {(0, 0, 0, 1): [g2, g8, g10],
+                                                             (0, 0, 1, 0): [g7]},
                                                'is_syn': [g5],
                                                'is_trv': True,
                                                'kappa': 0.3,
-                                               'nts_in_subs': [g5, g2, g7, g8, g10],
+                                               'nts_in_subs': [g5, g2, g8, g10, g7],
                                                'number_of_events': 1},
                                          'T': None},
                              'stationary_frequency': 0.25}},
-             'total_events': 4}
+             'total_events': 3}
 
         result_event_tree = self.sim_on_branch4.event_tree
         self.assertEqual(expected_event_tree, result_event_tree)
@@ -289,137 +291,122 @@ class TestSimulateOnBranch(unittest.TestCase):
         g19 = self.sim_on_branch1.sequence.nt_sequence[19]
         c20 = self.sim_on_branch1.sequence.nt_sequence[20]
 
-        # Remove nucleotide t17 from the sequence 1 event tree
+        # GTACGATCGATCGATGCTAGC
+        # Remove nucleotide c7 from the sequence 1 event tree
         random.seed(9001)
-        self.sim_on_branch1.remove_nt(t17)
+        self.sim_on_branch1.remove_nt(c7)
 
         expected_event_tree = \
-            {'to_nt': {
-                'A': {'stationary_frequency': 0.24,
-                      'from_nt': {
-                          'A': None,
-                          'T': {
-                              'is_trv': True,
-                              'kappa': 0.3,
-                              'is_nonsyn': {(1, 0, 0, 0): [t1],
-                                            (0, 1, 0, 0): [t6, t10, t14]},
-                              'is_syn': [],
-                              'nts_in_subs': [t1, t6, t10, t14],
-                              'number_of_events': 0},
-                          'C': {
-                              'is_trv': True,
-                              'kappa': 0.3,
-                              'is_nonsyn': {(0, 1, 0, 0): [c7],
-                                            (0, 0, 0, 1): [c16],
-                                            (0, 0, 1, 0): [c20]},
-                              'is_syn': [c3, c11],
-                              'nts_in_subs': [c3, c11, c7, c16, c20],
-                              'number_of_events': 2},
-                          'G': {
-                              'is_trv': False,
-                              'kappa': 1,
-                              'is_nonsyn': {(1, 0, 0, 0): [g0],
-                                            (0, 0, 1, 0): [g4, g19],
-                                            (0, 1, 0, 0): [g12],
-                                            (0, 0, 0, 1): [g15]},
-                              'is_syn': [g8],
-                              'nts_in_subs': [g8, g0, g4, g19, g12, g15],
-                              'number_of_events': 1}},
-                      'events_for_nt': 3},
-
-                'T': {'stationary_frequency': 0.24,
-                      'from_nt': {
-                          'A': {
-                              'is_trv': True,
-                              'kappa': 0.3,
-                              'is_nonsyn': {(0, 1, 0, 0): [a9],
-                                            (1, 0, 0, 0): [a13],
-                                            (0, 0, 1, 0): [a18]},
-                              'is_syn': [a2, a5],
-                              'nts_in_subs': [a2, a5, a9, a13, a18],
-                              'number_of_events': 2},
-                          'T': None,
-                          'C': {
-                              'is_trv': False,
-                              'kappa': 1,
-                              'is_nonsyn': {(0, 0, 1, 0): [c3],
-                                            (0, 0, 0, 1): [c7],
-                                            (1, 0, 0, 0): [c16]},
-                              'is_syn': [c11, c20],
-                              'nts_in_subs': [c11, c20, c3, c7, c16],
-                              'number_of_events': 2},
-                          'G': {
-                              'is_trv': True,
-                              'kappa': 0.3,
-                              'is_nonsyn': {(0, 0, 1, 0): [g0],
-                                            (0, 0, 0, 1): [g4, g12],
-                                            (1, 0, 0, 0): [g15, g19]},
-                              'is_syn': [g8],
-                              'nts_in_subs': [g8, g0, g4, g12, g15, g19],
-                              'number_of_events': 1}},
-                      'events_for_nt': 5},
-
-                'C': {'stationary_frequency': 0.24,
-                      'from_nt': {
-                          'A': {
-                              'is_trv': True,
-                              'kappa': 0.3,
-                              'is_nonsyn': {(0, 1, 0, 0): [a9, a18],
-                                            (1, 0, 0, 0): [a13]},
-                              'is_syn': [a2, a5],
-                              'nts_in_subs': [a2, a5, a9, a18, a13],
-                              'number_of_events': 2},
-                          'T': {
-                              'is_trv': False,
-                              'kappa': 1,
-                              'is_nonsyn': {(0, 0, 1, 0): [t1],
-                                            (0, 0, 0, 1): [t6, t10]},
-                              'is_syn': [t14],
-                              'nts_in_subs': [t14, t1, t6, t10],
-                              'number_of_events': 1},
-                          'C': None,
-                          'G': {
-                              'is_trv': True,
-                              'kappa': 0.3,
-                              'is_nonsyn': {(0, 0, 1, 0): [g0, g12, g15, g19],
-                                            (1, 0, 0, 0): [g4]},
-                              'is_syn': [g8],
-                              'nts_in_subs': [g8, g0, g12, g15, g19, g4],
-                              'number_of_events': 1}},
-                      'events_for_nt': 4},
-
-                'G': {'stationary_frequency': 0.29,
-                      'from_nt': {
-                          'A': {
-                              'is_trv': False,
-                              'kappa': 1,
-                              'is_nonsyn': {(0, 0, 1, 0): [a9, a18],
-                                            (0, 0, 0, 1): [a13]},
-                              'is_syn': [a2, a5],
-                              'nts_in_subs': [a2, a5, a9, a18, a13],
-                              'number_of_events': 2},
-                          'T': {
-                              'is_trv': True,
-                              'kappa': 0.3,
-                              'is_nonsyn': {(1, 0, 0, 0): [t1, t14],
-                                            (0, 0, 0, 1): [t6, t10]},
-                              'is_syn': [],
-                              'nts_in_subs': [t1, t14, t6, t10],
-                              'number_of_events': 0},
-                          'C': {
-                              'is_trv': True,
-                              'kappa': 0.3,
-                              'is_nonsyn': {(0, 0, 1, 0): [c3, c11, c16],
-                                            (0, 1, 0, 0): [c7],
-                                            (0, 0, 0, 1): [c20]},
-                              'is_syn': [],
-                              'nts_in_subs': [c3, c11, c16, c7, c20],
-                              'number_of_events': 0},
-                          'G': None},
-                      'events_for_nt': 2}},
-            'total_events': 14}
+            {'to_nt': {'A': {'events_for_nt': 4,
+                             'from_nt': {
+                                 'A': None,
+                                 'C': {'is_nonsyn': {(0, 0, 1, 0): [c16, c20]},
+                                       'is_syn': [c3, c11],
+                                       'is_trv': True,
+                                       'kappa': 0.3,
+                                       'nts_in_subs': [c3, c11, c16, c20],
+                                       'number_of_events': 2},
+                                 'G': {'is_nonsyn': {(0, 0, 0, 1): [g12],
+                                                     (0, 0, 1, 0): [g4, g19],
+                                                     (0, 1, 0, 0): [g15],
+                                                     (1, 0, 0, 0): [g0]},
+                                       'is_syn': [g8],
+                                       'is_trv': False,
+                                       'kappa': 1,
+                                       'nts_in_subs': [g8, g0, g4, g19, g12, g15],
+                                       'number_of_events': 1},
+                                 'T': {'is_nonsyn': {(0, 0, 0, 1): [t6, t14],
+                                                     (0, 0, 1, 0): [t10],
+                                                     (1, 0, 0, 0): [t1]},
+                                       'is_syn': [t17],
+                                       'is_trv': True,
+                                       'kappa': 0.3,
+                                       'nts_in_subs': [t17, t1, t6, t14, t10],
+                                       'number_of_events': 1}},
+                                 'stationary_frequency': 0.24},
+                       'C': {'events_for_nt': 5,
+                             'from_nt': {
+                                 'A': {'is_nonsyn': {(0, 0, 1, 0): [a13, a18],
+                                                     (0, 1, 0, 0): [a9]},
+                                       'is_syn': [a2, a5],
+                                       'is_trv': True,
+                                       'kappa': 0.3,
+                                       'nts_in_subs': [a2, a5, a9, a13, a18],
+                                       'number_of_events': 2},
+                                 'C': None,
+                                 'G': {'is_nonsyn': {(0, 0, 1, 0): [g0, g4, g12, g19],
+                                                     (1, 0, 0, 0): [g15]},
+                                       'is_syn': [g8],
+                                       'is_trv': True,
+                                       'kappa': 0.3,
+                                       'nts_in_subs': [g8, g0, g4, g12, g19, g15],
+                                       'number_of_events': 1},
+                                 'T': {'is_nonsyn': {(0, 0, 1, 0): [t1],
+                                                     (0, 1, 0, 0): [t6, t10]},
+                                       'is_syn': [t14, t17],
+                                       'is_trv': False,
+                                       'kappa': 1,
+                                       'nts_in_subs': [t14, t17, t1, t6, t10],
+                                       'number_of_events': 2}},
+                                 'stationary_frequency': 0.24},
+                       'G': {'events_for_nt': 3,
+                             'from_nt': {
+                                 'A': {'is_nonsyn': {(0, 0, 0, 1): [a9, a13],
+                                                     (1, 0, 0, 0): [a18]},
+                                       'is_syn': [a2, a5],
+                                       'is_trv': False,
+                                       'kappa': 1,
+                                       'nts_in_subs': [a2, a5, a9, a13, a18],
+                                       'number_of_events': 2},
+                                 'C': {'is_nonsyn': {(0, 0, 0, 1): [c11],
+                                                     (0, 0, 1, 0): [c3],
+                                                     (1, 0, 0, 0): [c16, c20]},
+                                       'is_syn': [],
+                                       'is_trv': True,
+                                       'kappa': 0.3,
+                                       'nts_in_subs': [c3, c11, c16, c20],
+                                       'number_of_events': 0},
+                                 'G': None,
+                                 'T': {'is_nonsyn': {(0, 0, 0, 1): [t6],
+                                                     (0, 1, 0, 0): [t10],
+                                                     (1, 0, 0, 0): [t1, t14]},
+                                       'is_syn': [t17],
+                                       'is_trv': True,
+                                       'kappa': 0.3,
+                                       'nts_in_subs': [t17, t1, t14, t6, t10],
+                                       'number_of_events': 1}},
+                                 'stationary_frequency': 0.29},
+                       'T': {'events_for_nt': 5,
+                             'from_nt': {
+                                 'A': {'is_nonsyn': {(0, 1, 0, 0): [a9, a18],
+                                                     (1, 0, 0, 0): [a13]},
+                                       'is_syn': [a2, a5],
+                                       'is_trv': True,
+                                       'kappa': 0.3,
+                                       'nts_in_subs': [a2, a5, a9, a18, a13],
+                                       'number_of_events': 2},
+                                 'C': {'is_nonsyn': {(0, 0, 0, 1): [c16]},
+                                                     # (0, 1, 0, 0): []},
+                                       'is_syn': [c11, c20],
+                                       'is_trv': False,
+                                       'kappa': 1,
+                                       'nts_in_subs': [c11, c20, c16],
+                                       'number_of_events': 2},
+                                 'G': {'is_nonsyn': {(0, 0, 0, 1): [g15],
+                                                     (0, 0, 1, 0): [g0, g19],
+                                                     (0, 1, 0, 0): [g12],
+                                                     (1, 0, 0, 0): [g4]},
+                                       'is_syn': [g8],
+                                       'is_trv': True,
+                                       'kappa': 0.3,
+                                       'nts_in_subs': [g8, g0, g19, g4, g12, g15],
+                                       'number_of_events': 1},
+                                 'T': None},
+                                 'stationary_frequency': 0.24}},
+             'total_events': 17}
 
         result_event_tree = self.sim_on_branch1.event_tree
+        print(result_event_tree)
         self.assertEqual(expected_event_tree, result_event_tree)
 
     def testUpdateNt(self):
@@ -434,9 +421,9 @@ class TestSimulateOnBranch(unittest.TestCase):
         self.sim_on_branch4.update_nucleotide(nt_to_mutate, new_state)
 
         expected_rates = {'A': None,
-                          'C': 3.75e-05,
-                          'G': 0.000125,
-                          'T': 3.75e-05}
+                          'C': 0.0375,
+                          'G': 0.125,
+                          'T': 0.0375}
         expected_omegas = {'A': None, 'C': (0, 0, 0, 0), 'G': (0, 0, 0, 0), 'T': (0, 0, 0, 0)}
 
         self.assertEqual('A', nt_to_mutate.state)
@@ -450,10 +437,10 @@ class TestSimulateOnBranch(unittest.TestCase):
         random.seed(9001)
 
         # Original sequence = ATGACGTGGTGA
-        expected = 'ATGACGTGGTGA'
+        expected = 'ATAACGTGGTGA'
         self.sim_on_branch4.mutate_on_branch()
+        result = ''.join(str(nt) for nt in self.sim_on_branch4.sequence.nt_sequence)
 
-        result = self.sim_on_branch4.sequence.nt_sequence
         self.assertEqual(expected, result)
 
     def testUpdateNucleotideOnTree(self):
@@ -475,112 +462,110 @@ class TestSimulateOnBranch(unittest.TestCase):
         a11 = self.sim_on_branch4.sequence.nt_sequence[11]
 
         # Change nucleotide 'A' at position 0 to T
+        # a0 should no longer appear in the tree, while t0 should appear in the 'from_nt'-T branches of the tree
+        # TODO: verify synonymous mutations count 
         self.sim_on_branch4.update_nucleotide(a0, 'T')
         self.sim_on_branch4.update_nt_on_tree(a0, 'T')
 
         t0 = self.sim_on_branch4.sequence.nt_sequence[0]  # Get mutated nucleotide
 
         expected_event_tree = \
-            {'to_nt': {'A': {'events_for_nt': 2,
+            {'to_nt': {'A': {'events_for_nt': 1,
                              'from_nt': {'A': None,
-                                         'C': {'is_nonsyn': {(0, 0, 0, 1): [c4]},
+                                         'C': {'is_nonsyn': {(1, 0, 0, 0): [c4]},
                                                'is_syn': [],
                                                'is_trv': True,
                                                'kappa': 0.3,
                                                'nts_in_subs': [c4],
                                                'number_of_events': 0},
-                                         'G': {'is_nonsyn': {(0, 0, 0, 1): [g7],
-                                                             (0, 0, 1, 0): [g8],
-                                                             (0, 1, 0, 0): [g2]},
-                                               'is_syn': [g5, g10],
+                                         'G': {'is_nonsyn': {(0, 0, 1, 0): [g2]},
+                                               'is_syn': [g5],
                                                'is_trv': False,
                                                'kappa': 1,
-                                               'nts_in_subs': [g5, g10, g2, g7, g8],
-                                               'number_of_events': 2},
-                                         'T': {'is_nonsyn': {(0, 0, 1, 0): [t6],
-                                                             (0, 1, 0, 0): [t9],
-                                                             (1, 0, 0, 0): [t1, t0]},
+                                               'nts_in_subs': [g5, g2],
+                                               'number_of_events': 1},
+                                         'T': {'is_nonsyn': {(0, 0, 0, 1): [t9],
+                                                             (0, 0, 1, 0): [t1],
+                                                             (0, 1, 0, 0): [t6],
+                                                             (1, 0, 0, 0): [t0]},
                                                'is_syn': [],
                                                'is_trv': True,
                                                'kappa': 0.3,
-                                               'nts_in_subs': [t1, t6, t9],
+                                               'nts_in_subs': [t1, t6, t9, t0],
                                                'number_of_events': 0}},
                              'stationary_frequency': 0.25},
                        'C': {'events_for_nt': 1,
                              'from_nt': {'A': {'is_nonsyn': {(0, 0, 0, 1): [a11],
-                                                             (0, 0, 1, 0): [t0, a3]},
+                                                             (0, 0, 1, 0): [a3]},
                                                'is_syn': [],
                                                'is_trv': True,
                                                'kappa': 0.3,
-                                               'nts_in_subs': [t0, a3, a11],
+                                               'nts_in_subs': [a3, a11],
                                                'number_of_events': 0},
                                          'C': None,
-                                         'G': {'is_nonsyn': {(0, 0, 1, 0): [g10],
-                                                             (0, 1, 0, 0): [g2],
-                                                             (1, 0, 0, 0): [g7, g8]},
+                                         'G': {'is_nonsyn': {(0, 0, 0, 1): [g2, g8],
+                                                             (0, 0, 1, 0): [g7],
+                                                             (0, 1, 0, 0): [g10]},
                                                'is_syn': [g5],
                                                'is_trv': True,
                                                'kappa': 0.3,
-                                               'nts_in_subs': [g5, g2, g7, g8, g10],
+                                               'nts_in_subs': [g5, g2, g8, g7, g10],
                                                'number_of_events': 1},
-                                         'T': {'is_nonsyn': {(0, 0, 1, 0): [t1],
-                                                             (0, 1, 0, 0): [t6],
-                                                             (1, 0, 0, 0): [t9]},
+                                         'T': {'is_nonsyn': {(0, 0, 1, 0): [t1, t9],
+                                                             (0, 1, 0, 0): [t6]},
                                                'is_syn': [t0],
                                                'is_trv': False,
                                                'kappa': 1,
-                                               'nts_in_subs': [t1, t6, t9],
-                                               'number_of_events': 0}},
+                                               'nts_in_subs': [t1, t9, t6, t0],
+                                               'number_of_events': 1}},
                              'stationary_frequency': 0.08},
                        'G': {'events_for_nt': 0,
-                             'from_nt': {'A': {'is_nonsyn': {(0, 0, 1, 0): [t0, a3],
-                                                             (0, 1, 0, 0): [a11]},
+                             'from_nt': {'A': {'is_nonsyn': {(0, 0, 1, 0): [a3],
+                                                             (1, 0, 0, 0): [a11]},
                                                'is_syn': [],
                                                'is_trv': False,
                                                'kappa': 1,
-                                               'nts_in_subs': [t0, a3, a11],
+                                               'nts_in_subs': [a3, a11],
                                                'number_of_events': 0},
-                                         'C': {'is_nonsyn': {(0, 0, 0, 1): [c4]},
+                                         'C': {'is_nonsyn': {(0, 0, 1, 0): [c4]},
                                                'is_syn': [],
                                                'is_trv': True,
                                                'kappa': 0.3,
                                                'nts_in_subs': [c4],
                                                'number_of_events': 0},
                                          'G': None,
-                                         'T': {'is_nonsyn': {(0, 0, 0, 1): [t1, t6],
-                                                             (0, 0, 1, 0): [t0],
-                                                             (1, 0, 0, 0): [t9]},
+                                         'T': {'is_nonsyn': {(0, 0, 1, 0): [t6, t9, t0],
+                                                             (0, 1, 0, 0): [t1]},
                                                'is_syn': [],
                                                'is_trv': True,
                                                'kappa': 0.3,
-                                               'nts_in_subs': [t1, t6, t9],
+                                               'nts_in_subs': [t1, t6, t9, t0],
                                                'number_of_events': 0}},
                              'stationary_frequency': 0.42},
                        'T': {'events_for_nt': 1,
-                             'from_nt': {'A': {'is_nonsyn': {(0, 0, 0, 1): [a3],
-                                                             (0, 1, 0, 0): [t0, a11]},
+                             'from_nt': {'A': {'is_nonsyn': {(0, 0, 0, 1): [a11],
+                                                             (0, 1, 0, 0): [a3]},
                                                'is_syn': [],
                                                'is_trv': True,
                                                'kappa': 0.3,
-                                               'nts_in_subs': [t0, a11, a3],
+                                               'nts_in_subs': [a3, a11],
                                                'number_of_events': 0},
-                                         'C': {'is_nonsyn': {(0, 0, 1, 0): [c4]},
+                                         'C': {'is_nonsyn': {(0, 0, 0, 1): [c4]},
                                                'is_syn': [],
                                                'is_trv': False,
                                                'kappa': 1,
                                                'nts_in_subs': [c4],
                                                'number_of_events': 0},
-                                         'G': {'is_nonsyn': {(0, 0, 0, 1): [g7, g8],
-                                                             (0, 0, 1, 0): [g2],
-                                                             (0, 1, 0, 0): [g10]},
+                                         'G': {'is_nonsyn': {(0, 0, 0, 1): [g2, g8, g10],
+                                                             (0, 0, 1, 0): [g7]},
                                                'is_syn': [g5],
                                                'is_trv': True,
                                                'kappa': 0.3,
-                                               'nts_in_subs': [g5, g2, g7, g8, g10],
+                                               'nts_in_subs': [g5, g2, g8, g10, g7],
                                                'number_of_events': 1},
                                          'T': None},
                              'stationary_frequency': 0.25}},
-             'total_events': 4}
+             'total_events': 3}
 
         result = self.sim_on_branch4.event_tree
         self.assertEqual(expected_event_tree, result)
