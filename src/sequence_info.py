@@ -223,7 +223,9 @@ class Sequence:
                 for codon in nt.codons:
                     pos_in_codon = codon.nt_in_pos(nt)
                     if codon.is_stop(pos_in_codon, to_nt): # If mutation leads to a stop codon
+                        #print("A stop codon would be introduced {}, {}, to {}".format(nt, nt.pos_in_seq, to_nt))
                         sub_rates[to_nt] *= 0
+                        nt.is_stop = True
                     elif codon.is_nonsyn(pos_in_codon, to_nt):  # Apply omega when mutation is non-synonymous
                         omega_index = random.randrange(len(self.omegas))
                         sub_rates[to_nt] *= self.omegas[omega_index]
@@ -242,8 +244,8 @@ class Sequence:
                     else:
                         self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_nonsyn'][omegas_in_sub].append(nt)
 
-                else:  # If mutation is syn in all codons
-                    self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_syn'].append(nt)
+                elif 0 not in sub_rates.values(): # If does not introduce an STOP codon
+                    self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_syn'].append(nt)  # Mutation is synonymous
 
         return sub_rates, my_omega_keys
 
@@ -579,5 +581,4 @@ class Codon:
         if CODON_DICT[''.join(mutated_codon)] == "*":
             return True
         else:
-            #print(''.join(mutated_codon))
             return False

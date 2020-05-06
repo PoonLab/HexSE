@@ -119,6 +119,7 @@ class SimulateOnBranch:
             mutation = self.get_substitution()
             my_nt = mutation[0]
             to_state = mutation[1]
+
             # Subtract the mutation rate of the nucleotide to mutate
             instant_rate = instant_rate - my_nt.mutation_rate
 
@@ -142,9 +143,10 @@ class SimulateOnBranch:
                         for codon in adj_nt.codons:
                             # If adjacent nucleotide and mutated nucleotide share at least one codon
                             if codon in my_nt.codons:
-                                self.remove_nt(adj_nt)
                                 instant_rate = instant_rate - adj_nt.mutation_rate
+                                self.remove_nt(adj_nt)
                                 self.update_nucleotide(adj_nt, adj_nt.state)
+                                self.update_nt_on_tree(adj_nt, adj_nt.state)
                                 # Update instant rate for adjacent nucleotide
                                 instant_rate = instant_rate + adj_nt.mutation_rate
                                 break
@@ -163,7 +165,6 @@ class SimulateOnBranch:
             if key_to_nt != nt.state:
                 # Find branches that contain my nucleotide
                 my_branch = self.event_tree['to_nt'][key_to_nt]['from_nt'][nt.state]
-
                 # Remove nt from non-synonymous mutations
                 for omega_key, nucleotide_list in my_branch['is_nonsyn'].items():
                     if nt in nucleotide_list:
@@ -256,7 +257,7 @@ class SimulateOnTree:
             # Create a deep copy of the parent sequence
             parent_sequence = copy.deepcopy(parent.sequence)
             # Mutate sequence and store it on clade
-            print("Simulating on one Branch")
+            print("Simulating on one Branch", clade)
             simulation = SimulateOnBranch(parent_sequence, clade.branch_length)
             clade.sequence = simulation.mutate_on_branch()
 

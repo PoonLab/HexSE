@@ -9,9 +9,9 @@ from Bio import Phylo
 from Bio import SeqIO
 from datetime import datetime
 
-from src.sequence_info import NUCLEOTIDES, COMPLEMENT_DICT
-from src.sequence_info import Sequence
-from src.simulation import SimulateOnTree
+from sequence_info import NUCLEOTIDES, COMPLEMENT_DICT
+from sequence_info import Sequence
+from simulation import SimulateOnTree
 
 
 def get_args(parser):
@@ -419,7 +419,11 @@ def main():
     print("\nCreating root sequence")
     root_sequence = Sequence(s, orfs, args.kappa, args.mu, pi, omegas)
     # Run simulation
+    #print("Event Tree:", root_sequence.event_tree["to_nt"]['T']["from_nt"]['G'])
+    #print(root_sequence.event_tree["to_nt"]['T']["from_nt"]['G']['nts_in_subs'][0].rates)
+    #print(root_sequence.event_tree["to_nt"]['T']["from_nt"]['G']['nts_in_subs'][0].mutation_rate)
     print("\nRunning simulation")
+
     simulation = SimulateOnTree(root_sequence, phylo_tree, args.outfile)
     simulation.get_alignment(args.outfile)
 
