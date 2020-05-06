@@ -137,8 +137,8 @@ class SimulateOnBranch:
                                       my_nt.pos_in_seq + 1, my_nt.pos_in_seq + 2]
 
                 for i in adjacent_positions:
-                    if 0 < i < len(self.sequence.get_string_sequence()):  # If position in sequence
-                        adj_nt = self.sequence.get_sequence().nucleotide_at_pos(i)
+                    if 0 < i < len(self.sequence.nt_sequence):  # If position in sequence
+                        adj_nt = self.sequence.nt_sequence[i]
 
                         for codon in adj_nt.codons:
                             # If adjacent nucleotide and mutated nucleotide share at least one codon
@@ -267,15 +267,12 @@ class SimulateOnTree:
         """
         Iterates over tips (terminal nodes) of tree and returns sequence
         """
-        # aln = open('/home/lmunoz/Projects/ovrf/HBV/NEWtest_Output.txt', "w+")
         final_tree = self.traverse_tree()
 
         if outfile is not None:
             with open(outfile, 'w+') as out_handle:
                 for clade in final_tree.get_terminals():
-                    seq = clade.sequence.get_string_sequence()
-                    out_handle.write(">Sequence_{} \n{}\n".format(clade, seq))
+                    out_handle.write(">Sequence_{} \n{}\n".format(clade, clade.sequence))
         else:
             for clade in final_tree.get_terminals():
-                seq = clade.sequence.get_string_sequence()
-                print(">Sequence_{} \n{}".format(clade, seq))
+                print(">Sequence_{} \n{}".format(clade, clade.sequence))

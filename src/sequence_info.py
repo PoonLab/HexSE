@@ -1,6 +1,5 @@
 # Store sequence information
 
-import copy
 import random
 
 TRANSITIONS_DICT = {'A': 'G', 'G': 'A', 'T': 'C', 'C': 'T'}
@@ -37,10 +36,10 @@ class Sequence:
     Store inputs and create sequence objects
     """
 
-    def __init__(self, str_sequence, orfs, kappa, mu, pi, omegas):
+    def __init__(self, str_sequence, orfs, kappa, mu, pi, omegas, circular=False):
         """
         Creates a list of nucleotides, locates open reading frames, and creates a list of codons.
-        :param sorted_orfs: A dictionary of ORFs, sorted by reading frame where:
+        :param orfs: A dictionary of ORFs, sorted by reading frame where:
                         - the keys are the reading frames (+0, +1, +2, -0, -1, -2)
                         - the values are a list of tuples containing the start and end positions of the ORFs.
                         - Ex: {'+0': [(0, 8), (3, 15)], '+1': [(1, 9)], '+2': [], '-0': [], '-1': [], '-2': []}
@@ -49,17 +48,19 @@ class Sequence:
         :param pi: Frequency of nucleotides in a given sequence, with nucleotide as keys
         :param omegas: <Dict> Numeric values drawn from gamma distribution.
                        Applied in case that a mutation is non_synonymous
+        :param circular: True if the genome is circular, false if the genome is linear (default: linear)
         """
         self.orfs = orfs  # Dictionary of of ORFs sorted by reading frame
         self.kappa = kappa  # Transition/ transversion rate ratio
         self.mu = mu  # The global rate (substitutions/site/unit time)
         self.pi = pi  # Frequency of nucleotides, with nucleotide as keys
         self.omegas = omegas  # Numeric values drawn from gamma distribution
+        self.nt_sequence = []   # List of Nucleotide objects
+        self.is_circular = circular  # True if the genome is circular, False otherwise
 
         # Create Nucleotides
-        self.nt_sequence = DoubleLinkedList()  # A List of Nucleotide objects
         for pos_in_seq, nt in enumerate(str_sequence):
-            self.nt_sequence.insert_nt(nt, pos_in_seq)
+            self.nt_sequence.append(Nucleotide(nt, pos_in_seq))
 
         # Set Codons based on the reading frames
         if self.orfs is not None:
@@ -77,7 +78,7 @@ class Sequence:
         self.event_tree = self.create_event_tree()  # Nested dict containing info about all possible mutation events
 
         # Calculate mutation rates for each nucleotide in sequence, populate the event tree which each nucleotide
-        for nt in iter(self.nt_sequence):
+        for nt in self.nt_sequence:
             sub_rates = self.get_substitution_rates(nt)
             nt.set_rates(sub_rates[0])
             nt.set_my_omegas(sub_rates[1])
@@ -86,27 +87,41 @@ class Sequence:
         # Update event_tree to include a list of nucleotides on the tips
         self.event_tree = self.get_nts_on_tips()
 
-    def __deepcopy__(self, memo):
-
-        return self.__class__(
-            str_sequence=copy.deepcopy(self.get_string_sequence(), memo),
-            orfs=copy.deepcopy(self.orfs, memo),
-            kappa=copy.deepcopy(self.kappa, memo),
-            mu=copy.deepcopy(self.mu, memo),
-            pi=copy.deepcopy(self.pi, memo),
-            omegas=copy.deepcopy(self.omegas, memo))
+    def __str__(self):
+        """
+        Represents the Sequence as a string by casting nt_sequence to a string.
+        """
+        return ''.join(str(nt) for nt in self.nt_sequence)
 
     def get_sequence(self):
         return self.nt_sequence
 
+    def get_right_nt(self, pos_in_seq):
+        """
+        Returns the next Nucleotide in the sequence
+        :param pos_in_seq: the position of the Nucleotide in the sequence
+        """
+        if self.is_circular:
+            if pos_in_seq == len(self.nt_sequence) - 1:
+                return self.nt_sequence[0]
+        else:
+            return self.nt_sequence[pos_in_seq + 1]
+
+    def get_left_nt(self, pos_in_seq):
+        """
+        Returns the previous Nucleotide in the sequence
+        :param pos_in_seq: the position of the Nucleotide in the sequence
+        """
+        if pos_in_seq == 0:
+            if self.is_circular:
+                return self.nt_sequence[- 1]
+            else:
+                return None
+        else:
+            return self.nt_sequence[pos_in_seq - 1]
+
     def get_event_tree(self):
         return self.event_tree
-
-    def get_string_sequence(self):
-        seq_as_string = ''
-        for nt in iter(self.nt_sequence):
-            seq_as_string += nt.state
-        return seq_as_string
 
     @staticmethod
     def get_frequency_rates(seq):
@@ -222,7 +237,7 @@ class Sequence:
                 chosen_omegas = [0, 0, 0, 0]  # omegas applied given a substitution from current_nt to to_nt
                 for codon in nt.codons:
                     pos_in_codon = codon.nt_in_pos(nt)
-                    if codon.is_stop(pos_in_codon, to_nt): # If mutation leads to a stop codon
+                    if codon.is_stop(pos_in_codon, to_nt):  # If mutation leads to a stop codon
                         #print("A stop codon would be introduced {}, {}, to {}".format(nt, nt.pos_in_seq, to_nt))
                         sub_rates[to_nt] *= 0
                         nt.is_stop = True
@@ -244,7 +259,7 @@ class Sequence:
                     else:
                         self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_nonsyn'][omegas_in_sub].append(nt)
 
-                elif 0 not in sub_rates.values(): # If does not introduce an STOP codon
+                elif 0 not in sub_rates.values():  # If does not introduce an STOP codon
                     self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_syn'].append(nt)  # Mutation is synonymous
 
         return sub_rates, my_omega_keys
@@ -296,9 +311,9 @@ class Sequence:
 
         # Reverse stand ORF
         if start_pos > end_pos:
-            my_orf = self.nt_sequence.slice_sequence(start_pos-1, end_pos)
+            my_orf = self.nt_sequence[end_pos: start_pos]
         else:
-            my_orf = self.nt_sequence.slice_sequence(start_pos, end_pos-1)
+            my_orf = self.nt_sequence[start_pos: end_pos]
 
         # Iterate over list by threes and create Codons
         for cdn in self.codon_iterator(my_orf, start_pos, end_pos-1):
@@ -314,12 +329,10 @@ class Nucleotide:
     and references to the previous and next base in the sequence.
     """
 
-    def __init__(self, state, pos_in_seq, left_nt=None, right_nt=None):
+    def __init__(self, state, pos_in_seq):
         """
         :param state: Nucleotide A, C, G or T
         :param pos_in_seq: Position of the nucleotide in the sequence
-        :param left_nt : reference to the adjacent nucleotide to the left (default to None)
-        :param right_nt: reference to the adjacent nucleotide to the right (default to None)
         """
         self.state = state  # The nucleotide base (A, T, G, C)
         self.pos_in_seq = pos_in_seq  # The nt's position relative to the start of the sequence
@@ -328,8 +341,6 @@ class Nucleotide:
         self.rates = {}  # A dictionary of mutation rates
         self.my_omegas = []  # Omegas chosen when calculating rates
         self.mutation_rate = 0  # The total mutation rate
-        self.left_nt = right_nt  # Reference to the nucleotide's left neighbour (prev)
-        self.right_nt = left_nt  # Reference to the nucleotide's right neighbour (next)
 
     def __str__(self):
         return self.state
@@ -337,21 +348,8 @@ class Nucleotide:
     def __repr__(self):
         return self.state.lower() + str(self.pos_in_seq)
 
-    def __deepcopy__(self, memo):
-        return self.__class__(state=copy.deepcopy(self.state, memo),
-                              pos_in_seq=copy.deepcopy(self.pos_in_seq, memo))
-
     def set_state(self, new_state):
         self.state = new_state
-
-    def set_pos_in_seq(self, new_pos):
-        self.pos_in_seq = new_pos
-
-    def set_left_nt(self, new_left_nt):
-        self.left_nt = new_left_nt
-
-    def set_right_nt(self, new_right_nt):
-        self.right_nt = new_right_nt
 
     def get_complement_state(self):
         return self.complement_state
@@ -376,137 +374,6 @@ class Nucleotide:
         self.mutation_rate = total_rate
 
 
-class DoubleLinkedList:
-    """
-    Circular Double linked list linking together objects of class Nucleotide
-    Default initialization with empty head node
-    """
-
-    # Constructor for circular double-linked list
-    def __init__(self):
-        self.head = None        # First nucleotide in the sequence
-        self.tail = None        # Last nucleotide in the sequence
-
-    # Iterator for circular double-linked list
-    def __iter__(self):
-        curr_nt = self.head
-        while curr_nt is not None:
-            yield curr_nt
-            curr_nt = curr_nt.right_nt
-
-    # Iterator for circular double-linked list
-    def __next__(self):
-        curr_nt = self.head
-        if curr_nt is None:
-            raise StopIteration
-        else:
-            curr_nt = curr_nt.right_nt
-            return curr_nt
-
-    def __deepcopy__(self):
-        return self.__class__()
-
-    # Insert for circular double linked list
-    def insert_nt(self, state, position):
-        """
-        Insert objects of class Nucleotide to the end of the DoubleLinkedList
-        :param state: Nucleotide state in sequence
-        :param position: Position of nt in sequence
-        """
-        new_nt = Nucleotide(state, position)
-
-        # If the circular double linked list is empty, assign the first nucleotide as the head
-        if self.head is None:
-            self.head = new_nt
-            new_nt.left_nt = None
-            new_nt.right_nt = None
-            self.tail = new_nt
-
-        else:
-            # Traverse the list to find the last nucleotide
-            curr_nt = self.head
-            while curr_nt.right_nt is not None:
-                curr_nt = curr_nt.right_nt
-            # Update the references
-            curr_nt.right_nt = new_nt
-            new_nt.left_nt = curr_nt
-            self.tail = new_nt
-
-    def nucleotide_at_pos(self, position):
-        """
-        Traverse sequence to find the Nucleotide object at a specific position
-        :param position: the position of the Nucleotide
-        :return: the Nucleotide object in the specified position
-        """
-        current_nt = self.head
-        while current_nt is not None:
-            if position == current_nt.pos_in_seq:
-                return current_nt
-            current_nt = current_nt.right_nt
-        return None
-
-    def slice_sequence(self, start_pos, end_pos):
-        """
-        Slices the Nucleotide sequence from the start position, up to and including the end position (inclusive slicing)
-        :param start_pos: the start position
-        :param end_pos: the end position
-        :return sub_seq: a list of Nucleotides between the start and end positions (in 5', 3' direction)
-        """
-        sub_seq = []
-        if start_pos < end_pos:  # Positive strand
-            curr_nt = self.nucleotide_at_pos(start_pos)
-        else:  # Negative strand
-            curr_nt = self.nucleotide_at_pos(end_pos)
-            end_pos = start_pos
-
-        while curr_nt is not None and curr_nt.pos_in_seq <= end_pos:
-            sub_seq.append(curr_nt)
-            curr_nt = curr_nt.right_nt
-
-        return sub_seq
-
-    # Constructor for double linked list
-    # def __init__(self):
-    #     self.head = None            # The starting nucleotide
-    #     self.current_nt = None      # Pointer to the current nucleotide for insertion
-    #     self.next_iter_nt = None    # The current state of the iteration
-    #     self.size = 0
-
-    # Iterator for double linked list
-    # def __iter__(self):
-    #     self.next_iter_nt = self.head
-    #     return self
-
-    # Iterator for double linked list
-    # def __next__(self):
-    #     # Note: Not thread safe
-    #     if self.next_iter_nt is not None:
-    #         nt = self.next_iter_nt
-    #         self.next_iter_nt = nt.right_nt
-    #         return nt
-    #     else:
-    #         raise StopIteration
-
-    # Insert for double linked list
-    # def insert_nt(self, state, position):
-    #     """
-    #     Insert objects of class Nucleotide to the end of the DoubleLinkedList
-    #     :param state: Nucleotide state in sequence
-    #     :param position: Position of nt in sequence
-    #     """
-    #     new_nt = Nucleotide(state, position)  # create new Nucleotide object
-    #     self.size += 1
-    #
-    #     # Assign the first nucleotide as head
-    #     if self.head is None:
-    #         self.head = new_nt
-    #         self.current_nt = new_nt
-    #     else:
-    #         new_nt.set_left_nt(self.current_nt)  # For the new nucleotide, create a left pointer towards the current one
-    #         self.current_nt.set_right_nt(new_nt)  # Create the double link between current and new
-    #         self.current_nt = new_nt
-
-
 class Codon:
     """
     Stores information about the frameshift, ORF, and pointers to 3 Nucleotide objects
@@ -523,11 +390,8 @@ class Codon:
         self.orf = orf  # Tuple containing the reading frame and the coordinates
         self.nts_in_codon = nts_in_codon  # List of Nucleotides in the Codon
 
-    def __deepcopy__(self, memo):
-        return self.__class__(
-            frame=copy.deepcopy(self.frame, memo),
-            orf=copy.deepcopy(self.orf, memo),
-            nts_in_codon=copy.deepcopy(self.nts_in_codon, memo))
+    def __repr__(self):
+        return ''.join(str(nt) for nt in self.nts_in_codon)
 
     def nt_in_pos(self, query_nt):
         """

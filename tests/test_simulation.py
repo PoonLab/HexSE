@@ -49,19 +49,19 @@ class TestSimulateOnBranch(unittest.TestCase):
     def testGetSubstitution(self):
         random.seed(9001)       # Set seed for pseudo-random number generator
 
-        expected = (self.sim_on_branch1.sequence.nt_sequence.nucleotide_at_pos(16), 'A')
+        expected = (self.sim_on_branch1.sequence.nt_sequence[16], 'A')
         result = self.sim_on_branch1.get_substitution()
         self.assertEqual(expected, result)
 
-        expected = (self.sim_on_branch2.sequence.nt_sequence.nucleotide_at_pos(1), 'C')
+        expected = (self.sim_on_branch2.sequence.nt_sequence[1], 'C')
         result = self.sim_on_branch2.get_substitution()
         self.assertEqual(expected, result)
 
-        expected = (self.sim_on_branch3.sequence.nt_sequence.nucleotide_at_pos(29), 'C')
+        expected = (self.sim_on_branch3.sequence.nt_sequence[29], 'C')
         result = self.sim_on_branch3.get_substitution()
         self.assertEqual(expected, result)
 
-        expected = (self.sim_on_branch4.sequence.nt_sequence.nucleotide_at_pos(2), 'A')
+        expected = (self.sim_on_branch4.sequence.nt_sequence[2], 'A')
         result = self.sim_on_branch4.get_substitution()
         self.assertEqual(expected, result)
 
@@ -141,18 +141,18 @@ class TestSimulateOnBranch(unittest.TestCase):
     def testRemoveNt(self):
 
         # Testing sequence 2
-        a0 = self.sim_on_branch4.sequence.nt_sequence.nucleotide_at_pos(0)
-        t1 = self.sim_on_branch4.sequence.nt_sequence.nucleotide_at_pos(1)
-        g2 = self.sim_on_branch4.sequence.nt_sequence.nucleotide_at_pos(2)
-        a3 = self.sim_on_branch4.sequence.nt_sequence.nucleotide_at_pos(3)
-        c4 = self.sim_on_branch4.sequence.nt_sequence.nucleotide_at_pos(4)
-        g5 = self.sim_on_branch4.sequence.nt_sequence.nucleotide_at_pos(5)
-        t6 = self.sim_on_branch4.sequence.nt_sequence.nucleotide_at_pos(6)
-        g7 = self.sim_on_branch4.sequence.nt_sequence.nucleotide_at_pos(7)
-        g8 = self.sim_on_branch4.sequence.nt_sequence.nucleotide_at_pos(8)
-        t9 = self.sim_on_branch4.sequence.nt_sequence.nucleotide_at_pos(9)
-        g10 = self.sim_on_branch4.sequence.nt_sequence.nucleotide_at_pos(10)
-        a11 = self.sim_on_branch4.sequence.nt_sequence.nucleotide_at_pos(11)
+        a0 = self.sim_on_branch4.sequence.nt_sequence[0]
+        t1 = self.sim_on_branch4.sequence.nt_sequence[1]
+        g2 = self.sim_on_branch4.sequence.nt_sequence[2]
+        a3 = self.sim_on_branch4.sequence.nt_sequence[3]
+        c4 = self.sim_on_branch4.sequence.nt_sequence[4]
+        g5 = self.sim_on_branch4.sequence.nt_sequence[5]
+        t6 = self.sim_on_branch4.sequence.nt_sequence[6]
+        g7 = self.sim_on_branch4.sequence.nt_sequence[7]
+        g8 = self.sim_on_branch4.sequence.nt_sequence[8]
+        t9 = self.sim_on_branch4.sequence.nt_sequence[9]
+        g10 = self.sim_on_branch4.sequence.nt_sequence[10]
+        a11 = self.sim_on_branch4.sequence.nt_sequence[11]
 
         # Remove nucleotide t17 from the sequence 1 event tree
         random.seed(9001)
@@ -267,27 +267,27 @@ class TestSimulateOnBranch(unittest.TestCase):
         self.assertEqual(expected_event_tree, result_event_tree)
 
         # Testing sequence 1
-        g0 = self.sim_on_branch1.sequence.nt_sequence.nucleotide_at_pos(0)
-        t1 = self.sim_on_branch1.sequence.nt_sequence.nucleotide_at_pos(1)
-        a2 = self.sim_on_branch1.sequence.nt_sequence.nucleotide_at_pos(2)
-        c3 = self.sim_on_branch1.sequence.nt_sequence.nucleotide_at_pos(3)
-        g4 = self.sim_on_branch1.sequence.nt_sequence.nucleotide_at_pos(4)
-        a5 = self.sim_on_branch1.sequence.nt_sequence.nucleotide_at_pos(5)
-        t6 = self.sim_on_branch1.sequence.nt_sequence.nucleotide_at_pos(6)
-        c7 = self.sim_on_branch1.sequence.nt_sequence.nucleotide_at_pos(7)
-        g8 = self.sim_on_branch1.sequence.nt_sequence.nucleotide_at_pos(8)
-        a9 = self.sim_on_branch1.sequence.nt_sequence.nucleotide_at_pos(9)
-        t10 = self.sim_on_branch1.sequence.nt_sequence.nucleotide_at_pos(10)
-        c11 = self.sim_on_branch1.sequence.nt_sequence.nucleotide_at_pos(11)
-        g12 = self.sim_on_branch1.sequence.nt_sequence.nucleotide_at_pos(12)
-        a13 = self.sim_on_branch1.sequence.nt_sequence.nucleotide_at_pos(13)
-        t14 = self.sim_on_branch1.sequence.nt_sequence.nucleotide_at_pos(14)
-        g15 = self.sim_on_branch1.sequence.nt_sequence.nucleotide_at_pos(15)
-        c16 = self.sim_on_branch1.sequence.nt_sequence.nucleotide_at_pos(16)
-        t17 = self.sim_on_branch1.sequence.nt_sequence.nucleotide_at_pos(17)
-        a18 = self.sim_on_branch1.sequence.nt_sequence.nucleotide_at_pos(18)
-        g19 = self.sim_on_branch1.sequence.nt_sequence.nucleotide_at_pos(19)
-        c20 = self.sim_on_branch1.sequence.nt_sequence.nucleotide_at_pos(20)
+        g0 = self.sim_on_branch1.sequence.nt_sequence[0]
+        t1 = self.sim_on_branch1.sequence.nt_sequence[1]
+        a2 = self.sim_on_branch1.sequence.nt_sequence[2]
+        c3 = self.sim_on_branch1.sequence.nt_sequence[3]
+        g4 = self.sim_on_branch1.sequence.nt_sequence[4]
+        a5 = self.sim_on_branch1.sequence.nt_sequence[5]
+        t6 = self.sim_on_branch1.sequence.nt_sequence[6]
+        c7 = self.sim_on_branch1.sequence.nt_sequence[7]
+        g8 = self.sim_on_branch1.sequence.nt_sequence[8]
+        a9 = self.sim_on_branch1.sequence.nt_sequence[9]
+        t10 = self.sim_on_branch1.sequence.nt_sequence[10]
+        c11 = self.sim_on_branch1.sequence.nt_sequence[11]
+        g12 = self.sim_on_branch1.sequence.nt_sequence[12]
+        a13 = self.sim_on_branch1.sequence.nt_sequence[13]
+        t14 = self.sim_on_branch1.sequence.nt_sequence[14]
+        g15 = self.sim_on_branch1.sequence.nt_sequence[15]
+        c16 = self.sim_on_branch1.sequence.nt_sequence[16]
+        t17 = self.sim_on_branch1.sequence.nt_sequence[17]
+        a18 = self.sim_on_branch1.sequence.nt_sequence[18]
+        g19 = self.sim_on_branch1.sequence.nt_sequence[19]
+        c20 = self.sim_on_branch1.sequence.nt_sequence[20]
 
         # Remove nucleotide t17 from the sequence 1 event tree
         random.seed(9001)
@@ -428,7 +428,7 @@ class TestSimulateOnBranch(unittest.TestCase):
         random.seed(9001)
 
         # Mutate the G in the 5th position
-        nt_to_mutate = self.sim_on_branch4.sequence.nt_sequence.nucleotide_at_pos(5)
+        nt_to_mutate = self.sim_on_branch4.sequence.nt_sequence[5]
         selected_mutation = self.sim_on_branch4.get_substitution()
         new_state = str(selected_mutation[1])
         self.sim_on_branch4.update_nucleotide(nt_to_mutate, new_state)
@@ -453,7 +453,7 @@ class TestSimulateOnBranch(unittest.TestCase):
         expected = 'ATGACGTGGTGA'
         self.sim_on_branch4.mutate_on_branch()
 
-        result = self.sim_on_branch4.sequence.get_string_sequence()
+        result = self.sim_on_branch4.sequence.nt_sequence
         self.assertEqual(expected, result)
 
     def testUpdateNucleotideOnTree(self):
@@ -461,24 +461,24 @@ class TestSimulateOnBranch(unittest.TestCase):
         np.random.seed(9001)
         random.seed(9001)
 
-        a0 = self.sim_on_branch4.sequence.nt_sequence.nucleotide_at_pos(0)
-        t1 = self.sim_on_branch4.sequence.nt_sequence.nucleotide_at_pos(1)
-        g2 = self.sim_on_branch4.sequence.nt_sequence.nucleotide_at_pos(2)
-        a3 = self.sim_on_branch4.sequence.nt_sequence.nucleotide_at_pos(3)
-        c4 = self.sim_on_branch4.sequence.nt_sequence.nucleotide_at_pos(4)
-        g5 = self.sim_on_branch4.sequence.nt_sequence.nucleotide_at_pos(5)
-        t6 = self.sim_on_branch4.sequence.nt_sequence.nucleotide_at_pos(6)
-        g7 = self.sim_on_branch4.sequence.nt_sequence.nucleotide_at_pos(7)
-        g8 = self.sim_on_branch4.sequence.nt_sequence.nucleotide_at_pos(8)
-        t9 = self.sim_on_branch4.sequence.nt_sequence.nucleotide_at_pos(9)
-        g10 = self.sim_on_branch4.sequence.nt_sequence.nucleotide_at_pos(10)
-        a11 = self.sim_on_branch4.sequence.nt_sequence.nucleotide_at_pos(11)
+        a0 = self.sim_on_branch4.sequence.nt_sequence[0]
+        t1 = self.sim_on_branch4.sequence.nt_sequence[1]
+        g2 = self.sim_on_branch4.sequence.nt_sequence[2]
+        a3 = self.sim_on_branch4.sequence.nt_sequence[3]
+        c4 = self.sim_on_branch4.sequence.nt_sequence[4]
+        g5 = self.sim_on_branch4.sequence.nt_sequence[5]
+        t6 = self.sim_on_branch4.sequence.nt_sequence[6]
+        g7 = self.sim_on_branch4.sequence.nt_sequence[7]
+        g8 = self.sim_on_branch4.sequence.nt_sequence[8]
+        t9 = self.sim_on_branch4.sequence.nt_sequence[9]
+        g10 = self.sim_on_branch4.sequence.nt_sequence[10]
+        a11 = self.sim_on_branch4.sequence.nt_sequence[11]
 
         # Change nucleotide 'A' at position 0 to T
         self.sim_on_branch4.update_nucleotide(a0, 'T')
         self.sim_on_branch4.update_nt_on_tree(a0, 'T')
 
-        t0 = self.sim_on_branch4.sequence.nt_sequence.nucleotide_at_pos(0)  # Get mutated nucleotide
+        t0 = self.sim_on_branch4.sequence.nt_sequence[0]  # Get mutated nucleotide
 
         expected_event_tree = \
             {'to_nt': {'A': {'events_for_nt': 2,

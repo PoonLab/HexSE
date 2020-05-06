@@ -50,6 +50,11 @@ def get_args(parser):
         help='List of dN/dS ratios along the length of the sequence. '
     )
 
+    parser.add_argument(
+        '--circular', action='store_true',
+        help='True for circular genomes. By default, false for linear genomes'
+    )
+
     return parser.parse_args()
 
 
@@ -417,7 +422,7 @@ def main():
 
     # Make Sequence object
     print("\nCreating root sequence")
-    root_sequence = Sequence(s, orfs, args.kappa, args.mu, pi, omegas)
+    root_sequence = Sequence(s, orfs, args.kappa, args.mu, pi, omegas, args.circular)
     # Run simulation
     #print("Event Tree:", root_sequence.event_tree["to_nt"]['T']["from_nt"]['G'])
     #print(root_sequence.event_tree["to_nt"]['T']["from_nt"]['G']['nts_in_subs'][0].rates)
