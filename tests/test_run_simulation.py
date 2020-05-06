@@ -1,6 +1,9 @@
 import unittest
+import os
 
 from src.run_simulation import *
+
+CURR_ABSPATH = os.path.dirname(os.path.abspath(__file__))
 
 
 class TestValidSequence(unittest.TestCase):
@@ -231,7 +234,7 @@ class TestSortOrfs(unittest.TestCase):
 class TestParseInput(unittest.TestCase):
 
     def testParseGenbank(self):
-        in_seq = 'fixtures/NC_003977.2_HBV.gb'
+        in_seq = os.path.join(CURR_ABSPATH, 'fixtures/NC_003977.2_HBV.gb')
         exp_seq = 'AATTCCACAACCTTCCACCAAACTCTGCAAGATCCCAGAGTGAGAGGCCTGTATTTCCCTGCTGGTGGCT'
         exp_orfs = [(2308, 3182), (0, 1625), (2849, 3182), (0, 837), (3173, 3182), (156, 837),
                     (1375, 1840), (1815, 2454), (1853, 1922), (1902, 2454)]
@@ -241,7 +244,7 @@ class TestParseInput(unittest.TestCase):
         self.assertEqual(exp_orfs, res_orfs)
 
     def testParseFasta(self):
-        in_seq = 'fixtures/HBV.fasta'
+        in_seq = os.path.join(CURR_ABSPATH, 'fixtures/HBV.fasta')
         exp_seq = 'CATTCGGGCTGGGTTTCACCCCACCGCACGGAGGCCTTTTGGGGTGGAGCCCTCAGGCTCAGGGCATACTACAAACTTTGCCAGCAAATCCGCC' \
                   'TCCTGCCTCCACCAATCGCCAGTCAGGAAGGCAGCCTACCCCGCTGTCTCCACCTTTGAGAAACACTCATCCTCAGGCCATGCAGTGG'
         res_seq = parse_fasta(in_seq)
@@ -249,8 +252,8 @@ class TestParseInput(unittest.TestCase):
 
     def testCheckOrfs(self):
         #  If user specified ORFs
-        in_orfs = 'fixtures/test_HBV_orfs.csv'
-        exp_orfs = [(2308, 3182), (0, 1625), (2849, 3182), (0, 837), (3173, 3182), (156, 837),
+        in_orfs = os.path.join(CURR_ABSPATH, 'fixtures/test_HBV_orfs.csv')
+        exp_orfs = [(2849, 3182), (0, 837), (3173, 3182), (156, 837),
                     (1375, 1840), (1815, 2454), (1853, 1922), (1902, 2454)]
         self.assertEqual(exp_orfs, check_orfs(in_orfs))
 

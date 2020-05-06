@@ -289,9 +289,9 @@ class TestSequenceInfo(unittest.TestCase):
                                                 'G': {'is_trv': False,
                                                       'kappa': 1,
                                                       'is_nonsyn': {(0, 0, 1, 0): [g2]},
-                                                      'is_syn': [g5, g7, g8, g10],
-                                                      'nts_in_subs': [g5, g7, g8, g10, g2],
-                                                      'number_of_events': 4}},
+                                                      'is_syn': [g5, g10],
+                                                      'nts_in_subs': [g5, g10, g2],
+                                                      'number_of_events': 2}},
                                     'events_for_nt': 4},
                               'T': {'stationary_frequency': 0.25,
                                     'from_nt': {'A': {'is_trv': True,
@@ -361,7 +361,7 @@ class TestSequenceInfo(unittest.TestCase):
                                                       'number_of_events': 0},
                                                 'G': None},
                                     'events_for_nt': 0}},
-                              'total_events': 6}
+                              'total_events': 4}
         self.assertEqual(expected, result)
 
 
@@ -511,8 +511,8 @@ class TestNucleotide(unittest.TestCase):
                                0.00013481869746126456,              # g7
                                0.0002496969651112465,               # g8
                                0.00024818789308831134,              # t9
-                               0.0001661143441535868,               # g10
-                               0.0001852884854149908]              # a11
+                               0.0001661143441535868,               # g10 *
+                               0.0001852884854149908]               # a11
         for pos, exp_seq4_rate in enumerate(seq4_expected_rates):
             nt = self.nt_seq4.nucleotide_at_pos(pos)
             self.assertEqual(exp_seq4_rate, nt.mutation_rate)
@@ -640,6 +640,12 @@ class TestCodon(unittest.TestCase):
         omegas = [0.29327471612351436, 0.6550136761581515, 1.0699896623909886, 1.9817219453273531]
         self.nt_seq1 = Sequence(s1, {'+0': [(0, 21)]}, kappa, mu, pi1, omegas)
 
+        s4 = 'ATGACGTGGTGA'
+        sorted_orfs = {'+0': [(0, 12)], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
+        pi4 = Sequence.get_frequency_rates(s4)
+        random.seed(9001)
+        self.nt_seq4 = Sequence(s4, sorted_orfs, kappa, mu, pi4, omegas)
+
     def testNtInPos(self):
         codons = self.nt_seq1.find_codons('+0', (0, 12))
         codon = codons[0]
@@ -671,13 +677,41 @@ class TestCodon(unittest.TestCase):
         nt = self.nt_seq1.nt_sequence.nucleotide_at_pos(20)  # C
 
         # Mutation at wobble position
-        expected = False
+        expected = False    # Synonymous
         result = codon.is_nonsyn(2, nt.state)
         self.assertEqual(expected, result)
 
         # Mutation at first position
-        expected = True
+        expected = True     # Non-synonymous
         result = codon.is_nonsyn(0, nt.state)
+        self.assertEqual(expected, result)
+
+        # Testing sequence 4
+        # ATGACGTGGTGA
+        codons = self.nt_seq4.find_codons('+0', (0, 12))
+        codon = codons[2]   # TGG = Trp
+        nt = self.nt_seq1.nt_sequence.nucleotide_at_pos(0)  # A
+
+        # Mutation at second position TGG --> TGA
+        expected = True     # Non-synonymous
+        result = codon.is_nonsyn(1, 'A')
+        self.assertEqual(expected, result)
+
+        # Mutation at last position TGG --> TGA
+        expected = True    # Non-synonymous
+        result = codon.is_nonsyn(2, 'A')
+        self.assertEqual(expected, result)
+
+        # Testing mutation at position 2 in ACG ACG --> ACT
+        expected = False
+        codon = codons[1]
+        result = codon.is_nonsyn(2, 'T')
+        self.assertEqual(expected, result)
+
+        # Testing mutation at position 10 TGA --> TAA
+        expected = False
+        codon = codons[3]
+        result = codon.is_nonsyn(1, 'A')
         self.assertEqual(expected, result)
 
     def testIsStop(self):
