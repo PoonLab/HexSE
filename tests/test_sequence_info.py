@@ -36,6 +36,46 @@ class TestSequenceInfo(unittest.TestCase):
         random.seed(9001)
         self.sequence4 = Sequence(s4, sorted_orfs, kappa, mu, pi4, omegas)
 
+    def testDeepcopy(self):
+        random.seed(9001)
+
+        # Check that Sequences are different objects with the same attributes
+        new_sequence1 = self.sequence1.__deepcopy__(memodict={})
+        self.assertIsNot(self.sequence1, new_sequence1)
+        self.assertEqual(self.sequence1.orfs, new_sequence1.orfs)
+        self.assertEqual(self.sequence1.kappa, new_sequence1.kappa)
+        self.assertEqual(self.sequence1.mu, new_sequence1.mu)
+        self.assertEqual(self.sequence1.pi, new_sequence1.pi)
+        self.assertEqual(self.sequence1.omegas, new_sequence1.omegas)
+        self.assertEqual(self.sequence1.is_circular, new_sequence1.is_circular)
+
+        # Event trees reference different Nucleotides, but the Nucleotides have the same states
+        self.assertNotEqual(self.sequence1.event_tree, new_sequence1.event_tree)
+        self.assertEqual(str(self.sequence1.event_tree), str(new_sequence1.event_tree))
+
+        # Check that Nucleotides are different objects with the same attributes
+        for pos, nt in enumerate(self.sequence1.nt_sequence):
+            new_nt = new_sequence1.nt_sequence[pos]
+            self.assertIsNot(nt, new_nt)
+
+            self.assertEqual(nt.state, new_nt.state)
+            self.assertEqual(nt.pos_in_seq, new_nt.pos_in_seq)
+            self.assertEqual(nt.complement_state, new_nt.complement_state)
+            self.assertEqual(nt.rates, new_nt.rates)
+            self.assertEqual(nt.my_omegas, new_nt.my_omegas)
+            self.assertEqual(nt.mutation_rate, new_nt.mutation_rate)
+
+            self.assertEqual(str(nt.codons), str(new_nt.codons))
+            self.assertEqual(len(nt.codons), len(new_nt.codons))
+
+            # Check that Codons are different objects with the same attributes
+            for i, codon in enumerate(nt.codons):
+                new_codon = new_nt.codons[i]
+                self.assertIsNot(codon, new_codon)
+                self.assertEqual(codon.orf, new_codon.orf)
+                self.assertEqual(codon.frame, new_codon.frame)
+                self.assertEqual(str(codon.nts_in_codon), str(new_codon.nts_in_codon))
+
     def testGetFrequencyRates(self):
         random.seed(9001)
         result = Sequence.get_frequency_rates('AAAAAAAAA')

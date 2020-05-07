@@ -1,6 +1,7 @@
 # Store sequence information
 
 import random
+import copy
 
 TRANSITIONS_DICT = {'A': 'G', 'G': 'A', 'T': 'C', 'C': 'T'}
 
@@ -55,6 +56,7 @@ class Sequence:
         self.mu = mu  # The global rate (substitutions/site/unit time)
         self.pi = pi  # Frequency of nucleotides, with nucleotide as keys
         self.omegas = omegas  # Numeric values drawn from gamma distribution
+        self.__codons = []      # Store references to all codons
         self.nt_sequence = []   # List of Nucleotide objects
         self.is_circular = circular  # True if the genome is circular, False otherwise
 
@@ -73,6 +75,7 @@ class Sequence:
                     for codon in codons:
                         for i, nt in enumerate(codon.nts_in_codon):
                             nt.codons.append(codon)
+                        self.__codons.append(codon)
 
         # Create event tree containing all possible mutations and the parameters needed to calculate the rates
         self.event_tree = self.create_event_tree()  # Nested dict containing info about all possible mutation events
@@ -86,6 +89,27 @@ class Sequence:
 
         # Update event_tree to include a list of nucleotides on the tips
         self.event_tree = self.get_nts_on_tips()
+
+    def __deepcopy__(self, memodict):
+        """
+        Creates a deepcopy of Sequence and sets the reference(s) for a Nucleotide's Codon(s)
+        """
+
+        # Creates a new Sequence
+        cls = self.__class__
+        new_sequence = cls.__new__(cls)
+        memodict[id(self)] = new_sequence        # Avoid duplicate copying
+
+        # Set attributes of new Sequence to the same as the original object
+        for k, v in self.__dict__.items():
+            setattr(new_sequence, k, copy.deepcopy(v, memodict))
+
+        # Set references to Codons
+        for codon in new_sequence.__codons:
+            for i, nt in enumerate(codon.nts_in_codon):
+                nt.codons.append(codon)
+
+        return new_sequence
 
     def __str__(self):
         """
@@ -347,6 +371,28 @@ class Nucleotide:
 
     def __repr__(self):
         return self.state.lower() + str(self.pos_in_seq)
+
+    def __deepcopy__(self, memodict):
+        """
+        Creates a deepcopy of a Nucleotide.
+        Note: A Nucleotide's reference(s) to its Codon(s) will be set in Sequence's deepcopy
+        """
+
+        # Creates a new Nucleotide
+        cls = self.__class__
+        new_nucletotide = cls.__new__(cls)
+        memodict[id(self)] = new_nucletotide        # Avoid duplicate copying
+
+        # Copy all attributes except the codons
+        new_nucletotide.state = copy.deepcopy(self.state, memodict)
+        new_nucletotide.pos_in_seq = copy.deepcopy(self.pos_in_seq, memodict)
+        new_nucletotide.complement_state = copy.deepcopy(self.complement_state, memodict)
+        new_nucletotide.rates = copy.deepcopy(self.rates, memodict)
+        new_nucletotide.my_omegas = copy.deepcopy(self.my_omegas, memodict)
+        new_nucletotide.mutation_rate = copy.deepcopy(self.mutation_rate, memodict)
+        new_nucletotide.codons = []     # References to Codons will be set when the Sequence is deep-copied
+
+        return new_nucletotide
 
     def set_state(self, new_state):
         self.state = new_state
