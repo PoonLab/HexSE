@@ -166,9 +166,14 @@ class SimulateOnBranch:
                 # Find branches that contain my nucleotide
                 my_branch = self.event_tree['to_nt'][key_to_nt]['from_nt'][nt.state]
                 # Remove nt from non-synonymous mutations
-                for omega_key, nucleotide_list in my_branch['is_nonsyn'].items():
+                for omega_key in list(my_branch['is_nonsyn'].keys()):
+                    nucleotide_list = my_branch['is_nonsyn'][omega_key]
                     if nt in nucleotide_list:
                         nucleotide_list.remove(nt)
+
+                    # Remove omega keys with no associated nucleotides
+                    if not nucleotide_list:
+                        del my_branch['is_nonsyn'][omega_key]
 
                 # Remove nt from synonymous mutations and list of nucleotides in substitution
                 if nt in my_branch['is_syn']:
