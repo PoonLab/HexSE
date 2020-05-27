@@ -1,6 +1,7 @@
 import argparse
 import re
 import sys
+import logging
 
 import numpy as np
 import scipy
@@ -358,26 +359,46 @@ def check_orfs(in_orfs=None, s=None):
 
     return unsorted_orfs
 
+def create_log_file(input_file_name):
+    """
+    Create a log file with information for the run
+    """
+    # Select name of the input file
+    file_name = input_file_name.split("/")[-1]
+    file_name = file_name.split(".")[0]
+    LOG_FILENAME = "{}_evol_simulation.log".format(file_name)
+
+    return LOG_FILENAME
+
 
 def main():
     start_time = datetime.now()
-    print("Started at: ", datetime.now())
+    print("\nStarted at: ", datetime.now())
     parser = argparse.ArgumentParser(
         description='Simulates and visualizes the evolution of a sequence through a phylogeny'
     )
     args = get_args(parser)
+    input = args.seq.lower()
+
+    #Create log file
+    file_name = input.split("/")[-1]
+    LOG_FILENAME = "{}_evol_simulation.log".format(file_name.split(".")[0])
+    logging.basicConfig(filename=LOG_FILENAME, level=logging.INFO)
 
     # Check input format
-    input = args.seq.lower()
     if input.endswith(".gb") or input.endswith("genbank"):  # If genbank file
         s, unsorted_orfs = parse_genbank(args.seq, args.orfs)
+        logging.info("Input sequence is: {} in genbank format".format(input))
     elif input.endswith(".fasta") or input.endswith(".fa"):   # If fasta file
         s = parse_fasta(args.seq)
         unsorted_orfs = check_orfs(args.orfs, s)
+        logging.info("Input sequence is: {} in fasta format".format(input))
         print(unsorted_orfs)
     else:
         print("Sequence files must end in '.fa', '.fasta', '.gb', 'genbank'")
+        logging.error("Invalid sequence: files must end in '.fa', '.fasta', '.gb', 'genbank'")
         sys.exit()
+
 
     # Check if the ORFs are valid
     invalid_orfs = valid_orfs(unsorted_orfs, len(s))
@@ -389,14 +410,17 @@ def main():
             invalid_orf_msg += " {} ".format(invalid_orf)
             unsorted_orfs.remove(invalid_orf)
         print("\nOmitted orfs: {}\n".format(invalid_orf_msg))
+        logging.warning("Omitted orfs: {}".format(invalid_orf_msg))
 
     # Since ORFs are valid, sort the ORFs by reading frame
     orfs = sort_orfs(unsorted_orfs)
     print("Valid sorted orfs: ", orfs)
+    logging.info("Valid orfs: {}".format(orfs))
 
     # Check if sequence is valid
     if not valid_sequence(s):
         print("Invalid sequence: {}".format(s))
+        logging.error("Invalid sequence: {}".format(s))
         sys.exit(0)
 
     # If the user did not specify stationary frequencies
@@ -417,18 +441,16 @@ def main():
         # Draw omega values from gamma distribution
         omegas = get_omega_values(2, 4)
 
+    logging.info("Parameters for the run: \nPi: {}\nOmgeas{}\nmu: {}\nkappa: {}".format(pi, omegas, args.mu, args.kappa))
     # Read in the tree
     phylo_tree = Phylo.read(args.tree, 'newick', rooted=True)
-
+    logging.info("Phylogenic tree: {}".format(args.tree))
     # Make Sequence object
     print("\nCreating root sequence")
     root_sequence = Sequence(s, orfs, args.kappa, args.mu, pi, omegas, args.circular)
-    # Run simulation
-    #print("Event Tree:", root_sequence.event_tree["to_nt"]['T']["from_nt"]['G'])
-    #print(root_sequence.event_tree["to_nt"]['T']["from_nt"]['G']['nts_in_subs'][0].rates)
-    #print(root_sequence.event_tree["to_nt"]['T']["from_nt"]['G']['nts_in_subs'][0].mutation_rate)
-    print("\nRunning simulation")
 
+    # Run simulation
+    print("\nRunning simulation")
     simulation = SimulateOnTree(root_sequence, phylo_tree, args.outfile)
     simulation.get_alignment(args.outfile)
 
