@@ -10,9 +10,9 @@ from Bio import Phylo
 from Bio import SeqIO
 from datetime import datetime
 
-from sequence_info import NUCLEOTIDES, COMPLEMENT_DICT
-from sequence_info import Sequence
-from simulation import SimulateOnTree
+from src.sequence_info import NUCLEOTIDES, COMPLEMENT_DICT
+from src.sequence_info import Sequence
+from src.simulation import SimulateOnTree
 
 
 def get_args(parser):
@@ -47,10 +47,10 @@ def get_args(parser):
              'the program will use the empirical frequencies in the sequence. Format: [A, T, G, C]'
     )
     parser.add_argument(
-        '--omega', type=float, default=[None, None, None, None],
-        help='List of dN/dS ratios along the length of the sequence. '
+        '--dist', choices=['gamma', 'lognorm'], default='gamma',
+        help='The parametric distribution used to model synonymous and non-synonymous rates. '
+             'Options are gamma and lognormal'
     )
-
     parser.add_argument(
         '--circular', action='store_true',
         help='True for circular genomes. By default, false for linear genomes'
@@ -257,16 +257,29 @@ def sort_orfs(unsorted_orfs):
     return sorted_orfs
 
 
-def get_omega_values(alpha, ncat):
+# def get_omega_values(alpha, ncat):
+#     """
+#     Draw ncat number of omega values from a discretized gamma distribution
+#     :param alpha: shape parameter
+#     :param ncat: Number of categories (expected omegas)
+#     :return: list of ncat number of omega values (e.i. if ncat = 3, omega_values = [0.29, 0.65, 1.06])
+#     """
+#     values = discretize_gamma(alpha=alpha, ncat=ncat)
+#     omega_values = list(values)
+#     return omega_values
+
+
+def get_rate_values(alpha, ncat, dist=ss.gamma):
     """
-    Draw ncat number of omega values from a discretized gamma distribution
+    Draw ncat number of dN or dS values from a discretized gamma distribution
     :param alpha: shape parameter
-    :param ncat: Number of categories (expected omegas)
+    :param ncat: Number of categories (expected dS values)
+    :param dist: the parametric distribution
     :return: list of ncat number of omega values (e.i. if ncat = 3, omega_values = [0.29, 0.65, 1.06])
     """
-    values = discretize_gamma(alpha=alpha, ncat=ncat)
-    omega_values = list(values)
-    return omega_values
+    values = discretize_gamma(alpha, ncat, dist)
+    rate_values = list(values)
+    return rate_values
 
 
 def discretize_gamma(alpha, ncat, dist=ss.gamma):
@@ -359,6 +372,7 @@ def check_orfs(in_orfs=None, s=None):
 
     return unsorted_orfs
 
+
 def create_log_file(input_file_name):
     """
     Create a log file with information for the run
@@ -374,13 +388,14 @@ def create_log_file(input_file_name):
 def main():
     start_time = datetime.now()
     print("\nStarted at: ", datetime.now())
+
     parser = argparse.ArgumentParser(
         description='Simulates and visualizes the evolution of a sequence through a phylogeny'
     )
     args = get_args(parser)
     input = args.seq.lower()
 
-    #Create log file
+    # Create log file
     file_name = input.split("/")[-1]
     LOG_FILENAME = "{}_evol_simulation.log".format(file_name.split(".")[0])
     logging.basicConfig(filename=LOG_FILENAME, level=logging.INFO)
@@ -398,7 +413,6 @@ def main():
         print("Sequence files must end in '.fa', '.fasta', '.gb', 'genbank'")
         logging.error("Invalid sequence: files must end in '.fa', '.fasta', '.gb', 'genbank'")
         sys.exit()
-
 
     # Check if the ORFs are valid
     invalid_orfs = valid_orfs(unsorted_orfs, len(s))
@@ -436,25 +450,24 @@ def main():
         print("Invalid input: {}".format(args.pi))
         exit(0)
 
-    # If user did not specify omega values
-    if all(v is None for v in args.omega):
-        # Draw omega values from gamma distribution
-        omegas = get_omega_values(2, 4)
+    # Draw dN and dS valeus from the user-specified discretized distribution
+    dN_values = get_rate_values(2, 4)
+    ds_values = get_rate_values(2, 4)
 
-    logging.info("Parameters for the run: \nPi: {}\nOmgeas{}\nmu: {}\nkappa: {}".format(pi, omegas, args.mu, args.kappa))
+    logging.info("Parameters for the run: \nPi: {}\nMu: {}\nKappa: {}".format(pi, args.mu, args.kappa))
     # Read in the tree
     phylo_tree = Phylo.read(args.tree, 'newick', rooted=True)
     logging.info("Phylogenic tree: {}".format(args.tree))
     # Make Sequence object
     print("\nCreating root sequence")
-    root_sequence = Sequence(s, orfs, args.kappa, args.mu, pi, omegas, args.circular)
+    root_sequence = Sequence(s, orfs, args.kappa, args.mu, pi, dN_values, ds_values, args.circular)
 
     # Run simulation
     print("\nRunning simulation")
     simulation = SimulateOnTree(root_sequence, phylo_tree, args.outfile)
     simulation.get_alignment(args.outfile)
 
-    print("Simulation runed during {} seconds".format(datetime.now() - start_time))
+    print("Simulation duration {} seconds".format(datetime.now() - start_time))
 
 
 if __name__ == '__main__':

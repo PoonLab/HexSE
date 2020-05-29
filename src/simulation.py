@@ -198,7 +198,8 @@ class SimulateOnBranch:
         nt.set_complement_state()  # Change complementary state given the mutation
         rates = self.sequence.get_substitution_rates(nt)  # Calculate new rates and update event tree
         nt.set_rates(rates[0])  # Update substitution rates
-        nt.set_my_omegas(rates[1])  # Update omega keys
+        nt.dN_values(rates[1])  # Update dN
+        nt.dS_values(rates[2])  # Update dS
         nt.get_mutation_rate()
 
     def update_nt_on_tree(self, nt, to_state):
