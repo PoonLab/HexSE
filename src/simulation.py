@@ -78,7 +78,6 @@ class SimulateOnBranch:
         :param sum_values: sum all values on dict to establish the limit for the mutation
         :return: random key from dict
         """
-
         iter_object = iter(dictionary.items())
         limit = random.uniform(0, sum_values)
         s = 0
@@ -97,6 +96,7 @@ class SimulateOnBranch:
     def sum_rates(self):
         """
         Calculate the total mutation rate of sequence
+        :return: the sum of the mutation rates
         """
         total_rate = sum([nt.mutation_rate for nt in iter(self.sequence.get_sequence())])
         return total_rate
@@ -104,6 +104,7 @@ class SimulateOnBranch:
     def mutate_on_branch(self):
         """
         Simulate molecular evolution in sequence given a branch length
+        :return: the mutated sequence
         """
         times_sum = 0
         instant_rate = self.sum_rates()
@@ -159,8 +160,8 @@ class SimulateOnBranch:
     def remove_nt(self, nt):
         """
         Find nucleotide selected to mutate in the event tree and remove it from every branch on the event tree
+        :param nt: The nucleotide to be removed from the event tree
         """
-
         for key_to_nt, value_to_nt in self.event_tree['to_nt'].items():
             if key_to_nt != nt.state:
                 # Find branches that contain my nucleotide
@@ -191,15 +192,14 @@ class SimulateOnBranch:
         """
         Update parameters on the mutated nucleotide
         """
-
         nt.set_state(to_state)  # Update the state of the nucleotide
 
         # Update rates, omega key and event tree with the nucleotide according to its new state
         nt.set_complement_state()  # Change complementary state given the mutation
         rates = self.sequence.get_substitution_rates(nt)  # Calculate new rates and update event tree
         nt.set_rates(rates[0])  # Update substitution rates
-        nt.dN_values(rates[1])  # Update dN
-        nt.dS_values(rates[2])  # Update dS
+        nt.set_dN(rates[1])  # Update dN
+        nt.set_dS(rates[2])  # Update dS
         nt.get_mutation_rate()
 
     def update_nt_on_tree(self, nt, to_state):
@@ -241,6 +241,7 @@ class SimulateOnTree:
         :param child_clade: current clade
         :return: path to the parent clade
         """
+
         node_path = self.phylo_tree.get_path(child_clade)
         return node_path[-2] if len(node_path) > 1 else self.phylo_tree.root
 
@@ -249,6 +250,7 @@ class SimulateOnTree:
         Mutate a sequence along a phylogeny by traversing it in level-order
         :return phylo_tree: A Phylo tree with Clade objects annotated with sequences.
         """
+
         # Assign root_seq to root Clade
         self.phylo_tree.root.sequence = self.root_sequence
         root = self.phylo_tree.root
@@ -273,6 +275,7 @@ class SimulateOnTree:
         """
         Iterates over tips (terminal nodes) of tree and returns sequence
         """
+
         final_tree = self.traverse_tree()
 
         if outfile is not None:

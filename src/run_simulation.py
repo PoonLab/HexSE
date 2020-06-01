@@ -47,11 +47,6 @@ def get_args(parser):
              'the program will use the empirical frequencies in the sequence. Format: [A, T, G, C]'
     )
     parser.add_argument(
-        '--dist', choices=['gamma', 'lognorm'], default='gamma',
-        help='The parametric distribution used to model synonymous and non-synonymous rates. '
-             'Options are gamma and lognormal'
-    )
-    parser.add_argument(
         '--circular', action='store_true',
         help='True for circular genomes. By default, false for linear genomes'
     )
@@ -257,45 +252,27 @@ def sort_orfs(unsorted_orfs):
     return sorted_orfs
 
 
-# def get_omega_values(alpha, ncat):
-#     """
-#     Draw ncat number of omega values from a discretized gamma distribution
-#     :param alpha: shape parameter
-#     :param ncat: Number of categories (expected omegas)
-#     :return: list of ncat number of omega values (e.i. if ncat = 3, omega_values = [0.29, 0.65, 1.06])
-#     """
-#     values = discretize_gamma(alpha=alpha, ncat=ncat)
-#     omega_values = list(values)
-#     return omega_values
-
-
-def get_rate_values(alpha, ncat, dist=ss.gamma):
+def get_rate_values(alpha, ncat):
     """
     Draw ncat number of dN or dS values from a discretized gamma distribution
     :param alpha: shape parameter
     :param ncat: Number of categories (expected dS values)
-    :param dist: the parametric distribution
     :return: list of ncat number of omega values (e.i. if ncat = 3, omega_values = [0.29, 0.65, 1.06])
     """
-    values = discretize_gamma(alpha, ncat, dist)
+    values = discretize_gamma(alpha, ncat)
     rate_values = list(values)
     return rate_values
 
 
-def discretize_gamma(alpha, ncat, dist=ss.gamma):
+def discretize_gamma(alpha, ncat):
     """
     Divide the gamma distribution into a number of intervals with equal probability and get the mid point of those intervals
     From https://gist.github.com/kgori/95f604131ce92ec15f4338635a86dfb9
     :param alpha: shape parameter
     :param ncat: Number of categories
-    :param dist: function from scipy stats
     :return: array with ncat number of values
     """
-    if dist == ss.gamma:
-        dist = dist(alpha, scale=1 / alpha)
-
-    elif dist == ss.lognorm:
-        dist = dist(s=alpha, scale=np.exp(0.5 * alpha ** 2))
+    dist = ss.gamma(alpha, scale=1 / alpha)
 
     quantiles = dist.ppf(np.arange(0, ncat) / ncat)
     rates = np.zeros(ncat, dtype=np.double)  # return a new array of shape ncat and type double

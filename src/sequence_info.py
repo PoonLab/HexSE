@@ -224,7 +224,7 @@ class Sequence:
 
                     # Add nucleotides involved in non-syn substitutions
                     nt_subs_length = len(nt_in_substitution)
-                    non_syn_subs = from_nt['is_nonsyn']
+                    non_syn_subs = from_nt['is_nonsyn']['dN']
                     for key3, nts in non_syn_subs.items():
                         nt_in_substitution.extend([nt for nt in nts])
 
@@ -236,7 +236,6 @@ class Sequence:
             updated_event_tree['to_nt'][key1].update([('events_for_nt', events_for_to_nt)])
 
         updated_event_tree['total_events'] = total_events
-
         return updated_event_tree
 
     def get_substitution_rates(self, nt):
@@ -281,16 +280,21 @@ class Sequence:
                 my_dN_keys[to_nt] = dN_in_sub
                 my_dS_keys[to_nt] = dS_in_sub
 
-                current_event = self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_nonsyn']
+                current_dS = self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_nonsyn']['dS']
+                current_dN = self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_nonsyn']['dN']
 
                 # Populate event tree using dN and dS keys
                 if any(dN_in_sub) and any(dS_in_sub):
-                    # Create dS key if needed, associate it with the current nucleotide
-                    if dN_in_sub not in current_event and dS_in_sub not in current_event:
-                        self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_nonsyn']['dN'] = [nt]
-                        self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_nonsyn']['dS'] = [nt]
+                    # Create dN key if needed, associate it with the current nucleotide
+                    if dN_in_sub not in current_dN:
+                        self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_nonsyn']['dN'][dN_in_sub] = [nt]
                     else:
                         self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_nonsyn']['dN'][dN_in_sub].append(nt)
+
+                    # Create dS key if needed, associate it with the current nucleotide
+                    if dS_in_sub not in current_dS:
+                        self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_nonsyn']['dS'][dS_in_sub] = [nt]
+                    else:
                         self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_nonsyn']['dS'][dS_in_sub].append(nt)
 
                 elif 0 not in sub_rates.values():  # If does not introduce an STOP codon
