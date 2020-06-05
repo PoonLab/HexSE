@@ -47,6 +47,22 @@ def get_args(parser):
              'the program will use the empirical frequencies in the sequence. Format: [A, T, G, C]'
     )
     parser.add_argument(
+        '--dNclasses', type=int, default=4,
+        help='The number of dN classes'
+    )
+    parser.add_argument(
+        '--dNshape', type=float, default=2.0,
+        help='The shape parameter of the gamma distribution, from which dN values are drawn'
+    )
+    parser.add_argument(
+        '--dSclasses', type=int, default=4,
+        help='The number of dS classes'
+    )
+    parser.add_argument(
+        '--dSshape', type=float, default=2.0,
+        help='The shape parameter of the gamma distribution, from which dS values are drawn'
+    )
+    parser.add_argument(
         '--circular', action='store_true',
         help='True for circular genomes. By default, false for linear genomes'
     )
@@ -427,24 +443,30 @@ def main():
         print("Invalid input: {}".format(args.pi))
         exit(0)
 
-    # Draw dN and dS valeus from the user-specified discretized distribution
-    dN_values = get_rate_values(2, 4)
-    ds_values = get_rate_values(2, 4)
+    # Draw dN and dS values from a gamma distribution
+    dN_values = get_rate_values(args.dNshape, args.dNclasses)
+    dS_values = get_rate_values(args.dSshape, args.dSclasses)
 
-    logging.info("Parameters for the run: \nPi: {}\nMu: {}\nKappa: {}".format(pi, args.mu, args.kappa))
+    logging.info("Parameters for the run: \nPi: {}\nMu: {}\nKappa: {}\n"
+                 "Number of dN classes: {}\ndN shape parameter: {}\ndN values: {}\n"
+                 "Number of dS classes: {}\ndS shape parameter: {}\ndS values: {}\n"
+                 .format(pi, args.mu, args.kappa,
+                         args.dNclasses, args.dNshape, dN_values,
+                         args.dSclasses, args.dSshape, dS_values))
+
     # Read in the tree
     phylo_tree = Phylo.read(args.tree, 'newick', rooted=True)
     logging.info("Phylogenic tree: {}".format(args.tree))
     # Make Sequence object
     print("\nCreating root sequence")
-    root_sequence = Sequence(s, orfs, args.kappa, args.mu, pi, dN_values, ds_values, args.circular)
+    root_sequence = Sequence(s, orfs, args.kappa, args.mu, pi, dN_values, dS_values, args.circular)
 
     # Run simulation
     print("\nRunning simulation")
     simulation = SimulateOnTree(root_sequence, phylo_tree, args.outfile)
     simulation.get_alignment(args.outfile)
 
-    print("Simulation duration {} seconds".format(datetime.now() - start_time))
+    print("Simulation duration: {} seconds".format(datetime.now() - start_time))
 
 
 if __name__ == '__main__':

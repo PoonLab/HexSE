@@ -261,8 +261,10 @@ class Sequence:
                 if self.is_transv(current_nt, to_nt):
                     sub_rates[to_nt] *= self.kappa
 
-                chosen_dN = [0, 0, 0, 0]  # dN applied given a substitution from current_nt to to_nt
-                chosen_dS = [0, 0, 0, 0]  # dS applied given a substitution from current_nt to to_nt
+                # dN and dS applied given a substitution from current_nt to to_nt
+                chosen_dN = [0 for _ in range(len(self.dN_values))]
+                chosen_dS = [0 for _ in range(len(self.dS_values))]
+
                 for codon in nt.codons:
                     pos_in_codon = codon.nt_in_pos(nt)
                     if codon.is_stop(pos_in_codon, to_nt):  # If mutation leads to a stop codon
