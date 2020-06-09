@@ -280,4 +280,4 @@ class SimulateOnTree:
                     out_handle.write(">Sequence_{} \n{}\n".format(clade, clade.sequence))
         else:
             for clade in final_tree.get_terminals():
-                print(">Sequence_{} \n{}".format(clade, clade.sequence))
+                print(">{} \n{}".format(clade, clade.sequence))
