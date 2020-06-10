@@ -277,7 +277,7 @@ class SimulateOnTree:
         if outfile is not None:
             with open(outfile, 'w+') as out_handle:
                 for clade in final_tree.get_terminals():
-                    out_handle.write(">Sequence_{} \n{}\n".format(clade, clade.sequence))
+                    out_handle.write(">{} \n{}\n".format(clade, clade.sequence))
         else:
             for clade in final_tree.get_terminals():
                 print(">{} \n{}".format(clade, clade.sequence))
