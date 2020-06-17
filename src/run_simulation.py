@@ -10,9 +10,9 @@ from Bio import Phylo
 from Bio import SeqIO
 from datetime import datetime
 
-from sequence_info import NUCLEOTIDES, COMPLEMENT_DICT
-from sequence_info import Sequence
-from simulation import SimulateOnTree
+from src.sequence_info import NUCLEOTIDES, COMPLEMENT_DICT
+from src.sequence_info import Sequence
+from src.simulation import SimulateOnTree
 
 
 def get_args(parser):
@@ -370,6 +370,33 @@ def create_log_file(input_file_name):
 
     return LOG_FILENAME
 
+def stop_in_seq(seq, start, end):
+    """
+    Look for stop codons inside the CDS
+    """
+    cds = seq[start:end]
+    stop =  ["TGA", "TAG", "TAA"]
+    stop_count = 0
+    for codon, nt in codon_iterator(cds, start, end):
+        if codon in stop:
+            stop_count += 1
+
+    return stop_count
+
+def codon_iterator(my_orf, start_pos, end_pos):
+    """
+    Generator to move every three nucleotides (codon)
+    :param my_orf: A list of Nucleotides in the ORF
+    :param start_pos: The start position of the ORF
+    :param end_pos: The end position of the ORF
+    :yield codon
+    """
+    if start_pos > end_pos:  # Negative strand
+        my_orf.reverse()
+    i = 0
+    while i < len(my_orf):
+        yield (my_orf[i:i + 3], i)
+        i += 3
 
 def main():
     start_time = datetime.now()
@@ -385,7 +412,7 @@ def main():
     LOG_FILENAME = "{}_evol_simulation.log".format(file_name.split(".")[0])
     logging.basicConfig(filename=LOG_FILENAME, level=logging.INFO)
 
-    # Check input format
+    # Check input format for the nucleotide sequence
     if input.endswith(".gb") or input.endswith("genbank"):  # If genbank file
         s, unsorted_orfs = parse_genbank(args.seq, args.orfs)
         logging.info("Input sequence is: {} in genbank format".format(input))
@@ -411,6 +438,13 @@ def main():
             unsorted_orfs.remove(invalid_orf)
         print("\nOmitted orfs: {}\n".format(invalid_orf_msg))
         logging.warning("Omitted orfs: {}".format(invalid_orf_msg))
+
+    #Check if the CDSs have stop codons inside them
+    for orf in unsorted_orfs:
+        stop_count = stop_in_seq(s, orf[0], orf[1])
+        if stop_count > 1:  # CDS has more than one stop codon (the final one)
+            unsorted_orfs.remove(orf)
+            print(f"Omitted orf: {orf} has {stop_count} STOP codons")
 
     # Since ORFs are valid, sort the ORFs by reading frame
     orfs = sort_orfs(unsorted_orfs)
