@@ -216,17 +216,18 @@ class Sequence:
 
             for key2, from_nt in subset.items():
                 if from_nt:
-                    nt_in_substitution = []  # Nucleotides associated with each substitution event
+                    nt_in_substitution = set()  # Nucleotides associated with each substitution event
 
                     # Add nucleotides that are not involved in any non-syn substitution
                     if from_nt['is_syn']:
-                        nt_in_substitution.extend([nts for nts in from_nt['is_syn']])
+                        nt_in_substitution.update(from_nt['is_syn'])
 
                     # Add nucleotides involved in non-syn substitutions
                     nt_subs_length = len(nt_in_substitution)
                     non_syn_subs = from_nt['is_nonsyn']['dN']
+
                     for key3, nts in non_syn_subs.items():
-                        nt_in_substitution.extend([nt for nt in nts])
+                        nt_in_substitution.update(nts)
 
                     updated_event_tree['to_nt'][key1]['from_nt'][key2].update([('nts_in_subs', nt_in_substitution)])
                     updated_event_tree['to_nt'][key1]['from_nt'][key2].update([('number_of_events', nt_subs_length)])
@@ -269,7 +270,6 @@ class Sequence:
                     pos_in_codon = codon.nt_in_pos(nt)
                     if codon.is_stop(pos_in_codon, to_nt):  # If mutation leads to a stop codon
                         sub_rates[to_nt] *= 0
-                        nt.is_stop = True
                     elif codon.is_nonsyn(pos_in_codon, to_nt):  # Apply omega when mutation is non-synonymous
                         dN_index = random.randrange(len(self.dN_values))
                         dS_index = random.randrange(len(self.dS_values))
