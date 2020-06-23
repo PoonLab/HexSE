@@ -56,19 +56,26 @@ class TestSimulateOnBranch(unittest.TestCase):
         result = self.sim_on_branch1.get_substitution()
         self.assertEqual(expected, result)
 
-        # Expected TTT --> CTT substitution
-        expected = (self.sim_on_branch2.sequence.nt_sequence[4], 'C')
+        # Expected TTT --> TCT substitution
+        expected = (self.sim_on_branch2.sequence.nt_sequence[3], 'C')
         result = self.sim_on_branch2.get_substitution()
         self.assertEqual(expected, result)
 
-        # Expected TTC --> TCC substitution
-        expected = (self.sim_on_branch3.sequence.nt_sequence[30], 'C')
+        # AATTCATGAACGAAAATCTGTTCGCTTCATTCATTGCCCCCACAATCTAGGCCTACCC
+        # Expected TGT --> TGC substitution
+        expected = (self.sim_on_branch3.sequence.nt_sequence[20], 'C')
         result = self.sim_on_branch3.get_substitution()
         self.assertEqual(expected, result)
 
         # ATG ACG TGG TGA
         # expected TGA -> TTA substitution
         expected = (self.sim_on_branch4.sequence.nt_sequence[10], 'T')
+        result = self.sim_on_branch4.get_substitution()
+        self.assertEqual(expected, result)
+
+        # ATG ACG TGG TGA
+        # expected ATG -> ATA
+        expected = (self.sim_on_branch4.sequence.nt_sequence[2], 'A')
         result = self.sim_on_branch4.get_substitution()
         self.assertEqual(expected, result)
 

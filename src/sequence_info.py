@@ -224,6 +224,7 @@ class Sequence:
 
                     # Add nucleotides involved in non-syn substitutions
                     nt_subs_length = len(nt_in_substitution)
+                    # print(from_nt['is_nonsyn'])
                     non_syn_subs = from_nt['is_nonsyn']['dN']
 
                     for key3, nts in non_syn_subs.items():
@@ -268,9 +269,16 @@ class Sequence:
 
                 for codon in nt.codons:
                     pos_in_codon = codon.nt_in_pos(nt)
-                    if codon.is_stop(pos_in_codon, to_nt):  # If mutation leads to a stop codon
+                    # If mutation leads to a stop codon
+                    if codon.is_stop(pos_in_codon, to_nt):
                         sub_rates[to_nt] *= 0
-                    elif codon.is_nonsyn(pos_in_codon, to_nt):  # Apply omega when mutation is non-synonymous
+
+                    # # If nt is part of a start codon, set dN to 0
+                    # elif codon.is_start():
+                    #     sub_rates[to_nt] *= 0
+
+                    # Apply omega when mutation is non-synonymous
+                    elif codon.is_nonsyn(pos_in_codon, to_nt):
                         dN_index = random.randrange(len(self.dN_values))
                         dS_index = random.randrange(len(self.dS_values))
                         sub_rates[to_nt] *= (self.dN_values[dN_index] / self.dS_values[dS_index])
@@ -405,8 +413,6 @@ class Nucleotide:
         new_nucletotide.pos_in_seq = copy.deepcopy(self.pos_in_seq, memodict)
         new_nucletotide.complement_state = copy.deepcopy(self.complement_state, memodict)
         new_nucletotide.rates = copy.deepcopy(self.rates, memodict)
-        new_nucletotide.dN_values = copy.deepcopy(self.dN_values, memodict)
-        new_nucletotide.dS_values = copy.deepcopy(self.dS_values, memodict)
         new_nucletotide.mutation_rate = copy.deepcopy(self.mutation_rate, memodict)
         new_nucletotide.codons = []     # References to Codons will be set when the Sequence is deep-copied
 
@@ -428,7 +434,7 @@ class Nucleotide:
         self.dN_values = dN_values
 
     def set_dS(self, dS_values):
-        self.dS_values =dS_values
+        self.dS_values = dS_values
 
     def add_codon(self, codon):
         self.codons.append(codon)
@@ -513,3 +519,12 @@ class Codon:
             return True
         else:
             return False
+
+    def is_start(self):
+        # Get the codon as a list of strings
+        if self.orf[0] < self.orf[1]:  # Positive strand
+            codon = ''.join(str(nt) for nt in self.nts_in_codon)  # Cast all Nucleotides in the Codon to strings
+        else:
+            codon = ''.join(nt.complement_state for nt in self.nts_in_codon)
+
+        return codon == 'ATG' and self.nts_in_codon[0].pos_in_seq == self.orf[0]

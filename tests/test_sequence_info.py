@@ -712,6 +712,19 @@ class TestCodon(unittest.TestCase):
         result = codon.is_stop(1, 'A')
         self.assertEqual(expected, result)
 
+    def testIsStart(self):
+        codons = self.nt_seq1.find_codons('+0', (0, 12))
+        codon = codons[0]
+        expected = False
+        result = codon.is_start()
+        self.assertEqual(expected, result)
+
+        codons = self.nt_seq4.find_codons('+0', (0, 12))
+        codon = codons[0]
+        expected = True
+        result = codon.is_start()
+        self.assertEqual(expected, result)
+
 
 if __name__ == '__main__':
     unittest.main()
