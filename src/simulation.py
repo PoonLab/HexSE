@@ -44,16 +44,16 @@ class SimulateOnBranch:
         # Select weighted nucleotide
         from_nucleotide = self.weighted_random_choice(nt_dict, sum(rates_list))
 
-        # print("from nt:{}\tto nt:{}\tcodon:{}\tpos in seq:{}".format(from_nucleotide, to_mutation, from_nucleotide.codons, from_nucleotide.pos_in_seq))
-        # print("from nt rate: {}".format(from_nucleotide.mutation_rate))
-        # print("before:{}".format(self.sequence))
-        # original_seq = list(self.sequence.nt_sequence)
-        # nt_seq = []
-        # for nt in original_seq:
-        #     nt_seq.append(nt.state)
-        # nt_seq[from_nucleotide.pos_in_seq] = to_mutation
-        # after_seq = ''.join(nt for nt in nt_seq)
-        # print("after: {}\n".format(after_seq))
+        print("from nt:{}\tto nt:{}\tcodon:{}\tpos in seq:{}".format(from_nucleotide, to_mutation, from_nucleotide.codons, from_nucleotide.pos_in_seq))
+        print("from nt rate: {}".format(from_nucleotide.mutation_rate))
+        print("before:{}".format(self.sequence))
+        original_seq = list(self.sequence.nt_sequence)
+        nt_seq = []
+        for nt in original_seq:
+            nt_seq.append(nt.state)
+        nt_seq[from_nucleotide.pos_in_seq] = to_mutation
+        after_seq = ''.join(nt for nt in nt_seq)
+        print("after: {}\n".format(after_seq))
 
         return from_nucleotide, to_mutation
 
@@ -177,15 +177,6 @@ class SimulateOnBranch:
             if key_to_nt != nt.state:
                 # Find branches that contain my nucleotide
                 my_branch = self.event_tree['to_nt'][key_to_nt]['from_nt'][nt.state]
-                # Remove nt from non-synonymous mutations
-                for omega_key in list(my_branch['is_nonsyn'].keys()):
-                    nucleotide_list = my_branch['is_nonsyn'][omega_key]
-                    if nt in nucleotide_list:
-                        nucleotide_list.remove(nt)
-
-                    # Remove omega keys with no associated nucleotides
-                    if not nucleotide_list:
-                        del my_branch['is_nonsyn'][omega_key]
 
                 # Remove nt from synonymous mutations and list of nucleotides in substitution
                 if nt in my_branch['is_syn']:
@@ -198,6 +189,21 @@ class SimulateOnBranch:
 
                 if nt in my_branch['nts_in_subs']:
                     my_branch['nts_in_subs'].remove(nt)
+
+                # Remove nt from non-synonymous mutations
+                for dN_key in list(my_branch['is_nonsyn']['dN'].keys()):
+                    dN_nt_list = my_branch['is_nonsyn']['dN'][dN_key]
+                    if nt in dN_nt_list:      # Remove nucleotide from dN list
+                        dN_nt_list.remove(nt)
+                    if not dN_nt_list:        # Remove dN keys with no associated nucleotides
+                        del my_branch['is_nonsyn']['dN'][dN_key]
+
+                for dS_key in list(my_branch['is_nonsyn']['dS'].keys()):
+                    dS_nt_list = my_branch['is_nonsyn']['dS'][dS_key]
+                    if nt in dS_nt_list:      # Remove nucleotide from dS list
+                        dS_nt_list.remove(nt)
+                    if not dS_nt_list:        # Remove dS keys with no associated nucleotides
+                        del my_branch['is_nonsyn']['dS'][dS_key]
 
     def update_nucleotide(self, nt, to_state):
         """

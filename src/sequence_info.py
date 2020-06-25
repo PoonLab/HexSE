@@ -273,9 +273,9 @@ class Sequence:
                     if codon.is_stop(pos_in_codon, to_nt):
                         sub_rates[to_nt] *= 0
 
-                    # # If nt is part of a start codon, set dN to 0
-                    # elif codon.is_start():
-                    #     sub_rates[to_nt] *= 0
+                    # If nt is part of a start codon, set dN to 0
+                    elif codon.is_start():
+                        sub_rates[to_nt] *= 0
 
                     # Apply omega when mutation is non-synonymous
                     elif codon.is_nonsyn(pos_in_codon, to_nt):
@@ -476,6 +476,17 @@ class Codon:
             if query_nt is nt:
                 return idx
 
+    def convert_codon(self):
+        """
+        Represents the codon as a list of strings
+        :return codon: the codon represented as a list of strings
+        """
+        if self.orf[0] < self.orf[1]:  # Positive strand
+            codon = [str(nt) for nt in self.nts_in_codon]  # Cast all Nucleotides in the Codon to strings
+        else:
+            codon = [nt.complement_state for nt in self.nts_in_codon]
+        return codon
+
     def is_nonsyn(self, pos_in_codon, to_nt):
         """
         Finds if a substitution at the specified position results in a non-synonymous mutation
@@ -484,11 +495,8 @@ class Codon:
         :return: True if the substitution leads to a non-synonymous mutation,
                  False if the substitution leads to a synonymous mutation
         """
-        if self.orf[0] < self.orf[1]:  # Positive strand
-            codon = [str(nt) for nt in self.nts_in_codon]  # Cast all Nucleotides in the Codon to strings
-        else:
-            codon = [nt.complement_state for nt in self.nts_in_codon]
-            to_nt = COMPLEMENT_DICT[to_nt]
+        codon = self.convert_codon()
+        to_nt = COMPLEMENT_DICT[to_nt]
 
         mutated_codon = codon.copy()
         mutated_codon[pos_in_codon] = to_nt
@@ -506,11 +514,8 @@ class Codon:
         :return: True if the substitution leads to stop codon,
                  False if the substitution doesn't lead to a stop codon
         """
-        if self.orf[0] < self.orf[1]:  # Positive strand
-            codon = [str(nt) for nt in self.nts_in_codon]  # Cast all Nucleotides in the Codon to strings
-        else:
-            codon = [nt.complement_state for nt in self.nts_in_codon]
-            to_nt = COMPLEMENT_DICT[to_nt]
+        codon = self.convert_codon()
+        to_nt = COMPLEMENT_DICT[to_nt]
 
         mutated_codon = codon.copy()
         mutated_codon[pos_in_codon] = to_nt
@@ -521,7 +526,10 @@ class Codon:
             return False
 
     def is_start(self):
-        # Get the codon as a list of strings
+        """
+        Checks if the codon is a start codon
+        :return True of the codon is a start codon, False otherwise
+        """
         if self.orf[0] < self.orf[1]:  # Positive strand
             codon = ''.join(str(nt) for nt in self.nts_in_codon)  # Cast all Nucleotides in the Codon to strings
         else:
