@@ -476,16 +476,23 @@ class Codon:
             if query_nt is nt:
                 return idx
 
-    def convert_codon(self):
+    def mutate_codon(self, pos_in_codon, to_nt):
         """
-        Represents the codon as a list of strings
-        :return codon: the codon represented as a list of strings
+        Changes the state of the specified nucleotide in the codon
+        :param pos_in_codon: the position in the Codon
+        :param to_nt: the new state of the Nucleotide
+        :return codon, mutated_codon: the codon and mutated codon represented as lists of strings
         """
         if self.orf[0] < self.orf[1]:  # Positive strand
             codon = [str(nt) for nt in self.nts_in_codon]  # Cast all Nucleotides in the Codon to strings
         else:
             codon = [nt.complement_state for nt in self.nts_in_codon]
-        return codon
+            to_nt = COMPLEMENT_DICT[to_nt]
+
+        mutated_codon = codon.copy()
+        mutated_codon[pos_in_codon] = to_nt
+
+        return codon, mutated_codon
 
     def is_nonsyn(self, pos_in_codon, to_nt):
         """
@@ -495,16 +502,8 @@ class Codon:
         :return: True if the substitution leads to a non-synonymous mutation,
                  False if the substitution leads to a synonymous mutation
         """
-        codon = self.convert_codon()
-        to_nt = COMPLEMENT_DICT[to_nt]
-
-        mutated_codon = codon.copy()
-        mutated_codon[pos_in_codon] = to_nt
-
-        if CODON_DICT[''.join(mutated_codon)] != CODON_DICT[''.join(codon)]:
-            return True
-        else:
-            return False
+        codon, mutated_codon = self.mutate_codon(pos_in_codon, to_nt)
+        return CODON_DICT[''.join(mutated_codon)] != CODON_DICT[''.join(codon)]
 
     def is_stop(self, pos_in_codon, to_nt):
         """
@@ -514,16 +513,8 @@ class Codon:
         :return: True if the substitution leads to stop codon,
                  False if the substitution doesn't lead to a stop codon
         """
-        codon = self.convert_codon()
-        to_nt = COMPLEMENT_DICT[to_nt]
-
-        mutated_codon = codon.copy()
-        mutated_codon[pos_in_codon] = to_nt
-
-        if CODON_DICT[''.join(mutated_codon)] == "*":
-            return True
-        else:
-            return False
+        codon, mutated_codon = self.mutate_codon(pos_in_codon, to_nt)
+        return CODON_DICT[''.join(mutated_codon)] == "*"
 
     def is_start(self):
         """

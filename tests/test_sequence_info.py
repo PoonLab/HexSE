@@ -38,6 +38,12 @@ class TestSequenceInfo(unittest.TestCase):
         random.seed(9001)
         self.sequence4 = Sequence(s4, sorted_orfs, kappa, mu, pi4, dN_values, dS_values)
 
+        s5 = 'ATGATGCCCTAA'
+        sorted_orfs = {'+0': [(0, 12)], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
+        pi5 = Sequence.get_frequency_rates(s5)
+        random.seed(4000)
+        self.sequence5 = Sequence(s5, sorted_orfs, kappa, mu, pi5, dN_values, dS_values)
+
     def testDeepcopy(self):
         random.seed(9001)
 
@@ -54,7 +60,7 @@ class TestSequenceInfo(unittest.TestCase):
 
         # Event trees reference different Nucleotides, but the Nucleotides have the same states
         self.assertNotEqual(self.sequence1.event_tree, new_sequence1.event_tree)
-        self.assertEqual(str(self.sequence1.event_tree), str(new_sequence1.event_tree))
+        self.assertCountEqual(self.sequence1.event_tree, new_sequence1.event_tree)
 
         # Check that Nucleotides are different objects with the same attributes
         for pos, nt in enumerate(self.sequence1.nt_sequence):
@@ -65,8 +71,6 @@ class TestSequenceInfo(unittest.TestCase):
             self.assertEqual(nt.pos_in_seq, new_nt.pos_in_seq)
             self.assertEqual(nt.complement_state, new_nt.complement_state)
             self.assertEqual(nt.rates, new_nt.rates)
-            self.assertEqual(nt.dN_values, new_nt.dN_values)
-            self.assertEqual(nt.dS_values, new_nt.dS_values)
             self.assertEqual(nt.mutation_rate, new_nt.mutation_rate)
 
             self.assertEqual(str(nt.codons), str(new_nt.codons))
@@ -122,11 +126,11 @@ class TestSequenceInfo(unittest.TestCase):
 
         # Tests a nucleotide involved in multiple orfs (non-syn mutations)
         random.seed(7)  # Set seed value to initialize pseudo-random number generator
-        nt = self.sequence3.nt_sequence[6]
+        nt = self.sequence3.nt_sequence[11]
         result = self.sequence3.get_substitution_rates(nt)
-        expected = ({'A': 6.860859163125469e-05, 'C': 0.000946010880218476, 'G': 4.2000000000000004e-05, 'T': None},
-                    {'A': (0, 0, 1, 0), 'C': (0, 0, 0, 1), 'G': (1, 0, 0, 0), 'T': None},   # dN values
-                    {'A': (0, 1, 0, 0), 'C': (1, 0, 0, 0), 'G': (1, 0, 0, 0), 'T': None})   # dS values
+        expected = ({'A': 0.0006622905526493184, 'C': 6.56715797993524e-05, 'G': None, 'T': 0.0},
+                    {'A': (0, 0, 1, 1), 'C': (1, 0, 1, 0), 'G': None, 'T': (0, 1, 0, 0)},  # dN values
+                    {'A': (1, 1, 0, 0), 'C': (2, 0, 0, 0), 'G': None, 'T': (1, 0, 0, 0)})  # dS values
         self.assertEqual(expected, result)
 
         # Tests a nucleotide involved in multiple orfs (syn and non-syn mutations)
@@ -135,18 +139,19 @@ class TestSequenceInfo(unittest.TestCase):
         random.seed(1000)  # Set seed value to initialize pseudo-random number generator
         nt = self.sequence3.nt_sequence[7]
         result = self.sequence3.get_substitution_rates(nt)
-        expected = ({'A': 0.0007509006546280129, 'C': 0.0, 'G': None, 'T': 0.0},
-                    {'A': (0, 0, 0, 2), 'C': (1, 0, 0, 0), 'G': None, 'T': (0, 1, 0, 0)},   # dN values
-                    {'A': (1, 0, 1, 0), 'C': (0, 0, 0, 1), 'G': None, 'T': (0, 0, 0, 1)})   # dS values
+        expected = ({'A': 0.0, 'C': 0.0, 'G': None, 'T': 0.0},
+                    {'A': (0, 0, 0, 1), 'C': (0, 0, 0, 0), 'G': None, 'T': (0, 0, 0, 0)},   # dN values
+                    {'A': (1, 0, 0, 0), 'C': (0, 0, 0, 0), 'G': None, 'T': (0, 0, 0, 0)})   # dS values
+        # Substitution rates are 0 because a STOP codon would be introduced
         self.assertEqual(expected, result)
 
         # Tests a nucleotide position that would result in a synonymous mutation
         random.seed(555)  # Set seed value to initialize pseudo-random number generator
-        nt = self.sequence4.nt_sequence[5]
+        nt = self.sequence4.nt_sequence[9]
         result = self.sequence4.get_substitution_rates(nt)
-        expected = ({'A': 0.00021, 'C': 6.3e-05, 'G': None, 'T': 6.3e-05},
-                    {'A': (0, 0, 0, 0), 'C': (0, 0, 0, 0), 'G': None, 'T': (0, 0, 0, 0)},   # dN values
-                    {'A': (0, 0, 0, 0), 'C': (0, 0, 0, 0), 'G': None, 'T': (0, 0, 0, 0)})   # dS values
+        expected = ({'A': 2.2956308569414034e-05, 'C': 0.000125,     'G': 1.679018660974705e-05, 'T': None},
+                    {'A': (0, 1, 0, 0),           'C': (0, 1, 0, 0), 'G': (1, 0, 0, 0),          'T': None},  # dN values
+                    {'A': (0, 0, 1, 0),           'C': (0, 1, 0, 0), 'G': (0, 1, 0, 0),          'T': None})  # dS values
         self.assertEqual(expected, result)
 
         # Tests a nonsense mutation
@@ -320,132 +325,123 @@ class TestSequenceInfo(unittest.TestCase):
         a11 = self.sequence4.nt_sequence[11]
 
         result = self.sequence4.get_nts_on_tips()
-        expected = {'to_nt': {'A':
-                                  {'stationary_frequency': 0.25,
-                                   'from_nt':
-                                       {'A': None,
-                                        'T': {'is_trv': True,
-                                              'kappa': 0.3,
-                                              'is_nonsyn': {'dN': {(0, 0, 1, 0): [t1, t9],
-                                                                  (0, 1, 0, 0): [t6]},
-                                                            'dS': {(0, 0, 1, 0): [t1],
-                                                                  (1, 0, 0, 0): [t6],
-                                                                  (0, 0, 0, 1): [t9]}},
-                                              'is_syn': [],
-                                              'nts_in_subs': [t1, t9, t6],
-                                              'number_of_events': 0},
-                                        'C': {'is_trv': True,
-                                              'kappa': 0.3,
-                                              'is_nonsyn': {'dN': {(0, 1, 0, 0): [c4]},
-                                                            'dS': {(0, 0, 1, 0): [c4]}},
-                                              'is_syn': [],
-                                              'nts_in_subs': [c4],
-                                              'number_of_events': 0},
-                                        'G': {'is_trv': False,
-                                              'kappa': 1,
-                                              'is_nonsyn': {'dN': {(0, 0, 0, 1): [g2]},
-                                                            'dS': {(0, 0, 0, 1): [g2]}},
-                                              'is_syn': [g5],
-                                              'nts_in_subs': [g5, g2],
-                                              'number_of_events': 1}},
-                                   'events_for_nt': 1},
-                              'T': {'stationary_frequency': 0.25,
-                                    'from_nt':
-                                        {'A': {'is_trv': True,
-                                               'kappa': 0.3,
-                                               'is_nonsyn': {'dN': {(0, 0, 1, 0): [a0, a11],
-                                                                   (0, 0, 0, 1): [a3]},
-                                                             'dS': {(1, 0, 0, 0): [a0],
-                                                                   (0, 0, 1, 0): [a3],
-                                                                   (0, 0, 0, 1): [a11]}},
-                                               'is_syn': [],
-                                               'nts_in_subs': [a0, a11, a3],
-                                               'number_of_events': 0},
-                                         'T': None,
-                                         'C': {'is_trv': False,
-                                               'kappa': 1,
-                                               'is_nonsyn': {'dN': {(0, 0, 0, 1): [c4]},
-                                                             'dS': {(1, 0, 0, 0): [c4]}},
-                                               'is_syn': [],
-                                               'nts_in_subs': [c4],
-                                               'number_of_events': 0},
-                                         'G': {'is_trv': True,
-                                               'kappa': 0.3,
-                                               'is_nonsyn': {'dN': {(0, 0, 0, 1): [g2, g10],
-                                                                   (0, 1, 0, 0): [g7],
-                                                                   (0, 0, 1, 0): [g8]},
-                                                             'dS': {(0, 1, 0, 0): [g2],
-                                                                   (0, 0, 1, 0): [g7],
-                                                                   (1, 0, 0, 0): [g8, g10]}},
-                                               'is_syn': [g5],
-                                               'nts_in_subs': [g5, g2, g10, g7, g8],
-                                               'number_of_events': 1}},
-                                    'events_for_nt': 1},
-                              'C': {'stationary_frequency': 0.08,
-                                    'from_nt':
-                                        {'A': {'is_trv': True,
-                                               'kappa': 0.3,
-                                               'is_nonsyn': {'dN': {(1, 0, 0, 0): [a0, a11],
-                                                                   (0, 0, 1, 0): [a3]},
-                                                             'dS': {(0, 0, 1, 0): [a0],
-                                                                   (0, 1, 0, 0): [a3],
-                                                                   (1, 0, 0, 0): [a11]}},
-                                               'is_syn': [],
-                                               'nts_in_subs': [a0, a11, a3],
-                                               'number_of_events': 0},
-                                         'T': {'is_trv': False,
-                                               'kappa': 1,
-                                               'is_nonsyn': {'dN': {(0, 0, 1, 0): [t1],
-                                                                    (0, 0, 0, 1): [t6],
-                                                                    (1, 0, 0, 0): [t9]},
-                                                             'dS': {(1, 0, 0, 0): [t1],
-                                                                    (0, 0, 1, 0): [t6, t9]}},
-                                               'is_syn': [],
-                                               'nts_in_subs': [t1, t6, t9],
-                                               'number_of_events': 0},
-                                         'C': None,
-                                         'G': {'is_trv': True,
-                                               'kappa': 0.3,
-                                               'is_nonsyn': {'dN': {(0, 1, 0, 0): [g2],
-                                                                    (0, 0, 1, 0): [g7, g8],
-                                                                    (1, 0, 0, 0): [g10]},
-                                                             'dS': {(0, 1, 0, 0): [g2, g10],
-                                                                    (1, 0, 0, 0): [g7],
-                                                                    (0, 0, 1, 0): [g8]}},
-                                               'is_syn': [g5],
-                                               'nts_in_subs': [g5, g2, g7, g8, g10],
-                                               'number_of_events': 1}},
-                                    'events_for_nt': 1},
-                              'G': {'stationary_frequency': 0.42,
-                                    'from_nt':
-                                        {'A': {'is_trv': False,
-                                               'kappa': 1,
-                                               'is_nonsyn': {'dN': {(0, 0, 1, 0): [a0],
-                                                                    (0, 1, 0, 0): [a3, a11]},
-                                                             'dS': {(1, 0, 0, 0): [a0],
-                                                                    (0, 0, 0, 1): [a3],
-                                                                    (0, 0, 1, 0): [a11]}},
-                                               'is_syn': [],
-                                               'nts_in_subs': [a0, a3, a11],
-                                               'number_of_events': 0},
-                                         'T': {'is_trv': True,
-                                               'kappa': 0.3,
-                                               'is_nonsyn': {'dN': {(0, 0, 0, 1): [t1, t9],
-                                                                    (1, 0, 0, 0): [t6]},
-                                                             'dS': {(0, 1, 0, 0): [t1],
-                                                                    (0, 0, 0, 1): [t6, t9]}},
-                                               'is_syn': [],
-                                               'nts_in_subs': [t1, t9, t6],
-                                               'number_of_events': 0},
-                                         'C': {'is_trv': True,
-                                               'kappa': 0.3,
-                                               'is_nonsyn': {'dN': {(0, 0, 0, 1): [c4]},
-                                                             'dS': {(1, 0, 0, 0): [c4]}},
-                                               'is_syn': [],
-                                               'nts_in_subs': [c4],
-                                               'number_of_events': 0},
-                                         'G': None},
-                                    'events_for_nt': 0}},
+
+        expected = {'to_nt':
+                    {'A':
+                        {'stationary_frequency': 0.25,
+                         'from_nt':
+                            {'A': None,
+                             'T': {'is_trv': True,
+                                   'kappa': 0.3,
+                                   'is_nonsyn': {'dN': {(0, 0, 0, 1): [t6, t9]},
+                                                 'dS': {(0, 0, 0, 1): [t6],
+                                                        (1, 0, 0, 0): [t9]}},
+                                   'is_syn': [],
+                                   'nts_in_subs': {t9, t6},
+                                   'number_of_events': 0},
+                             'C': {'is_trv': True,
+                                   'kappa': 0.3,
+                                   'is_nonsyn': {'dN': {(0, 0, 1, 0): [c4]},
+                                                 'dS': {(0, 0, 1, 0): [c4]}},
+                                   'is_syn': [],
+                                   'nts_in_subs': {c4},
+                                   'number_of_events': 0},
+                             'G': {'is_trv': False,
+                                   'kappa': 1,
+                                   'is_nonsyn': {'dN': {},
+                                                 'dS': {}},
+                                   'is_syn': [g5],
+                                   'nts_in_subs': {g5},
+                                   'number_of_events': 1}},
+                         'events_for_nt': 1},
+                     'T': {'stationary_frequency': 0.25,
+                           'from_nt':
+                               {'A': {'is_trv': True,
+                                      'kappa': 0.3,
+                                      'is_nonsyn': {'dN': {(0, 0, 1, 0): [a3, a11]},
+                                                    'dS': {(1, 0, 0, 0): [a3],
+                                                           (0, 0, 1, 0): [a11]}},
+                                      'is_syn': [],
+                                      'nts_in_subs': {a3, a11},
+                                      'number_of_events': 0},
+                                'T': None,
+                                'C': {'is_trv': False,
+                                      'kappa': 1,
+                                      'is_nonsyn': {'dN': {(0, 0, 0, 1): [c4]},
+                                                    'dS': {(0, 1, 0, 0): [c4]}},
+                                      'is_syn': [],
+                                      'nts_in_subs': {c4},
+                                      'number_of_events': 0},
+                                'G': {'is_trv': True,
+                                      'kappa': 0.3,
+                                      'is_nonsyn': {'dN': {(0, 1, 0, 0): [g7, g8],
+                                                           (1, 0, 0, 0): [g10]},
+                                                    'dS': {(0, 0, 0, 1): [g7, g10],
+                                                           (0, 0, 1, 0): [g8]}},
+                                      'is_syn': [g5],
+                                      'nts_in_subs': {g7, g5, g10, g8},
+                                      'number_of_events': 1}},
+                           'events_for_nt': 1},
+                     'C': {'stationary_frequency': 0.08,
+                           'from_nt':
+                               {'A': {'is_trv': True,
+                                      'kappa': 0.3,
+                                      'is_nonsyn': {'dN': {(1, 0, 0, 0): [a3],
+                                                           (0, 0, 1, 0): [a11]},
+                                                    'dS': {(0, 0, 1, 0): [a3],
+                                                           (1, 0, 0, 0): [a11]}},
+                                      'is_syn': [],
+                                      'nts_in_subs': {a3, a11},
+                                      'number_of_events': 0},
+                                'T': {'is_trv': False,
+                                      'kappa': 1,
+                                      'is_nonsyn': {'dN': {(0, 1, 0, 0): [t6],
+                                                           (0, 0, 0, 1): [t9]},
+                                                    'dS': {(0, 1, 0, 0): [t6],
+                                                           (1, 0, 0, 0): [t9]}},
+                                      'is_syn': [],
+                                      'nts_in_subs': {t9, t6},
+                                      'number_of_events': 0},
+                                'C': None,
+                                'G': {'is_trv': True,
+                                      'kappa': 0.3,
+                                      'is_nonsyn': {'dN': {(0, 0, 1, 0): [g7],
+                                                           (0, 0, 0, 1): [g8, g10]},
+                                                    'dS': {(0, 1, 0, 0): [g7],
+                                                           (0, 0, 1, 0): [g8, g10]}},
+                                      'is_syn': [g5],
+                                      'nts_in_subs': {g7, g5, g10, g8},
+                                      'number_of_events': 1}},
+                           'events_for_nt': 1},
+                     'G': {'stationary_frequency': 0.42,
+                           'from_nt':
+                               {'A': {'is_trv': False,
+                                      'kappa': 1,
+                                      'is_nonsyn': {'dN': {(0, 0, 1, 0): [a3],
+                                                           (0, 1, 0, 0): [a11]},
+                                                    'dS': {(1, 0, 0, 0): [a3],
+                                                           (0, 0, 1, 0): [a11]}},
+                                      'is_syn': [],
+                                      'nts_in_subs': {a3, a11},
+                                      'number_of_events': 0},
+                                'T': {'is_trv': True,
+                                      'kappa': 0.3,
+                                      'is_nonsyn': {'dN': {(0, 0, 0, 1): [t6],
+                                                           (0, 1, 0, 0): [t9]},
+                                                    'dS': {(0, 1, 0, 0): [t6],
+                                                           (1, 0, 0, 0): [t9]}},
+                                      'is_syn': [],
+                                      'nts_in_subs': {t9, t6},
+                                      'number_of_events': 0},
+                                'C': {'is_trv': True,
+                                      'kappa': 0.3,
+                                      'is_nonsyn': {'dN': {(0, 0, 1, 0): [c4]},
+                                                    'dS': {(1, 0, 0, 0): [c4]}},
+                                      'is_syn': [],
+                                      'nts_in_subs': {c4},
+                                      'number_of_events': 0},
+                                'G': None},
+                           'events_for_nt': 0}},
                     'total_events': 3}
         self.assertEqual(expected, result)
 
@@ -479,6 +475,12 @@ class TestNucleotide(unittest.TestCase):
         sorted_orfs = {'+0': [(0, 12)], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
         pi4 = Sequence.get_frequency_rates(s4)
         self.nt_seq4 = Sequence(s4, sorted_orfs, kappa, mu, pi4, dN_values, dS_values).nt_sequence
+
+        s5 = 'ATGATGCCCTAA'
+        sorted_orfs = {'+0': [(0, 12)], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
+        pi5 = Sequence.get_frequency_rates(s5)
+        random.seed(4000)
+        self.sequence5 = Sequence(s5, sorted_orfs, kappa, mu, pi5, dN_values, dS_values)
 
     def testGetMutationRate(self):
 
@@ -530,51 +532,51 @@ class TestNucleotide(unittest.TestCase):
                                0.00022400000000000002,              # t2
                                0.00010471857777732271,              # t3
                                0.00035664546468782717,              # c4
-                               0.00032332685084578215,              # a5
-                               0.00037456990815018656,              # t6
-                               3.2395755567441353e-05,              # g7
-                               0.00046415078872206957,              # a8
-                               0.00011459615422288484,              # a9
-                               0.000789911823084979,                # c10
-                               9.439553648884362e-05,               # g11
-                               0.00039078461919204766,              # a12
-                               0.00027328516704295104,              # a13
-                               0.00036107074192617697,              # a14
-                               0.00017655918550525822,              # a15
-                               0.0005720601016146754,               # t16
-                               8.831265417917062e-05,               # c17
-                               0.00016889260223040578,              # t18
-                               0.00047789163168352714,              # g19
-                               0.0002231353803076036,               # t20
-                               0.00017165793053820124,              # t21
-                               0.001246531333312454,                # c22
-                               5.1337700605613604e-05,              # g23
-                               0.00017294221882591291,              # c24
-                               0.0004717808856990442,               # t25
-                               6.507886436308092e-05,               # t26
-                               8.908832781046372e-05,               # c27
-                               0.00019631214362373376,              # a28
-                               6.084458179381724e-05,               # t29
-                               0.00036619447647979927,              # t30
-                               0.000264,                            # c31
-                               0.00039776489914726987,              # a32
-                               0.00018920258566998787,              # t33
-                               0.000335233686198489,                # t34
-                               0.00025490526599784136,              # g35
-                               0.00013433937112896293,              # c36
+                               0,                                   # a5
+                               0,                                   # t6
+                               0,                                   # g7
+                               0.00024827025218117723,              # a8
+                               0.0004090398495395135,               # a9
+                               0.00040643926925193344,              # c10
+                               2.239496575855691e-05,               # g11
+                               0.00016889260223040578,              # a12
+                               0.0005341739039971021,               # a13
+                               0.0003126988468504775,               # a14
+                               0.0002927806593074979,               # a15
+                               0.0002113948905533971,               # t16
+                               0.0011580290060315436,               # c17
+                               0.00019231134008645506,              # t18
+                               4.039496575855691e-05,               # g19
+                               5.103283697304041e-05,               # t20
+                               0.0007493685764313902,               # t21
+                               0.00018081008501704828,              # c22
+                               1.759038285768209e-05,               # g23
+                               0.001246531333312454,                # c24
+                               0.00036990181856380496,              # t25
+                               0.00015337806440379493,              # t26
+                               0.0004992019752883201,               # c27
+                               0.00021534344906991846,              # a28
+                               0.00011255202127871845,              # t29
+                               0.00019631214362373376,              # t30
+                               0.0002702461894726866,               # c31
+                               0.0001291019253726049,               # a32
+                               0.00015098256672753418,              # t33
+                               0.00022400000000000002,              # t34
+                               9.6e-05,                             # g35
+                               0.0003316284761430394,               # c36
                                0.000264,                            # c37
-                               0.001559979463247919,                # c38
-                               0.00015446075439169997,              # c39
+                               0.0007239704854711276,               # c38
+                               0.0003950968444482191,               # c39
                                0.000264,                            # c40
-                               0.0001534146175902228,               # a41
-                               0.0005518761878033891,               # c42
+                               0.00014158570860052833,              # a41
+                               0.001559979463247919,                # c42
                                0.00022400000000000002,              # a43
-                               0.0001854640930243867,               # a44
-                               0.0005770369502640317,               # t45
-                               0.00024122649834313912,              # c46
-                               0.0002809517503178035,               # t47
-                               0.0003734876564341409,               # a48
-                               5.327634285597265e-06,               # g49
+                               0.0001239781908189825,               # a44
+                               0.0001534146175902228,               # t45
+                               0.0003061786766654374,               # c46
+                               0.0005437043017094783,               # t47
+                               0.00032839160089398977,              # a48
+                               8.36715797993524e-05,                # g49
                                9.6e-05,                             # g50
                                0.000264,                            # c51
                                0.000264,                            # c52
@@ -587,18 +589,18 @@ class TestNucleotide(unittest.TestCase):
             nt = self.nt_seq3[pos]
             self.assertEqual(exp_seq3_rate, nt.mutation_rate)
 
-        seq4_expected_rates = [0.0002820631384783016,               # a0
-                               6.170238595738872e-05,               # t1
-                               0.0008225834580011948,               # g2
-                               0.00025848242360752887,              # a3
-                               0.00023031258488830883,              # c4
+        seq4_expected_rates = [0,                                   # a0
+                               0,                                   # t1
+                               0,                                   # g2
+                               0.0004359306618420145,               # a3
+                               0.00010530422972550672,              # c4
                                0.00033600000000000004,              # g5
-                               5.6934597457030823e-05,              # t6
-                               0.00010156659839661558,              # g7
-                               0.00038120878112926263,              # g8
-                               7.400789115706304e-05,               # t9
-                               0.0004887048960983141,               # g10
-                               0.0003355134375527915]               # a11
+                               4.083853581556804e-05,               # t6
+                               0.0002928505292977334,               # g7
+                               7.258214174242901e-05,               # g8
+                               0.00020985656772831745,              # t9
+                               5.6415027008750096e-05,              # g10
+                               0.00025848242360752887]              # a11
         for pos, exp_seq4_rate in enumerate(seq4_expected_rates):
             nt = self.nt_seq4[pos]
             self.assertEqual(exp_seq4_rate, nt.mutation_rate)
@@ -623,6 +625,12 @@ class TestCodon(unittest.TestCase):
         pi4 = Sequence.get_frequency_rates(s4)
         random.seed(9001)
         self.nt_seq4 = Sequence(s4, sorted_orfs, kappa, mu, pi4, dN_values, dS_values)
+
+        s5 = 'ATGATGCCCTAA'
+        sorted_orfs = {'+0': [(0, 12)], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
+        pi5 = Sequence.get_frequency_rates(s5)
+        random.seed(4000)
+        self.nt_seq5 = Sequence(s5, sorted_orfs, kappa, mu, pi5, dN_values, dS_values)
 
     def testNtInPos(self):
         codons = self.nt_seq1.find_codons('+0', (0, 12))
@@ -649,46 +657,65 @@ class TestCodon(unittest.TestCase):
         result = codon.nt_in_pos(nt)
         self.assertEqual(expected, result)
 
-    def testIsNonSyn(self):
+    def testMutateCodon(self):
+        # Test Sequence 1
+        # GTA CGA TCG ATC GAT GCT AGC
+        # CAT GCT AGC TAG CTA CGA TCG
         codons = self.nt_seq1.find_codons('+0', (0, 12))
-        codon = codons[0]    # GTA = Valine
-        nt = self.nt_seq1.nt_sequence[20]  # C
+        exp_codon = ['G', 'T', 'A']
+        exp_mutated = ['G', 'T', 'C']
+        res_codon, res_mutated = codons[0].mutate_codon(2, 'C')
+        self.assertEqual(exp_codon, res_codon)
+        self.assertEqual(exp_mutated, res_mutated)
+
+        codons = self.nt_seq1.find_codons('-0', (12, 0))
+        exp_codon = ['G', 'A', 'T']
+        exp_mutated = ['T', 'A', 'T']
+        res_codon, res_mutated = codons[0].mutate_codon(0, 'A')
+        self.assertEqual(exp_codon, res_codon)
+        self.assertEqual(exp_mutated, res_mutated)
+
+    def testIsNonSyn(self):
+        # Test Sequence 1
+        # GTA CGA TCG ATC GAT GCT AGC
+        codons = self.nt_seq1.find_codons('+0', (0, 12))
+        codon = codons[0]                    # GTA = Valine
 
         # Mutation at wobble position
-        expected = False    # Synonymous
-        result = codon.is_nonsyn(2, nt.state)
+        expected = False                     # Synonymous
+        result = codon.is_nonsyn(2, 'C')     # GTC = Valine
         self.assertEqual(expected, result)
 
         # Mutation at first position
-        expected = True     # Non-synonymous
-        result = codon.is_nonsyn(0, nt.state)
+        expected = True                     # Non-synonymous
+        result = codon.is_nonsyn(0, 'C')    # CTA = Leucine
         self.assertEqual(expected, result)
 
         # Testing sequence 4
-        # ATGACGTGGTGA
+        # ATG ACG TGG TGA
         codons = self.nt_seq4.find_codons('+0', (0, 12))
-        codon = codons[2]   # TGG = Trp
+        codon = codons[2]                   # TGG = Tryptophan
 
-        # Mutation at second position TGG --> TGA
-        expected = True     # Non-synonymous
-        result = codon.is_nonsyn(1, 'A')
+        # Mutation at second position
+        expected = True                     # Non-synonymous
+        result = codon.is_nonsyn(1, 'A')    # TAG = STOP
         self.assertEqual(expected, result)
 
-        # Mutation at last position TGG --> TGA
-        expected = True    # Non-synonymous
-        result = codon.is_nonsyn(2, nt.state)
+        # Mutation at wobble position
+        expected = True                     # Non-synonymous
+        result = codon.is_nonsyn(2, 'A')    # TGA = STOP
         self.assertEqual(expected, result)
 
-        # Testing mutation at position 2 in ACG ACG --> ACT
-        expected = False
-        codon = codons[1]
-        result = codon.is_nonsyn(2, 'T')
+        # Testing mutation at position 2 in ACG
+        codon = codons[1]                   # ACG = Threonine
+        expected = False                    # Synonymous
+        result = codon.is_nonsyn(2, 'T')    # ACT = Threonine
         self.assertEqual(expected, result)
 
-        # Testing mutation at position 10 TGA --> TAA
-        expected = False
-        codon = codons[3]
-        result = codon.is_nonsyn(1, 'A')
+        # Testing mutation at position 1 in TGA
+        expected = False                    # Synonymous
+        codon = codons[3]                   # TGA = STOP
+        result = codon.is_nonsyn(1, 'A')    # TAA = STOP
         self.assertEqual(expected, result)
 
     def testIsStop(self):
@@ -700,12 +727,12 @@ class TestCodon(unittest.TestCase):
         result = codon.is_stop(0, 'G')
         self.assertEqual(expected, result)
 
-        # A to C mutation in middle position (TAG = STOP)
+        # C to A mutation in middle position (TAG = STOP)
         expected = True
         result = codon.is_stop(1, 'A')
         self.assertEqual(expected, result)
 
-        # TGA --> TAA
+        # G to A mutation in middle position (TAA = STOP)
         codons = self.nt_seq4.find_codons('+0', (0, 12))
         codon = codons[3]
         expected = True
@@ -713,15 +740,27 @@ class TestCodon(unittest.TestCase):
         self.assertEqual(expected, result)
 
     def testIsStart(self):
+        # Testing sequence 1
+        # GTA CGA TCG ATC GAT GCT AGC
         codons = self.nt_seq1.find_codons('+0', (0, 12))
-        codon = codons[0]
+        codon = codons[0]               # GTA = Valine
         expected = False
         result = codon.is_start()
         self.assertEqual(expected, result)
 
+        # Testing sequence 4
+        # ATG ACG TGG TGA
         codons = self.nt_seq4.find_codons('+0', (0, 12))
-        codon = codons[0]
+        codon = codons[0]               # first Methionine
         expected = True
+        result = codon.is_start()
+        self.assertEqual(expected, result)
+
+        # Testing sequence 5
+        # ATG ATG CCC TAA
+        codons = self.nt_seq5.find_codons('+0', (0, 12))
+        codon = codons[1]               # second Methionine
+        expected = False
         result = codon.is_start()
         self.assertEqual(expected, result)
 
