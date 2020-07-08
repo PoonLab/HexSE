@@ -27,15 +27,12 @@ class SimulateOnBranch:
 
         # Select: to nucleotide
         events = self.event_tree['total_events']
-        # print("calling from 'to_nt'")
-        # print(self.event_tree['to_nt'])
         to_mutation = self.select_weighted_values(self.event_tree['to_nt'], events,
                                                   'events_for_nt', 'stationary_frequency')
 
         # Select: possible from nucleotides
         from_dict = self.event_tree['to_nt'][to_mutation]['from_nt']
         events_for_nt = self.event_tree['to_nt'][to_mutation]['events_for_nt']
-        # print("calling from 'from_nt'")
         from_mutation = self.select_weighted_values(from_dict, events_for_nt, 'number_of_events', 'kappa')
         final_mutation = self.event_tree['to_nt'][to_mutation]['from_nt'][from_mutation]
 
@@ -46,17 +43,6 @@ class SimulateOnBranch:
 
         # Select weighted nucleotide
         from_nucleotide = self.weighted_random_choice(nt_dict, sum(rates_list))
-
-        print("from nt:{}\tto nt:{}\tcodon:{}\tpos in seq:{}".format(from_nucleotide, to_mutation, from_nucleotide.codons, from_nucleotide.pos_in_seq))
-        print("from nt rate: {}".format(from_nucleotide.mutation_rate))
-        print("before:{}".format(self.sequence))
-        original_seq = list(self.sequence.nt_sequence)
-        nt_seq = []
-        for nt in original_seq:
-            nt_seq.append(nt.state)
-        nt_seq[from_nucleotide.pos_in_seq] = to_mutation
-        after_seq = ''.join(nt for nt in nt_seq)
-        print("after: {}\n".format(after_seq))
 
         return from_nucleotide, to_mutation
 
@@ -69,8 +55,6 @@ class SimulateOnBranch:
                 - the key to stationary frequency
                 - the key to transition/transversion rate ratio
         """
-        # print('dictionary: {}\nnumber of total events: {}\nkey for local events: {}\nkey to weight:{}\n'
-        #       .format(dictionary, number_of_total_events, key_for_local_events, key_to_weight))
 
         total_events = number_of_total_events
         temp = {}
