@@ -178,7 +178,7 @@ class SimulateOnBranch:
                     self.event_tree['total_events'] -= 1
 
                 if nt in my_branch['nts_in_subs']:
-                    my_branch['nts_in_subs'].remove(nt)
+                    my_branch['nts_in_subs'].pop(nt, None)
 
                 # Remove nt from non-synonymous mutations
                 for dN_key in list(my_branch['is_nonsyn']['dN'].keys()):

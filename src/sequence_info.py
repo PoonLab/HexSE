@@ -216,21 +216,22 @@ class Sequence:
 
             for key2, from_nt in subset.items():
                 if from_nt:
-                    nt_in_substitution = set()  # Nucleotides associated with each substitution event
+                    nt_in_substitution = []  # Nucleotides associated with each substitution event
 
                     # Add nucleotides that are not involved in any non-syn substitution
                     if from_nt['is_syn']:
-                        nt_in_substitution.update(from_nt['is_syn'])
+                        nt_in_substitution.extend(from_nt['is_syn'])
 
                     # Add nucleotides involved in non-syn substitutions
                     nt_subs_length = len(nt_in_substitution)
-                    # print(from_nt['is_nonsyn'])
                     non_syn_subs = from_nt['is_nonsyn']['dN']
 
                     for key3, nts in non_syn_subs.items():
-                        nt_in_substitution.update(nts)
+                        nt_in_substitution.extend(nts)
 
-                    updated_event_tree['to_nt'][key1]['from_nt'][key2].update([('nts_in_subs', nt_in_substitution)])
+                    nt_in_subs = dict.fromkeys(nt_in_substitution)
+
+                    updated_event_tree['to_nt'][key1]['from_nt'][key2].update([('nts_in_subs', nt_in_subs)])
                     updated_event_tree['to_nt'][key1]['from_nt'][key2].update([('number_of_events', nt_subs_length)])
                     events_for_to_nt += nt_subs_length
                     total_events += nt_subs_length
