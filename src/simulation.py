@@ -55,6 +55,7 @@ class SimulateOnBranch:
                 - the key to stationary frequency
                 - the key to transition/transversion rate ratio
         """
+
         total_events = number_of_total_events
         temp = {}
         sum_values = 0
@@ -78,7 +79,6 @@ class SimulateOnBranch:
         :param sum_values: sum all values on dict to establish the limit for the mutation
         :return: random key from dict
         """
-
         iter_object = iter(dictionary.items())
         limit = random.uniform(0, sum_values)
         s = 0
@@ -97,6 +97,7 @@ class SimulateOnBranch:
     def sum_rates(self):
         """
         Calculate the total mutation rate of sequence
+        :return: the sum of the mutation rates
         """
         total_rate = sum([nt.mutation_rate for nt in iter(self.sequence.get_sequence())])
         return total_rate
@@ -104,6 +105,7 @@ class SimulateOnBranch:
     def mutate_on_branch(self):
         """
         Simulate molecular evolution in sequence given a branch length
+        :return: the mutated sequence
         """
         times_sum = 0
         instant_rate = self.sum_rates()
@@ -159,21 +161,12 @@ class SimulateOnBranch:
     def remove_nt(self, nt):
         """
         Find nucleotide selected to mutate in the event tree and remove it from every branch on the event tree
+        :param nt: The nucleotide to be removed from the event tree
         """
-
         for key_to_nt, value_to_nt in self.event_tree['to_nt'].items():
             if key_to_nt != nt.state:
                 # Find branches that contain my nucleotide
                 my_branch = self.event_tree['to_nt'][key_to_nt]['from_nt'][nt.state]
-                # Remove nt from non-synonymous mutations
-                for omega_key in list(my_branch['is_nonsyn'].keys()):
-                    nucleotide_list = my_branch['is_nonsyn'][omega_key]
-                    if nt in nucleotide_list:
-                        nucleotide_list.remove(nt)
-
-                    # Remove omega keys with no associated nucleotides
-                    if not nucleotide_list:
-                        del my_branch['is_nonsyn'][omega_key]
 
                 # Remove nt from synonymous mutations and list of nucleotides in substitution
                 if nt in my_branch['is_syn']:
@@ -185,20 +178,35 @@ class SimulateOnBranch:
                     self.event_tree['total_events'] -= 1
 
                 if nt in my_branch['nts_in_subs']:
-                    my_branch['nts_in_subs'].remove(nt)
+                    my_branch['nts_in_subs'].pop(nt, None)
+
+                # Remove nt from non-synonymous mutations
+                for dN_key in list(my_branch['is_nonsyn']['dN'].keys()):
+                    dN_nt_list = my_branch['is_nonsyn']['dN'][dN_key]
+                    if nt in dN_nt_list:      # Remove nucleotide from dN list
+                        dN_nt_list.remove(nt)
+                    if not dN_nt_list:        # Remove dN keys with no associated nucleotides
+                        del my_branch['is_nonsyn']['dN'][dN_key]
+
+                for dS_key in list(my_branch['is_nonsyn']['dS'].keys()):
+                    dS_nt_list = my_branch['is_nonsyn']['dS'][dS_key]
+                    if nt in dS_nt_list:      # Remove nucleotide from dS list
+                        dS_nt_list.remove(nt)
+                    if not dS_nt_list:        # Remove dS keys with no associated nucleotides
+                        del my_branch['is_nonsyn']['dS'][dS_key]
 
     def update_nucleotide(self, nt, to_state):
         """
         Update parameters on the mutated nucleotide
         """
-
         nt.set_state(to_state)  # Update the state of the nucleotide
 
         # Update rates, omega key and event tree with the nucleotide according to its new state
         nt.set_complement_state()  # Change complementary state given the mutation
         rates = self.sequence.get_substitution_rates(nt)  # Calculate new rates and update event tree
         nt.set_rates(rates[0])  # Update substitution rates
-        nt.set_my_omegas(rates[1])  # Update omega keys
+        nt.set_dN(rates[1])  # Update dN
+        nt.set_dS(rates[2])  # Update dS
         nt.get_mutation_rate()
 
     def update_nt_on_tree(self, nt, to_state):
@@ -240,6 +248,7 @@ class SimulateOnTree:
         :param child_clade: current clade
         :return: path to the parent clade
         """
+
         node_path = self.phylo_tree.get_path(child_clade)
         return node_path[-2] if len(node_path) > 1 else self.phylo_tree.root
 
@@ -248,6 +257,7 @@ class SimulateOnTree:
         Mutate a sequence along a phylogeny by traversing it in level-order
         :return phylo_tree: A Phylo tree with Clade objects annotated with sequences.
         """
+
         # Assign root_seq to root Clade
         self.phylo_tree.root.sequence = self.root_sequence
         root = self.phylo_tree.root
@@ -272,6 +282,7 @@ class SimulateOnTree:
         """
         Iterates over tips (terminal nodes) of tree and returns sequence
         """
+
         final_tree = self.traverse_tree()
 
         if outfile is not None:
