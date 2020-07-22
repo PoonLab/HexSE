@@ -80,42 +80,44 @@ def valid_sequence(seq):
     return is_valid
 
 
-def valid_orfs(orfs, seq_length):
+def valid_orfs(orf_locations, seq_length):
     """
     Verifies that the input ORFs are a list of tuples containing the start and end positions of ORFs.
     Example of valid input: [(1, 9), (27, 13)]
     Example of invalid input: (1, 9), (27, 13)
-    :param orfs: The list of open reading frames
+    :param orf_locations: The list of open reading frames
     :param seq_length: The length of the original sequence
     :return: <True> if the ORFs are valid, <False> otherwise
     """
     invalid_orfs = []
 
-    for orf in orfs:
-        # Check that the ORF range is valid
-        if orf[0] == orf[1]:
-            invalid_orfs.append(orf)
+    for orf in orf_locations:
+        orf_coords = orf[0]
+        orf_length = 0
 
-        # Check that the start and end positions are integers
-        if type(orf[0]) is not int or type(orf[1]) is not int and orf not in invalid_orfs:
-            print("Invalid orf: {}; Start and end positions must be integers.".format(orf))
-            invalid_orfs.append(orf)
+        for coord in orf_coords:
+            orf_length += abs(coord[1] - coord[0])
 
-        # Check that the start and stop positions are in the range of the sequence
-        if 0 > orf[0] or seq_length < orf[0] or 0 > orf[1] or seq_length < orf[1] and orf not in invalid_orfs:
-            print("Invalid orf: {}; Positions must be between 0 and {}".format(orf, seq_length))
-            invalid_orfs.append(orf)
+            # Check that the ORF range is valid
+            if coord[0] == coord[1]:
+                print(coord)
+                invalid_orfs.append(coord)
+
+            # Check that the start and end positions are integers
+            if type(coord[0]) is not int or type(coord[1]) is not int and orf not in invalid_orfs:
+                print("Invalid orf: {}; Start and end positions must be integers.".format(coord))
+                invalid_orfs.append(coord)
+
+            # Check that the start and stop positions are in the range of the sequence
+            if 0 > coord[0] or seq_length < coord[0] or \
+                    0 > coord[1] or seq_length < coord[1] and orf not in invalid_orfs:
+                print("Invalid orf: {}; Positions must be between 0 and {}".format(coord, seq_length))
+                invalid_orfs.append(coord)
 
         # Check that the ORF is composed of codons
-        if orf[1] > orf[0]:  # Forward strand
-            if (orf[1] - orf[0]) % 3 != 0:      # Inclusive range (start and end coordinates included)
-                print("Invalid orf: {}; Not multiple of three".format(orf))
-                invalid_orfs.append(orf)
-
-        if orf[0] > orf[1]:  # Reverse strand
-            if (orf[0] - orf[1]) % 3 != 0:      # Inclusive range (start and end coordinates included)
-                print("Invalid orf: {}; Not multiple of three".format(orf))
-                invalid_orfs.append(orf)
+        if orf_length % 3 != 0:      # Inclusive range (start and end coordinates included)
+            print("Invalid orf: {}; Not multiple of three".format(orf_coords))
+            invalid_orfs.append(orf)
 
     return invalid_orfs
 
@@ -308,23 +310,25 @@ def parse_genbank(in_seq, in_orfs=None):
     """
     # Loop through records
     for rec in SeqIO.parse(in_seq, format="genbank"):
-        seq = rec.seq  # TODO: deal with multipartite viruses?
+        seq = rec.seq
         if in_orfs is None:  # User did not specify ORFs
-            unsorted_orfs = []
+            orf_locations = []
             cds = [feat for feat in rec.features if feat.type == "CDS"]
 
             # Record the first occurrence of the ORFs
             for cd in cds:
+                coords = []
+                strand = 0
                 for loc in cd.location.parts:
-                    coord = (int(loc.start), int(loc.end))
-                    if coord not in unsorted_orfs:
-                        unsorted_orfs.append(coord)
-                    else:
-                        print("ORF {} is common to multiple coding sequences.".format(coord))
-        else:
-            unsorted_orfs = check_orfs(in_orfs)
+                    strand = loc.strand
+                    coords.append((int(loc.start), int(loc.end)))
 
-    return seq, unsorted_orfs
+                orf_locations.append([coords, strand])
+
+        else:
+            orf_locations = check_orfs(in_orfs)
+
+    return seq, orf_locations
 
 
 def parse_fasta(in_seq):
@@ -352,18 +356,18 @@ def check_orfs(in_orfs=None, s=None):
 
     # Check if the user specified orfs
     if in_orfs is None:
-        unsorted_orfs = get_open_reading_frames(s)
+        orf_coords = get_open_reading_frames(s)
 
     # Read ORFs as a list of tuples
     else:
-        unsorted_orfs = []
+        orf_coords = []
         with open(in_orfs) as orf_handle:
             for line in orf_handle:
                 line = line.split(',')
                 orf = (int(line[0]), int(line[1]))
-                unsorted_orfs.append(orf)
+                orf_coords.append(orf)
 
-    return unsorted_orfs
+    return orf_coords
 
 
 def create_log_file(input_file_name):
@@ -376,6 +380,24 @@ def create_log_file(input_file_name):
     LOG_FILENAME = "{}_evol_simulation.log".format(file_name)
 
     return LOG_FILENAME
+
+
+def stop_in_seq(seq, start, end):
+    """
+    Look for stop codons inside the CDS
+    :param seq: the input sequence
+    :param start: the start position of the coding sequence
+    :param end: the end position of the coding sequence
+    :return: the number of stop codons in the coding sequence
+    """
+    cds = seq[start:end]
+    stop = ["TGA", "TAG", "TAA"]
+    stop_count = 0
+    for codon in Sequence.codon_iterator(cds, start, end):
+        if codon in stop:
+            stop_count += 1
+
+    return stop_count
 
 
 def main():
@@ -393,36 +415,43 @@ def main():
     LOG_FILENAME = "{}_evol_simulation.log".format(file_name.split(".")[0])
     logging.basicConfig(filename=LOG_FILENAME, level=logging.INFO)
 
-    # Check input format
+    # Check input format for the nucleotide sequence
     if input.endswith(".gb") or input.endswith("genbank"):  # If genbank file
-        s, unsorted_orfs = parse_genbank(args.seq, args.orfs)
+        s, orf_locations = parse_genbank(args.seq, args.orfs)
         logging.info("Input sequence is: {} in genbank format".format(input))
     elif input.endswith(".fasta") or input.endswith(".fa"):   # If fasta file
         s = parse_fasta(args.seq)
-        unsorted_orfs = check_orfs(args.orfs, s)
+        orf_locations = check_orfs(args.orfs, s)
         logging.info("Input sequence is: {} in fasta format".format(input))
-        print(unsorted_orfs)
+        print(orf_locations)
     else:
         print("Sequence files must end in '.fa', '.fasta', '.gb', 'genbank'")
         logging.error("Invalid sequence: files must end in '.fa', '.fasta', '.gb', 'genbank'")
         sys.exit()
 
     # Check if the ORFs are valid
-    invalid_orfs = valid_orfs(unsorted_orfs, len(s))
+    invalid_orfs = valid_orfs(orf_locations, len(s))
 
     # Omit the invalid ORFs
     if invalid_orfs:
         invalid_orf_msg = ""
         for invalid_orf in invalid_orfs:
-            invalid_orf_msg += " {} ".format(invalid_orf)
-            unsorted_orfs.remove(invalid_orf)
+            invalid_orf_msg += " {} ".format(invalid_orf[0])
+            orf_locations.remove(invalid_orf)
         print("\nOmitted orfs: {}\n".format(invalid_orf_msg))
         logging.warning("Omitted orfs: {}".format(invalid_orf_msg))
 
-    # Since ORFs are valid, sort the ORFs by reading frame
-    orfs = sort_orfs(unsorted_orfs)
-    print("Valid sorted orfs: ", orfs)
-    logging.info("Valid orfs: {}".format(orfs))
+    # Check if the CDSs have stop codons inside them
+    for orf in orf_locations:
+        stop_count = stop_in_seq(s, orf[0], orf[1])
+        if stop_count > 1:  # CDS has more than one stop codon (the final one)
+            orf_locations.remove(orf)
+            print(f"Omitted orf: {orf} has {stop_count} STOP codons")
+
+    # # Since ORFs are valid, sort the ORFs by reading frame
+    # orfs = sort_orfs(orf_locations)
+    # print("Valid sorted orfs: ", orfs)
+    # logging.info("Valid orfs: {}".format(orfs))
 
     # Check if sequence is valid
     if not valid_sequence(s):
@@ -459,7 +488,7 @@ def main():
     logging.info("Phylogenic tree: {}".format(args.tree))
     # Make Sequence object
     print("\nCreating root sequence")
-    root_sequence = Sequence(s, orfs, args.kappa, args.mu, pi, dN_values, dS_values, args.circular)
+    root_sequence = Sequence(s, orf_locations, args.kappa, args.mu, pi, dN_values, dS_values, args.circular)
 
     # Run simulation
     print("\nRunning simulation")
