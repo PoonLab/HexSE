@@ -122,17 +122,23 @@ def valid_orfs(orf_locations, seq_length):
     return invalid_orfs
 
 
-def reverse_and_complement(seq):
+def complement(seq, rev=False):
     """
-    Generates the reverse complement of a DNA sequence
-    :param: my_region <option> A sub-sequence of the original sequence
-    :return rcseq: The reverse complement of the sequence
+    Generates the complement of a DNA sequence
+    :param seq: the input sequence
+    :param <option> rev: option to find the reverse complement
+    :return s: The complement (or reverse complement) of the sequence
     """
-    rseq = reversed(seq.upper())
-    rcseq = ''
-    for i in rseq:  # reverse order
-        rcseq += COMPLEMENT_DICT[i]
-    return rcseq
+    if rev:
+        s = reversed(seq.upper())
+    else:
+        s = seq
+
+    result = ''
+    for i in s:
+        result += COMPLEMENT_DICT[i]
+
+    return result
 
 
 def get_open_reading_frames(seq):
@@ -181,7 +187,7 @@ def get_open_reading_frames(seq):
 
     # Forward (positive) reading frames of the reverse complement of the original
     # sequence is equivalent to reverse (negative) reading frames of the original sequence
-    rcseq = reverse_and_complement(seq)
+    rcseq = complement(seq, True)
 
     # Record positions of all potential START codons in the reverse (negative) reading frame
     rev_start_positions = [match.start() for match in start_codon.finditer(rcseq)]
@@ -382,18 +388,27 @@ def create_log_file(input_file_name):
     return LOG_FILENAME
 
 
-def stop_in_seq(seq, start, end):
+def stop_in_seq(seq, orf):
     """
     Look for stop codons inside the CDS
     :param seq: the input sequence
-    :param start: the start position of the coding sequence
-    :param end: the end position of the coding sequence
+    :param orf: list containing the coordinates of the ORF and the frame
     :return: the number of stop codons in the coding sequence
     """
-    cds = seq[start:end]
     stop = ["TGA", "TAG", "TAA"]
     stop_count = 0
-    for codon in Sequence.codon_iterator(cds, start, end):
+    strand = orf[1]
+    orf_coords = orf[0]
+    cds = ""
+
+    for coord in orf_coords:
+        cds += seq[coord[0]:coord[1]]
+
+    if strand == -1:    # Reverse strand
+        cds = cds[::-1]
+
+    for i in range(3, len(cds) + 1, 3):
+        codon = cds[i-3:i]
         if codon in stop:
             stop_count += 1
 
@@ -443,8 +458,13 @@ def main():
 
     # Check if the CDSs have stop codons inside them
     for orf in orf_locations:
-        stop_count = stop_in_seq(s, orf[0], orf[1])
-        if stop_count > 1:  # CDS has more than one stop codon (the final one)
+        if orf[-1] == -1:       # Reverse strand
+            stop_count = stop_in_seq(complement(s), orf)
+        else:                   # Forward strand
+            stop_count = stop_in_seq(s, orf)
+
+        # CDS has more than one stop codon (the final one)
+        if stop_count > 1:
             orf_locations.remove(orf)
             print(f"Omitted orf: {orf} has {stop_count} STOP codons")
 
@@ -486,6 +506,7 @@ def main():
     # Read in the tree
     phylo_tree = Phylo.read(args.tree, 'newick', rooted=True)
     logging.info("Phylogenic tree: {}".format(args.tree))
+
     # Make Sequence object
     print("\nCreating root sequence")
     root_sequence = Sequence(s, orf_locations, args.kappa, args.mu, pi, dN_values, dS_values, args.circular)
