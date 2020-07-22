@@ -89,35 +89,36 @@ def valid_orfs(orf_locations, seq_length):
     :param seq_length: The length of the original sequence
     :return: <True> if the ORFs are valid, <False> otherwise
     """
-    invalid_orfs = []
+    invalid_orfs = {1: [], -1: []}
 
-    for orf in orf_locations:
-        orf_coords = orf[0]
-        orf_length = 0
+    for strand in orf_locations:
+        orf_coords = orf_locations[strand]
 
-        for coord in orf_coords:
-            orf_length += abs(coord[1] - coord[0])
+        for orf_coord in orf_coords:
+            orf_length = 0
+            for coord in orf_coord:
+                orf_length += abs(coord[1] - coord[0])
 
-            # Check that the ORF range is valid
-            if coord[0] == coord[1]:
-                print(coord)
-                invalid_orfs.append(coord)
+                # Check that the ORF range is valid
+                if coord[0] == coord[1]:
+                    print(coord)
+                    invalid_orfs[strand].append(coord)
 
-            # Check that the start and end positions are integers
-            if type(coord[0]) is not int or type(coord[1]) is not int and orf not in invalid_orfs:
-                print("Invalid orf: {}; Start and end positions must be integers.".format(coord))
-                invalid_orfs.append(coord)
+                # Check that the start and end positions are integers
+                if type(coord[0]) is not int or type(coord[1]) is not int and orf_coord not in invalid_orfs:
+                    print("Invalid orf: {}; Start and end positions must be integers.".format(coord))
+                    invalid_orfs[strand].append(coord)
 
-            # Check that the start and stop positions are in the range of the sequence
-            if 0 > coord[0] or seq_length < coord[0] or \
-                    0 > coord[1] or seq_length < coord[1] and orf not in invalid_orfs:
-                print("Invalid orf: {}; Positions must be between 0 and {}".format(coord, seq_length))
-                invalid_orfs.append(coord)
+                # Check that the start and stop positions are in the range of the sequence
+                if 0 > coord[0] or seq_length < coord[0] or \
+                        0 > coord[1] or seq_length < coord[1] and orf_coord not in invalid_orfs:
+                    print("Invalid orf: {}; Positions must be between 0 and {}".format(coord, seq_length))
+                    invalid_orfs[strand].append(coord)
 
-        # Check that the ORF is composed of codons
-        if orf_length % 3 != 0:      # Inclusive range (start and end coordinates included)
-            print("Invalid orf: {}; Not multiple of three".format(orf_coords))
-            invalid_orfs.append(orf)
+            # Check that the ORF is composed of codons
+            if orf_length % 3 != 0:      # Inclusive range (start and end coordinates included)
+                print("Invalid orf: {}; Not multiple of three".format(orf_coord))
+                invalid_orfs[strand].append(orf_coord)
 
     return invalid_orfs
 
@@ -225,57 +226,6 @@ def get_open_reading_frames(seq):
     return reading_frames
 
 
-def sort_orfs(unsorted_orfs):
-    """
-    Store ORFs in position according to plus zero ORF (first of the list).
-    They will be classified as (+0, +1, +2, -0, -1, -2)
-    :return sorted_orfs: List of ORFs classified according to their shift relative to the
-                        plus zero reading frame (+0, +1, +2, -0, -1, -2)
-    """
-    sorted_orfs = {'+0': [], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
-
-    if unsorted_orfs:
-        first_orf = unsorted_orfs[0]
-        for orf in unsorted_orfs:
-            difference = abs(orf[0] - first_orf[0]) % 3
-
-            if first_orf[0] < first_orf[1]:
-                if orf[0] < orf[1]:  # positive strand
-                    if difference == 0:
-                        sorted_orfs['+0'].append(orf)
-                    elif difference == 1:
-                        sorted_orfs['+1'].append(orf)
-                    elif difference == 2:
-                        sorted_orfs['+2'].append(orf)
-
-                elif orf[0] > orf[1]:  # negative strand
-                    if difference == 0:
-                        sorted_orfs['-2'].append(orf)
-                    elif difference == 1:
-                        sorted_orfs['-1'].append(orf)
-                    elif difference == 2:
-                        sorted_orfs['-0'].append(orf)
-
-            else:
-                if orf[0] < orf[1]:  # positive strand
-                    if difference == 0:
-                        sorted_orfs['+2'].append(orf)
-                    elif difference == 1:  # plus one
-                        sorted_orfs['+1'].append(orf)
-                    elif difference == 2:  # plus two
-                        sorted_orfs['+0'].append(orf)
-
-                elif orf[0] > orf[1]:  # negative strand
-                    if difference == 0:
-                        sorted_orfs['-0'].append(orf)
-                    elif difference == 1:
-                        sorted_orfs['-1'].append(orf)
-                    elif difference == 2:
-                        sorted_orfs['-2'].append(orf)
-
-    return sorted_orfs
-
-
 def get_rate_values(alpha, ncat):
     """
     Draw ncat number of dN or dS values from a discretized gamma distribution
@@ -315,10 +265,11 @@ def parse_genbank(in_seq, in_orfs=None):
     :return tuple: (sequence, orfs)
     """
     # Loop through records
+    seq = ''
+    orf_locations = {1: [], -1: []}
     for rec in SeqIO.parse(in_seq, format="genbank"):
         seq = rec.seq
         if in_orfs is None:  # User did not specify ORFs
-            orf_locations = []
             cds = [feat for feat in rec.features if feat.type == "CDS"]
 
             # Record the first occurrence of the ORFs
@@ -328,8 +279,7 @@ def parse_genbank(in_seq, in_orfs=None):
                 for loc in cd.location.parts:
                     strand = loc.strand
                     coords.append((int(loc.start), int(loc.end)))
-
-                orf_locations.append([coords, strand])
+                orf_locations[strand].append(coords)
 
         else:
             orf_locations = check_orfs(in_orfs)
@@ -388,17 +338,16 @@ def create_log_file(input_file_name):
     return LOG_FILENAME
 
 
-def stop_in_seq(seq, orf):
+def stop_in_seq(seq, strand, orf_coords):
     """
     Look for stop codons inside the CDS
     :param seq: the input sequence
-    :param orf: list containing the coordinates of the ORF and the frame
+    :param strand: the strand (1 or -1)
+    :param orf_coords: list containing the coordinates of the ORF and the frame
     :return: the number of stop codons in the coding sequence
     """
     stop = ["TGA", "TAG", "TAA"]
     stop_count = 0
-    strand = orf[1]
-    orf_coords = orf[0]
     cds = ""
 
     for coord in orf_coords:
@@ -450,28 +399,30 @@ def main():
     # Omit the invalid ORFs
     if invalid_orfs:
         invalid_orf_msg = ""
-        for invalid_orf in invalid_orfs:
-            invalid_orf_msg += " {} ".format(invalid_orf[0])
-            orf_locations.remove(invalid_orf)
+        for strand in invalid_orfs:
+            orfs = invalid_orfs[strand]
+            for orf in orfs:
+                invalid_orf_msg += " {} ".format(orf)
+                orf_locations[strand].remove(orf)
         print("\nOmitted orfs: {}\n".format(invalid_orf_msg))
         logging.warning("Omitted orfs: {}".format(invalid_orf_msg))
 
     # Check if the CDSs have stop codons inside them
-    for orf in orf_locations:
-        if orf[-1] == -1:       # Reverse strand
-            stop_count = stop_in_seq(complement(s), orf)
-        else:                   # Forward strand
-            stop_count = stop_in_seq(s, orf)
+    for strand in orf_locations:
+        orfs = orf_locations[strand]
+        for orf_coords in orfs:
+            if strand == -1:       # Reverse strand
+                stop_count = stop_in_seq(complement(s), strand, orf_coords)
+            else:                   # Forward strand
+                stop_count = stop_in_seq(s, strand, orf_coords)
 
-        # CDS has more than one stop codon (the final one)
-        if stop_count > 1:
-            orf_locations.remove(orf)
-            print(f"Omitted orf: {orf} has {stop_count} STOP codons")
+            # CDS has more than one stop codon (the final one)
+            if stop_count > 1:
+                orf_locations[strand].remove(orf_coords)
+                print(f"Omitted orf: {orf_coords} has {stop_count} STOP codons")
 
-    # # Since ORFs are valid, sort the ORFs by reading frame
-    # orfs = sort_orfs(orf_locations)
-    # print("Valid sorted orfs: ", orfs)
-    # logging.info("Valid orfs: {}".format(orfs))
+    print("Valid sorted orfs: ", orf_locations)
+    logging.info("Valid orfs: {}".format(orf_locations))
 
     # Check if sequence is valid
     if not valid_sequence(s):
@@ -514,7 +465,8 @@ def main():
     # Run simulation
     print("\nRunning simulation")
     simulation = SimulateOnTree(root_sequence, phylo_tree, args.outfile)
-    simulation.get_alignment(args.outfile)
+    sequences = simulation.get_alignment(args.outfile)
+    # simulation.output_orfs(sequences, args.outfile)
 
     print("Simulation duration: {} seconds".format(datetime.now() - start_time))
 

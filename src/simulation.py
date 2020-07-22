@@ -282,13 +282,36 @@ class SimulateOnTree:
         """
         Iterates over tips (terminal nodes) of tree and returns sequence
         """
-
         final_tree = self.traverse_tree()
+        sequences = []
 
         if outfile is not None:
             with open(outfile, 'w+') as out_handle:
                 for clade in final_tree.get_terminals():
+                    sequences.append([clade, clade.sequence])
                     out_handle.write(">Sequence_{} \n{}\n".format(clade, clade.sequence))
         else:
             for clade in final_tree.get_terminals():
+                sequences.append([clade, clade.sequence])
                 print(">Sequence_{} \n{}".format(clade, clade.sequence))
+
+        return sequences
+
+    def output_orfs(self, sequences, outfile=None):
+        """
+        Outputs the mutated orfs
+        :sequences: list of lists of clade name and mutated sequences pairs
+        """
+        for clade_name, seq in sequences:
+            print(clade_name)
+            for strand in self.root_sequence.orfs:
+                orf_coords = self.root_sequence.orfs[strand]
+                my_orf = ''
+                for coord in orf_coords:
+                    for c in coord:
+                        my_orf += seq.nt_sequence[c[0]:c[1]]
+
+                        if strand == -1:  # Reverse strand
+                            my_orf = my_orf[::-1]
+                    print('{}\n{}\n\n'.format(orf_coords, my_orf))
+

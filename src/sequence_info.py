@@ -40,10 +40,10 @@ class Sequence:
     def __init__(self, str_sequence, orfs, kappa, mu, pi, dN_values, dS_values, circular=False):
         """
         Creates a list of nucleotides, locates open reading frames, and creates a list of codons.
-        :param orfs: A dictionary of ORFs, sorted by reading frame where:
-                        - the keys are the reading frames (+0, +1, +2, -0, -1, -2)
+        :param orfs: A dictionary of ORFs, sorted by strand where:
+                        - the keys are the strand (1 or -1)
                         - the values are a list of tuples containing the start and end positions of the ORFs.
-                        - Ex: {'+0': [(0, 8), (3, 15)], '+1': [(1, 9)], '+2': [], '-0': [], '-1': [], '-2': []}
+                        - Ex: {'1': [(0, 8), (3, 15)], [(1, 9)], '-1': [2, 10]}
         :param kappa: transition/ transversion rate ratio
         :param mu: The global rate (substitutions/site/unit time)
         :param pi: Frequency of nucleotides in a given sequence, with nucleotide as keys
@@ -51,7 +51,7 @@ class Sequence:
                        Applied in case that a mutation is non_synonymous
         :param circular: True if the genome is circular, false if the genome is linear (default: linear)
         """
-        self.orfs = orfs  # Dictionary of of ORFs sorted by reading frame
+        self.orfs = orfs  # Dictionary of of ORFs sorted by strand
         self.kappa = kappa  # Transition/ transversion rate ratio
         self.mu = mu  # The global rate (substitutions/site/unit time)
         self.pi = pi  # Frequency of nucleotides, with nucleotide as keys
@@ -67,10 +67,10 @@ class Sequence:
 
         # Set Codons based on the reading frames
         if self.orfs is not None:
-            for frame in self.orfs:
-                orf_list = self.orfs[frame]
+            for strand in self.orfs:
+                orf_list = self.orfs[strand]
                 for orf in orf_list:
-                    codons = self.find_codons(frame, orf)
+                    codons = self.find_codons(strand, orf)
 
                     # Tell Nucleotide which Codon(s) it belongs to
                     for codon in codons:
@@ -347,26 +347,25 @@ class Sequence:
             yield my_orf[i:i + 3]
             i += 3
 
-    def find_codons(self, frame, orf):
+    def find_codons(self, strand, orf_coords):
         """
         Gets the Codon sequence
-        :param frame: the frame of the ORF
-        :param orf: tuple containing the coordinates of the ORF
+        :param strand: the strand of the ORF
+        :param orf_coords: list of tuples containing the coordinates of the ORF
         :return: a list of Codon objects for the specified ORF
         """
         codons = []
-        start_pos = orf[0]
-        end_pos = orf[1]
+        my_orf = []
+        for coord in orf_coords:
+            my_orf.append(self.nt_sequence[coord[0]:coord[1]])
 
-        # Reverse stand ORF
-        if start_pos > end_pos:
-            my_orf = self.nt_sequence[end_pos: start_pos]
-        else:
-            my_orf = self.nt_sequence[start_pos: end_pos]
+        if strand == -1:  # Reverse strand
+            my_orf = my_orf[::-1]
 
         # Iterate over list by threes and create Codons
-        for cdn in self.codon_iterator(my_orf, start_pos, end_pos-1):
-            codon = Codon(frame, orf, cdn)
+        for i in range(3, len(my_orf) + 1, 3):
+            cdn = my_orf[i - 3:i]
+            codon = Codon(strand, orf_coords, cdn)
             codons.append(codon)
 
         return codons
@@ -461,7 +460,7 @@ class Codon:
         :param nts_in_codon: a list of pointers to the Nucleotides in the Codon
         """
         self.frame = frame  # The reading frame
-        self.orf = orf  # Tuple containing the reading frame and the coordinates
+        self.orf = orf  # List of tuples containing the coordinates
         self.nts_in_codon = nts_in_codon  # List of Nucleotides in the Codon
 
     def __repr__(self):
