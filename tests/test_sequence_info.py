@@ -70,8 +70,8 @@ class TestSequenceInfo(unittest.TestCase):
             self.assertEqual(nt.state, new_nt.state)
             self.assertEqual(nt.pos_in_seq, new_nt.pos_in_seq)
             self.assertEqual(nt.complement_state, new_nt.complement_state)
-            self.assertEqual(nt.rates, new_nt.rates)
-            self.assertEqual(nt.mutation_rate, new_nt.mutation_rate)
+            self.assertEqual(nt.sub_rates, new_nt.sub_rates)
+            self.assertEqual(nt.total_mut_rate, new_nt.total_mut_rate)
 
             self.assertEqual(str(nt.codons), str(new_nt.codons))
             self.assertEqual(len(nt.codons), len(new_nt.codons))
@@ -321,7 +321,7 @@ class TestSequenceInfo(unittest.TestCase):
         g10 = self.sequence4.nt_sequence[10]
         a11 = self.sequence4.nt_sequence[11]
 
-        result = self.sequence4.get_nts_on_tips()
+        result = self.sequence4.count_synonymous_events()
 
         expected = {'to_nt':
                     {'A':
@@ -504,7 +504,7 @@ class TestNucleotide(unittest.TestCase):
                                0.00021652268848481484]              # c20
         for pos, exp_seq1_rate in enumerate(seq1_expected_rates):
             nt = self.nt_seq1[pos]
-            self.assertEqual(exp_seq1_rate, nt.mutation_rate)
+            self.assertEqual(exp_seq1_rate, nt.total_mut_rate)
 
         seq2_expected_rates = [0.0005891339975452602,               # t0
                                0.000744,                            # t1
@@ -522,7 +522,7 @@ class TestNucleotide(unittest.TestCase):
                                0.000744]                            # t13
         for pos, exp_seq2_rate in enumerate(seq2_expected_rates):
             nt = self.nt_seq2[pos]
-            self.assertEqual(exp_seq2_rate, nt.mutation_rate)
+            self.assertEqual(exp_seq2_rate, nt.total_mut_rate)
 
         seq3_expected_rates = [0.00022400000000000002,              # a0
                                0.00022400000000000002,              # a1
@@ -584,7 +584,7 @@ class TestNucleotide(unittest.TestCase):
                                0.000264]                            # c57
         for pos, exp_seq3_rate in enumerate(seq3_expected_rates):
             nt = self.nt_seq3[pos]
-            self.assertEqual(exp_seq3_rate, nt.mutation_rate)
+            self.assertEqual(exp_seq3_rate, nt.total_mut_rate)
 
         seq4_expected_rates = [0,                                   # a0
                                0,                                   # t1
@@ -600,7 +600,7 @@ class TestNucleotide(unittest.TestCase):
                                0.00025848242360752887]              # a11
         for pos, exp_seq4_rate in enumerate(seq4_expected_rates):
             nt = self.nt_seq4[pos]
-            self.assertEqual(exp_seq4_rate, nt.mutation_rate)
+            self.assertEqual(exp_seq4_rate, nt.total_mut_rate)
 
 
 # ==========================================

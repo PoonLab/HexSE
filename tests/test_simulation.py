@@ -169,7 +169,7 @@ class TestSimulateOnBranch(unittest.TestCase):
 
         # Selecting the final from_nucleotide for seq1
         seq4_candidate_nts = self.sim_on_branch4.event_tree['to_nt'][exp_to_nt]['from_nt'][exp_from_nt]['nts_in_subs']
-        seq4_rates_list = [nt.mutation_rate for nt in seq4_candidate_nts]
+        seq4_rates_list = [nt.total_mut_rate for nt in seq4_candidate_nts]
         seq4_candidate_dict = dict(zip(seq4_candidate_nts, seq4_rates_list))
 
         exp_final_nt = 't9'
@@ -498,7 +498,7 @@ class TestSimulateOnBranch(unittest.TestCase):
 
         self.assertEqual('A', nt_to_mutate.state)
         self.assertEqual('T', nt_to_mutate.get_complement_state())
-        self.assertEqual(expected_rates, nt_to_mutate.rates)
+        self.assertEqual(expected_rates, nt_to_mutate.sub_rates)
 
     def testMutateOnBranch(self):
         np.random.seed(9001)    # Used to draw waiting times
@@ -662,9 +662,9 @@ class TestSimulateOnBranch(unittest.TestCase):
         # a3 should no longer appear in the tree, while t3 should appear in the 'from_nt'-T branches of the tree
         self.sim_on_branch4.remove_nt(a3)
         self.sim_on_branch4.update_nucleotide(a3, 'T')
-        self.sim_on_branch4.update_nt_on_tree(a3, 'T')
+        self.sim_on_branch4.update_num_syn_events(a3, 'T')
         t3 = self.sim_on_branch4.sequence.nt_sequence[3]  # Get mutated nucleotide
-        self.sim_on_branch4.sequence.get_nts_on_tips()
+        self.sim_on_branch4.sequence.count_synonymous_events()
 
         expected_event_tree = \
             {'to_nt': {'A': {'stationary_frequency': 0.25,

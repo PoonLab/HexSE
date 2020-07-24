@@ -313,6 +313,7 @@ def check_orfs(in_orfs=None, s=None):
     # Check if the user specified orfs
     if in_orfs is None:
         orf_coords = get_open_reading_frames(s)
+        orf_coords = {1: [[(0, 12)]], -1: []}
 
     # Read ORFs as a list of tuples
     else:

@@ -26,24 +26,27 @@ class SimulateOnBranch:
         """
 
         # Select: to nucleotide
-        events = self.event_tree['total_events']
+        events = self.event_tree['total_syn_events']
         to_mutation = self.select_weighted_values(self.event_tree['to_nt'], events,
-                                                  'events_for_nt', 'stationary_frequency')
+                                                  'syn_events_for_nt', 'stationary_frequency')
 
         # Select: possible from nucleotides
         from_dict = self.event_tree['to_nt'][to_mutation]['from_nt']
-        events_for_nt = self.event_tree['to_nt'][to_mutation]['events_for_nt']
-        from_mutation = self.select_weighted_values(from_dict, events_for_nt, 'number_of_events', 'kappa')
+        events_for_nt = self.event_tree['to_nt'][to_mutation]['syn_events_for_nt']
+        from_mutation = self.select_weighted_values(from_dict, events_for_nt, 'syn_events', 'kappa')
         final_mutation = self.event_tree['to_nt'][to_mutation]['from_nt'][from_mutation]
 
         # List of nucleotides that are candidates to mutate
-        candidate_nts = final_mutation['nts_in_subs']
-        rates_list = [nt.mutation_rate for nt in candidate_nts]
+        candidate_nts = self.sequence.get_candidate_subs(final_mutation)
+        print('\t{}'.format(candidate_nts))
+        rates_list = [nt.total_mut_rate for nt in candidate_nts]
         nt_dict = dict(zip(candidate_nts, rates_list))
 
         # Select weighted nucleotide
         from_nucleotide = self.weighted_random_choice(nt_dict, sum(rates_list))
 
+        print(self.sequence.event_tree)
+        print('\tfrom {}@{} to {}\n'.format(from_nucleotide.state, from_nucleotide.pos_in_seq, to_mutation))
         return from_nucleotide, to_mutation
 
     def select_weighted_values(self, dictionary, number_of_total_events, key_for_local_events, key_to_weight):
@@ -99,7 +102,7 @@ class SimulateOnBranch:
         Calculate the total mutation rate of sequence
         :return: the sum of the mutation rates
         """
-        total_rate = sum([nt.mutation_rate for nt in iter(self.sequence.get_sequence())])
+        total_rate = sum([nt.total_mut_rate for nt in iter(self.sequence.get_sequence())])
         return total_rate
 
     def mutate_on_branch(self):
@@ -123,15 +126,15 @@ class SimulateOnBranch:
             to_state = mutation[1]
 
             # Subtract the mutation rate of the nucleotide to mutate
-            instant_rate = instant_rate - my_nt.mutation_rate
+            instant_rate = instant_rate - my_nt.total_mut_rate
 
             # Remove the mutated nucleotide from the event tree and update information in Nucleotide
             self.remove_nt(my_nt)
             self.update_nucleotide(my_nt, to_state)
-            self.update_nt_on_tree(my_nt, to_state)
+            self.update_num_syn_events(my_nt, to_state)
 
             # Add the mutation rate of the mutated nucleotide
-            instant_rate = instant_rate + my_nt.mutation_rate
+            instant_rate = instant_rate + my_nt.total_mut_rate
 
             # Update information about adjacent nucleotides
             if my_nt.codons:  # If the mutated nucleotide belongs to at least one codon
@@ -145,16 +148,16 @@ class SimulateOnBranch:
                         for codon in adj_nt.codons:
                             # If adjacent nucleotide and mutated nucleotide share at least one codon
                             if codon in my_nt.codons:
-                                instant_rate = instant_rate - adj_nt.mutation_rate
+                                instant_rate = instant_rate - adj_nt.total_mut_rate
                                 self.remove_nt(adj_nt)
                                 self.update_nucleotide(adj_nt, adj_nt.state)
-                                self.update_nt_on_tree(adj_nt, adj_nt.state)
+                                self.update_num_syn_events(adj_nt, adj_nt.state)
                                 # Update instant rate for adjacent nucleotide
-                                instant_rate = instant_rate + adj_nt.mutation_rate
+                                instant_rate = instant_rate + adj_nt.total_mut_rate
                                 break
 
             # Update event_tree to include a list of nucleotides on the tips
-            self.event_tree = self.sequence.get_nts_on_tips()
+            self.sequence.count_synonymous_events()
 
         return self.sequence
 
@@ -169,31 +172,25 @@ class SimulateOnBranch:
                 my_branch = self.event_tree['to_nt'][key_to_nt]['from_nt'][nt.state]
 
                 # Remove nt from synonymous mutations and list of nucleotides in substitution
-                if nt in my_branch['is_syn']:
-                    my_branch['is_syn'].remove(nt)
+                if nt in my_branch['nts_in_subs']['is_syn']:
+                    my_branch['nts_in_subs']['is_syn'].remove(nt)
 
                     # Update the number of events
-                    my_branch['number_of_events'] -= 1
-                    self.event_tree['to_nt'][key_to_nt]['events_for_nt'] -= 1
-                    self.event_tree['total_events'] -= 1
-
-                if nt in my_branch['nts_in_subs']:
-                    my_branch['nts_in_subs'].pop(nt, None)
+                    my_branch['syn_events'] -= 1
+                    self.event_tree['to_nt'][key_to_nt]['syn_events_for_nt'] -= 1
+                    self.event_tree['total_syn_events'] -= 1
 
                 # Remove nt from non-synonymous mutations
-                for dN_key in list(my_branch['is_nonsyn']['dN'].keys()):
-                    dN_nt_list = my_branch['is_nonsyn']['dN'][dN_key]
-                    if nt in dN_nt_list:      # Remove nucleotide from dN list
-                        dN_nt_list.remove(nt)
-                    if not dN_nt_list:        # Remove dN keys with no associated nucleotides
-                        del my_branch['is_nonsyn']['dN'][dN_key]
+                for dNdS_key, values_dict in list(my_branch['nts_in_subs']['is_nonsyn'].items()):
+                    for value, nt_list in list(values_dict.items()):
 
-                for dS_key in list(my_branch['is_nonsyn']['dS'].keys()):
-                    dS_nt_list = my_branch['is_nonsyn']['dS'][dS_key]
-                    if nt in dS_nt_list:      # Remove nucleotide from dS list
-                        dS_nt_list.remove(nt)
-                    if not dS_nt_list:        # Remove dS keys with no associated nucleotides
-                        del my_branch['is_nonsyn']['dS'][dS_key]
+                        # Remove nucleotide from dN and dS lists
+                        if nt in nt_list:
+                            nt_list.remove(nt)
+
+                        # Remove dN and dS keys with no associated nucleotide
+                        if not nt_list:
+                            del my_branch['nts_in_subs']['is_nonsyn'][dNdS_key][value]
 
     def update_nucleotide(self, nt, to_state):
         """
@@ -207,9 +204,10 @@ class SimulateOnBranch:
         nt.set_rates(rates[0])  # Update substitution rates
         nt.set_dN(rates[1])  # Update dN
         nt.set_dS(rates[2])  # Update dS
-        nt.get_mutation_rate()
+        self.update_num_syn_events(nt, to_state)
+        nt.set_mutation_rate()
 
-    def update_nt_on_tree(self, nt, to_state):
+    def update_num_syn_events(self, nt, to_state):
         """
         Update the number of synonymous events in the event tree
         """
@@ -294,6 +292,11 @@ class SimulateOnTree:
             for clade in final_tree.get_terminals():
                 sequences.append([clade, clade.sequence])
                 print(">Sequence_{} \n{}".format(clade, clade.sequence))
+                print('\n\t{}\n'.format(clade.sequence.event_tree))
+
+                for nt in clade.sequence.nt_sequence:
+                    print('\t\t{}: {}'.format(nt, nt.sub_rates))
+                print()
 
         return sequences
 
