@@ -38,15 +38,16 @@ class SimulateOnBranch:
 
         # List of nucleotides that are candidates to mutate
         candidate_nts = self.sequence.get_candidate_subs(final_mutation)
-        print('\t{}'.format(candidate_nts))
+        # print('\t{}'.format(candidate_nts))
         rates_list = [nt.total_mut_rate for nt in candidate_nts]
         nt_dict = dict(zip(candidate_nts, rates_list))
 
         # Select weighted nucleotide
         from_nucleotide = self.weighted_random_choice(nt_dict, sum(rates_list))
+        # print(from_nucleotide.codons)
 
-        print(self.sequence.event_tree)
-        print('\tfrom {}@{} to {}\n'.format(from_nucleotide.state, from_nucleotide.pos_in_seq, to_mutation))
+        # print(self.sequence.event_tree)
+        # print('\tfrom {}@{} to {}\n'.format(from_nucleotide.state, from_nucleotide.pos_in_seq, to_mutation))
         return from_nucleotide, to_mutation
 
     def select_weighted_values(self, dictionary, number_of_total_events, key_for_local_events, key_to_weight):
@@ -82,6 +83,7 @@ class SimulateOnBranch:
         :param sum_values: sum all values on dict to establish the limit for the mutation
         :return: random key from dict
         """
+        key = None
         iter_object = iter(dictionary.items())
         limit = random.uniform(0, sum_values)
         s = 0
@@ -224,10 +226,10 @@ class SimulateOnBranch:
                     pos_in_codon = codon.nt_in_pos(nt)
 
                     # Update the number of events
-                    if codon.is_nonsyn(pos_in_codon, nt.state):
-                        branch['number_of_events'] += 1
-                        self.event_tree['to_nt'][key_to_nt]['events_for_nt'] += 1
-                        self.event_tree['total_events'] += 1
+                    if not codon.is_nonsyn(pos_in_codon, nt.state):
+                        branch['syn_events'] += 1
+                        self.event_tree['to_nt'][key_to_nt]['syn_events_for_nt'] += 1
+                        self.event_tree['total_syn_events'] += 1
 
 
 class SimulateOnTree:
@@ -236,7 +238,6 @@ class SimulateOnTree:
     """
 
     def __init__(self, root_sequence, phylo_tree, outfile=None):
-        # Not double linked list -- whole sequence object
         self.root_sequence = root_sequence  # Sequence object
         self.phylo_tree = phylo_tree  # Phylogenetic tree over which sequence will evolve
         self.outfile = outfile
@@ -270,7 +271,7 @@ class SimulateOnTree:
             # Create a deep copy of the parent sequence
             parent_sequence = copy.deepcopy(parent.sequence)
             # Mutate sequence and store it on clade
-            print("Simulating on one Branch", clade)
+            # print("Simulating on one Branch", clade)
             simulation = SimulateOnBranch(parent_sequence, clade.branch_length)
             clade.sequence = simulation.mutate_on_branch()
 
@@ -292,29 +293,10 @@ class SimulateOnTree:
             for clade in final_tree.get_terminals():
                 sequences.append([clade, clade.sequence])
                 print(">Sequence_{} \n{}".format(clade, clade.sequence))
-                print('\n\t{}\n'.format(clade.sequence.event_tree))
+                # print('\n\t{}\n'.format(clade.sequence.event_tree))
 
-                for nt in clade.sequence.nt_sequence:
-                    print('\t\t{}: {}'.format(nt, nt.sub_rates))
-                print()
+                # for nt in clade.sequence.nt_sequence:
+                #     print('\t\t{}: {}'.format(nt, nt.sub_rates))
+                # print()
 
         return sequences
-
-    def output_orfs(self, sequences, outfile=None):
-        """
-        Outputs the mutated orfs
-        :sequences: list of lists of clade name and mutated sequences pairs
-        """
-        for clade_name, seq in sequences:
-            print(clade_name)
-            for strand in self.root_sequence.orfs:
-                orf_coords = self.root_sequence.orfs[strand]
-                my_orf = ''
-                for coord in orf_coords:
-                    for c in coord:
-                        my_orf += seq.nt_sequence[c[0]:c[1]]
-
-                        if strand == -1:  # Reverse strand
-                            my_orf = my_orf[::-1]
-                    print('{}\n{}\n\n'.format(orf_coords, my_orf))
-

@@ -296,9 +296,11 @@ class Sequence:
                                 if dS_in_sub not in current_dS:
                                     self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['nts_in_subs']['is_nonsyn']['dS'][
                                         dS_in_sub] = [nt]
+                                    # print('\tAdded nucleotide {} @ pos {}'.format(nt, nt.pos_in_seq))
                                 else:
                                     self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['nts_in_subs']['is_nonsyn']['dS'][
                                         dS_in_sub].append(nt)
+                                    # print('\tAdded nucleotide {} @ pos {}'.format(nt, nt.pos_in_seq))
 
                         # Synonymous mutation
                         else:
@@ -306,7 +308,8 @@ class Sequence:
 
         return sub_rates, my_dN_keys, my_dS_keys
 
-    def get_candidate_subs(self, branch):
+    @staticmethod
+    def get_candidate_subs(branch):
         """
         Gets all synonymous and non-synonymous events
         """
@@ -320,8 +323,6 @@ class Sequence:
                     candidate_nts.extend(nt)
 
         return candidate_nts
-
-
 
     @staticmethod
     def is_transv(from_nt, to_nt):
@@ -513,6 +514,7 @@ class Codon:
                  False if the substitution leads to a synonymous mutation
         """
         codon, mutated_codon = self.mutate_codon(pos_in_codon, to_nt)
+        # print('\t\tCodon: {}\n\t\tMutated codon: {}'.format(codon, mutated_codon))
         return CODON_DICT[''.join(mutated_codon)] != CODON_DICT[''.join(codon)]
 
     def is_stop(self, pos_in_codon, to_nt):
@@ -537,4 +539,4 @@ class Codon:
         #     codon = ''.join(nt.complement_state for nt in self.nts_in_codon)
         codon = ''.join(str(nt) for nt in self.nts_in_codon)  # Cast all Nucleotides in the Codon to strings
 
-        return codon == 'ATG' and self.nts_in_codon[0].pos_in_seq == self.orf[0]
+        return codon == 'ATG' and self.nts_in_codon[0].pos_in_seq == self.orf[0][0]

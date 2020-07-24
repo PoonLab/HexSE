@@ -284,6 +284,7 @@ def parse_genbank(in_seq, in_orfs=None):
         else:
             orf_locations = check_orfs(in_orfs)
 
+    print(orf_locations)
     return seq, orf_locations
 
 
@@ -310,10 +311,11 @@ def check_orfs(in_orfs=None, s=None):
     :return: ORFs as a list of tuples
     """
 
-    # Check if the user specified orfs
+    # Check if the user did not specify orfs
     if in_orfs is None:
-        orf_coords = get_open_reading_frames(s)
-        orf_coords = {1: [[(0, 12)]], -1: []}
+        # orf_coords = get_open_reading_frames(s)
+        orf_coords = {1: [[(0, 12)], [(4, 16)]], -1: []}
+        # orf_coords = {1: [[(0, 435)]], -1: []}
 
     # Read ORFs as a list of tuples
     else:
@@ -466,8 +468,7 @@ def main():
     # Run simulation
     print("\nRunning simulation")
     simulation = SimulateOnTree(root_sequence, phylo_tree, args.outfile)
-    sequences = simulation.get_alignment(args.outfile)
-    # simulation.output_orfs(sequences, args.outfile)
+    simulation.get_alignment(args.outfile)
 
     print("Simulation duration: {} seconds".format(datetime.now() - start_time))
 
