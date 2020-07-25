@@ -313,8 +313,9 @@ def check_orfs(in_orfs=None, s=None):
 
     # Check if the user did not specify orfs
     if in_orfs is None:
-        # orf_coords = get_open_reading_frames(s)
-        orf_coords = {1: [[(0, 12)], [(4, 16)]], -1: []}
+        # FIXME: allow users to specify ORFs
+        orf_coords = get_open_reading_frames(s)
+        # orf_coords = {1: [[(0, 12)], [(4, 16)]], -1: []}
         # orf_coords = {1: [[(0, 435)]], -1: []}
 
     # Read ORFs as a list of tuples
