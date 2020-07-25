@@ -57,8 +57,8 @@ class Sequence:
         self.pi = pi  # Frequency of nucleotides, with nucleotide as keys
         self.dN_values = dN_values  # Numeric values for dN (drawn from a gamma distribution by default)
         self.dS_values = dS_values  # Numeric values for dS (drawn from a gamma distribution by default)
-        self.__codons = []      # Store references to all codons
-        self.nt_sequence = []   # List of Nucleotide objects
+        self.__codons = []  # Store references to all codons
+        self.nt_sequence = []  # List of Nucleotide objects
         self.is_circular = circular  # True if the genome is circular, False otherwise
 
         # Create Nucleotides
@@ -100,7 +100,7 @@ class Sequence:
         # Creates a new Sequence
         cls = self.__class__
         new_sequence = cls.__new__(cls)
-        memodict[id(self)] = new_sequence        # Avoid duplicate copying
+        memodict[id(self)] = new_sequence  # Avoid duplicate copying
 
         # Set attributes of new Sequence to the same as the original object
         for k, v in self.__dict__.items():
@@ -219,49 +219,42 @@ class Sequence:
 
         self.event_tree['total_syn_events'] = total_events
 
-    def get_substitution_rates(self, nt):
+    def get_substitution_rates(self, curr_nt):
         """
         Calculates substitution rates for each mutation and populates the event tree
-        :param nt: object of class Nucleotide
+        :param curr_nt: object of class Nucleotide
         :return: 1. Dictionary of substitutions rates, keyed by nt subs
                  2. Dictionary with omega keys
         """
-        sub_rates = {}
-        my_dN_keys = {}
-        my_dS_keys = {}
-        current_nt = nt.state
+        sub_rates, my_dN_keys, my_dS_keys = {}, {}, {}
 
         for to_nt in NUCLEOTIDES:
-            if to_nt == current_nt:
+            if to_nt == curr_nt.state:
                 sub_rates[to_nt] = None
                 my_dN_keys[to_nt] = None
                 my_dS_keys[to_nt] = None
 
             else:
                 # Apply global substitution rate and stationary nucleotide frequency
-                sub_rates[to_nt] = self.mu * self.pi[current_nt]
-                if self.is_transv(current_nt, to_nt):
+                sub_rates[to_nt] = self.mu * self.pi[curr_nt.state]
+                if self.is_transv(curr_nt.state, to_nt):
                     sub_rates[to_nt] *= self.kappa
 
                 # dN and dS applied given a substitution from current_nt to to_nt
                 chosen_dN = [0 for _ in range(len(self.dN_values))]
                 chosen_dS = [0 for _ in range(len(self.dS_values))]
 
-                for codon in nt.codons:
-                    pos_in_codon = codon.nt_in_pos(nt)
+                for codon in curr_nt.codons:
+                    pos_in_codon = codon.nt_in_pos(curr_nt)
                     # If mutation leads to a stop codon
                     stop_codon = codon.is_stop(pos_in_codon, to_nt)
                     if stop_codon:
                         sub_rates[to_nt] *= 0
-                        my_dN_keys[to_nt] = None
-                        my_dS_keys[to_nt] = None
 
                     # If nt is part of a start codon
                     start_codon = codon.is_start()
                     if start_codon:
                         sub_rates[to_nt] *= 0
-                        my_dN_keys[to_nt] = None
-                        my_dS_keys[to_nt] = None
 
                     # Apply omega when mutation is non-synonymous
                     if not start_codon and not stop_codon:
@@ -272,52 +265,51 @@ class Sequence:
                             chosen_dN[dN_index] += 1
                             chosen_dS[dS_index] += 1
 
-                            dN_in_sub = tuple(chosen_dN)
-                            dS_in_sub = tuple(chosen_dS)
+                            dN_in_sub, dS_in_sub = tuple(chosen_dN), tuple(chosen_dS)
                             my_dN_keys[to_nt] = dN_in_sub
                             my_dS_keys[to_nt] = dS_in_sub
 
-                            current_dS = \
-                            self.event_tree['to_nt'][to_nt]['from_nt'][nt.state]['nts_in_subs']['is_nonsyn']['dS']
-                            current_dN = \
-                            self.event_tree['to_nt'][to_nt]['from_nt'][nt.state]['nts_in_subs']['is_nonsyn']['dN']
+                            current_dN = self.event_tree['to_nt'][to_nt]['from_nt'][curr_nt.state][
+                                'nts_in_subs']['is_nonsyn']['dN']
+                            current_dS = self.event_tree['to_nt'][to_nt]['from_nt'][curr_nt.state][
+                                'nts_in_subs']['is_nonsyn']['dS']
 
                             # Populate event tree using dN and dS keys
                             if any(dN_in_sub) and any(dS_in_sub):
                                 # Create dN key if needed, associate it with the current nucleotide
                                 if dN_in_sub not in current_dN:
-                                    self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['nts_in_subs']['is_nonsyn']['dN'][
-                                        dN_in_sub] = [nt]
+                                    self.event_tree['to_nt'][to_nt]['from_nt'][curr_nt.state]['nts_in_subs'][
+                                        'is_nonsyn']['dN'][dN_in_sub] = [curr_nt]
                                 else:
-                                    self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['nts_in_subs']['is_nonsyn']['dN'][
-                                        dN_in_sub].append(nt)
+                                    self.event_tree['to_nt'][to_nt]['from_nt'][curr_nt.state]['nts_in_subs'][
+                                        'is_nonsyn']['dN'][dN_in_sub].append(curr_nt)
 
                                 # Create dS key if needed, associate it with the current nucleotide
                                 if dS_in_sub not in current_dS:
-                                    self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['nts_in_subs']['is_nonsyn']['dS'][
-                                        dS_in_sub] = [nt]
-                                    # print('\tAdded nucleotide {} @ pos {}'.format(nt, nt.pos_in_seq))
+                                    self.event_tree['to_nt'][to_nt]['from_nt'][curr_nt.state]['nts_in_subs'][
+                                        'is_nonsyn']['dS'][dS_in_sub] = [curr_nt]
                                 else:
-                                    self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['nts_in_subs']['is_nonsyn']['dS'][
-                                        dS_in_sub].append(nt)
-                                    # print('\tAdded nucleotide {} @ pos {}'.format(nt, nt.pos_in_seq))
+                                    self.event_tree['to_nt'][to_nt]['from_nt'][curr_nt.state]['nts_in_subs'][
+                                        'is_nonsyn']['dS'][dS_in_sub].append(curr_nt)
 
                         # Synonymous mutation
                         else:
-                            self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['nts_in_subs']['is_syn'].append(nt)
+                            self.event_tree['to_nt'][to_nt]['from_nt'][curr_nt.state][
+                                'nts_in_subs']['is_syn'].append(curr_nt)
 
         return sub_rates, my_dN_keys, my_dS_keys
 
     @staticmethod
     def get_candidate_subs(branch):
         """
-        Gets all synonymous and non-synonymous events
+        Gets all synonymous and non-synonymous events on a branch
+        :param branch: the branch of the event tree
+        :return: a list of candidate nucleotides in the given branch
         """
         candidate_nts = []
         for subs_type in branch['nts_in_subs']:
             if subs_type == 'is_syn':
                 candidate_nts.extend(branch['nts_in_subs'][subs_type])
-
             else:
                 for nt in branch['nts_in_subs'][subs_type]['dS'].values():
                     candidate_nts.extend(nt)
@@ -417,7 +409,7 @@ class Nucleotide:
         # Creates a new Nucleotide
         cls = self.__class__
         new_nucletotide = cls.__new__(cls)
-        memodict[id(self)] = new_nucletotide        # Avoid duplicate copying
+        memodict[id(self)] = new_nucletotide  # Avoid duplicate copying
 
         # Copy all attributes except the codons
         new_nucletotide.state = copy.deepcopy(self.state, memodict)
@@ -425,7 +417,7 @@ class Nucleotide:
         new_nucletotide.complement_state = copy.deepcopy(self.complement_state, memodict)
         new_nucletotide.sub_rates = copy.deepcopy(self.sub_rates, memodict)
         new_nucletotide.total_mut_rate = copy.deepcopy(self.total_mut_rate, memodict)
-        new_nucletotide.codons = []     # References to Codons will be set when the Sequence is deep-copied
+        new_nucletotide.codons = []  # References to Codons will be set when the Sequence is deep-copied
 
         return new_nucletotide
 
@@ -494,11 +486,7 @@ class Codon:
         :param to_nt: the new state of the Nucleotide
         :return codon, mutated_codon: the codon and mutated codon represented as lists of strings
         """
-        # if self.orf[0] < self.orf[1]:  # Positive strand
-        #     codon = [str(nt) for nt in self.nts_in_codon]  # Cast all Nucleotides in the Codon to strings
-        # else:
-        #     codon = [nt.complement_state for nt in self.nts_in_codon]
-        #     to_nt = COMPLEMENT_DICT[to_nt]
+        # FIXME: handle ORFs in complement strand
         codon = [str(nt) for nt in self.nts_in_codon]  # Cast all Nucleotides in the Codon to strings
         mutated_codon = codon.copy()
         mutated_codon[pos_in_codon] = to_nt
@@ -514,7 +502,6 @@ class Codon:
                  False if the substitution leads to a synonymous mutation
         """
         codon, mutated_codon = self.mutate_codon(pos_in_codon, to_nt)
-        # print('\t\tCodon: {}\n\t\tMutated codon: {}'.format(codon, mutated_codon))
         return CODON_DICT[''.join(mutated_codon)] != CODON_DICT[''.join(codon)]
 
     def is_stop(self, pos_in_codon, to_nt):
@@ -533,10 +520,6 @@ class Codon:
         Checks if the codon is a start codon
         :return True of the codon is a start codon, False otherwise
         """
-        # if self.orf[0] < self.orf[1]:  # Positive strand
-        #     codon = ''.join(str(nt) for nt in self.nts_in_codon)  # Cast all Nucleotides in the Codon to strings
-        # else:
-        #     codon = ''.join(nt.complement_state for nt in self.nts_in_codon)
+        # FIXME: handle ORFs in the complement strand
         codon = ''.join(str(nt) for nt in self.nts_in_codon)  # Cast all Nucleotides in the Codon to strings
-
         return codon == 'ATG' and self.nts_in_codon[0].pos_in_seq == self.orf[0][0]

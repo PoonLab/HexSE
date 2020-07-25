@@ -17,7 +17,6 @@ class SimulateOnBranch:
         :param branch_length: length of the branch over which evolution is happening
         """
         self.sequence = sequence  # Sequence object
-        self.event_tree = sequence.get_event_tree()  # Tree of all possible mutations related to sequence
         self.branch_length = branch_length
 
     def get_substitution(self):
@@ -26,28 +25,23 @@ class SimulateOnBranch:
         """
 
         # Select: to nucleotide
-        events = self.event_tree['total_syn_events']
-        to_mutation = self.select_weighted_values(self.event_tree['to_nt'], events,
+        events = self.sequence.event_tree['total_syn_events']
+        to_mutation = self.select_weighted_values(self.sequence.event_tree['to_nt'], events,
                                                   'syn_events_for_nt', 'stationary_frequency')
 
         # Select: possible from nucleotides
-        from_dict = self.event_tree['to_nt'][to_mutation]['from_nt']
-        events_for_nt = self.event_tree['to_nt'][to_mutation]['syn_events_for_nt']
+        from_dict = self.sequence.event_tree['to_nt'][to_mutation]['from_nt']
+        events_for_nt = self.sequence.event_tree['to_nt'][to_mutation]['syn_events_for_nt']
         from_mutation = self.select_weighted_values(from_dict, events_for_nt, 'syn_events', 'kappa')
-        final_mutation = self.event_tree['to_nt'][to_mutation]['from_nt'][from_mutation]
+        final_mutation = self.sequence.event_tree['to_nt'][to_mutation]['from_nt'][from_mutation]
 
         # List of nucleotides that are candidates to mutate
         candidate_nts = self.sequence.get_candidate_subs(final_mutation)
-        # print('\t{}'.format(candidate_nts))
         rates_list = [nt.total_mut_rate for nt in candidate_nts]
         nt_dict = dict(zip(candidate_nts, rates_list))
 
         # Select weighted nucleotide
         from_nucleotide = self.weighted_random_choice(nt_dict, sum(rates_list))
-        # print(from_nucleotide.codons)
-
-        # print(self.sequence.event_tree)
-        # print('\tfrom {}@{} to {}\n'.format(from_nucleotide.state, from_nucleotide.pos_in_seq, to_mutation))
         return from_nucleotide, to_mutation
 
     def select_weighted_values(self, dictionary, number_of_total_events, key_for_local_events, key_to_weight):
@@ -168,10 +162,10 @@ class SimulateOnBranch:
         Find nucleotide selected to mutate in the event tree and remove it from every branch on the event tree
         :param nt: The nucleotide to be removed from the event tree
         """
-        for key_to_nt, value_to_nt in self.event_tree['to_nt'].items():
+        for key_to_nt, value_to_nt in self.sequence.event_tree['to_nt'].items():
             if key_to_nt != nt.state:
                 # Find branches that contain my nucleotide
-                my_branch = self.event_tree['to_nt'][key_to_nt]['from_nt'][nt.state]
+                my_branch = self.sequence.event_tree['to_nt'][key_to_nt]['from_nt'][nt.state]
 
                 # Remove nt from synonymous mutations and list of nucleotides in substitution
                 if nt in my_branch['nts_in_subs']['is_syn']:
@@ -179,8 +173,8 @@ class SimulateOnBranch:
 
                     # Update the number of events
                     my_branch['syn_events'] -= 1
-                    self.event_tree['to_nt'][key_to_nt]['syn_events_for_nt'] -= 1
-                    self.event_tree['total_syn_events'] -= 1
+                    self.sequence.event_tree['to_nt'][key_to_nt]['syn_events_for_nt'] -= 1
+                    self.sequence.event_tree['total_syn_events'] -= 1
 
                 # Remove nt from non-synonymous mutations
                 for dNdS_key, values_dict in list(my_branch['nts_in_subs']['is_nonsyn'].items()):
@@ -215,11 +209,11 @@ class SimulateOnBranch:
         """
 
         # Update all occurrences of the nucleotide in the event tree
-        for key_to_nt, val in self.event_tree['to_nt'].items():
+        for key_to_nt, val in self.sequence.event_tree['to_nt'].items():
 
             if key_to_nt != to_state:
                 # Find branches that contain the nucleotide
-                branch = self.event_tree['to_nt'][key_to_nt]['from_nt'][nt.state]
+                branch = self.sequence.event_tree['to_nt'][key_to_nt]['from_nt'][nt.state]
 
                 # Check if the mutation is synonymous
                 for codon in nt.codons:
@@ -228,8 +222,8 @@ class SimulateOnBranch:
                     # Update the number of events
                     if not codon.is_nonsyn(pos_in_codon, nt.state):
                         branch['syn_events'] += 1
-                        self.event_tree['to_nt'][key_to_nt]['syn_events_for_nt'] += 1
-                        self.event_tree['total_syn_events'] += 1
+                        self.sequence.event_tree['to_nt'][key_to_nt]['syn_events_for_nt'] += 1
+                        self.sequence.event_tree['total_syn_events'] += 1
 
 
 class SimulateOnTree:
@@ -247,7 +241,6 @@ class SimulateOnTree:
         :param child_clade: current clade
         :return: path to the parent clade
         """
-
         node_path = self.phylo_tree.get_path(child_clade)
         return node_path[-2] if len(node_path) > 1 else self.phylo_tree.root
 
@@ -270,8 +263,9 @@ class SimulateOnTree:
 
             # Create a deep copy of the parent sequence
             parent_sequence = copy.deepcopy(parent.sequence)
+
             # Mutate sequence and store it on clade
-            # print("Simulating on one Branch", clade)
+            print("Simulating on one Branch", clade)
             simulation = SimulateOnBranch(parent_sequence, clade.branch_length)
             clade.sequence = simulation.mutate_on_branch()
 
@@ -293,10 +287,5 @@ class SimulateOnTree:
             for clade in final_tree.get_terminals():
                 sequences.append([clade, clade.sequence])
                 print(">Sequence_{} \n{}".format(clade, clade.sequence))
-                # print('\n\t{}\n'.format(clade.sequence.event_tree))
-
-                # for nt in clade.sequence.nt_sequence:
-                #     print('\t\t{}: {}'.format(nt, nt.sub_rates))
-                # print()
 
         return sequences
