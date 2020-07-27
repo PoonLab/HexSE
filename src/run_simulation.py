@@ -455,7 +455,7 @@ def main():
 
     # Since ORFs are valid, sort the ORFs by reading frame
     orfs = sort_orfs(unsorted_orfs)
-    print("Valid sorted orfs: ", orfs)
+    #print("Valid sorted orfs: ", orfs)
     logging.info("Valid orfs: {}".format(orfs))
 
     # Check if sequence is valid
