@@ -6,9 +6,20 @@ import sys
 
 import numpy as np
 
-def is_stop(sequence):
-    codons = [str(codon) for codon in sequence.get_codons()]
-    return ('TGA' in codons) or ('TAA' in codons)
+
+
+def is_stop(to_nt, from_nt):
+    """
+    Check if a STOP codon is being introduced in the sequence
+    """
+
+    for codon in from_nt.codons:
+        codon, mutated_codon = codon.mutate_codon(codon.nt_in_pos(from_nt), to_nt)
+
+        if str(mutated_codon) == 'TAA' or str(mutated_codon) == 'TGA' or str(mutated_codon) == 'TAG':
+            return True
+
+    return False
 
 
 class SimulateOnBranch:
@@ -68,8 +79,8 @@ class SimulateOnBranch:
         total_events = number_of_total_events
         temp = {}
         sum_values = 0
+
         # Create a temp dictionary to store the weighted values
-        info = {"dictionary": dictionary, "total events": number_of_total_events}
         for key, value in dictionary.items():
             if value:
                 # weight values
@@ -127,32 +138,20 @@ class SimulateOnBranch:
             if times_sum > self.branch_length:
                 break
 
-
             # Draw a mutation
             mutation = self.get_substitution()
             my_nt = mutation[0]
             to_state = mutation[1]
             instant_rate = instant_rate - my_nt.mutation_rate
 
-            if is_stop(self.sequence):
-                # self.sequence.get_nts_on_tips()
-                info = { "To nt": to_state,
-                        "state": my_nt.state,
-                        "pos_in_seq": my_nt.pos_in_seq,
-                        "codons": my_nt.codons,
-                        "nts on tips" : self.sequence.get_nts_on_tips()["to_nt"][to_state]["from_nt"][my_nt.state]
-                }
-                print(f">>> STOP CODON BEING INTRODUCED: \n {info}")
-                sys.exit(1)
-
-            print(f"***** Before updating: {my_nt.codons}")
             # Remove the mutated nucleotide from the event tree and update information in Nucleotide
             self.remove_nt(my_nt)
 
-            # Re-create substitution rates for the nucleotide, re-store it on the Event Tree
+            # Re-create substitution rates for the nucleotide
             self.update_nucleotide(my_nt, to_state)
 
-            self.update_nt_on_tree(my_nt, to_state) # Count the total number of events on the Event Tree
+            # Re-store the nucleotide on the Event Tree and update the total number of events
+            self.update_nt_on_tree(my_nt, to_state)
 
             # Add the mutation rate of the mutated nucleotide
             instant_rate = instant_rate + my_nt.mutation_rate
@@ -170,7 +169,6 @@ class SimulateOnBranch:
                             # If adjacent nucleotide and mutated nucleotide share at least one codon
                             if codon in my_nt.codons:
                                 instant_rate = instant_rate - adj_nt.mutation_rate
-                                print(f"***** Before updating: {adj_nt.codons}")
                                 self.remove_nt(adj_nt)
                                 self.update_nucleotide(adj_nt, adj_nt.state)
                                 self.update_nt_on_tree(adj_nt, adj_nt.state)
@@ -203,7 +201,6 @@ class SimulateOnBranch:
                     self.event_tree['total_events'] -= 1
 
                 # Remove nt from dictionary of nucleotides in substitution
-
                 if nt in my_branch['nts_in_subs']:
                     removed_value = my_branch['nts_in_subs'].pop(nt, None)
 
@@ -227,16 +224,13 @@ class SimulateOnBranch:
         """
         Update parameters on the mutated nucleotide
         """
-        print(f">>>>> Updating nucleotide FROM: {nt.state} TO {to_state}, POS {nt.pos_in_seq}")
-        pre_codons = copy.deepcopy(nt.codons)
+
         # Update the state of the nucleotide
         nt.set_state(to_state)
         # Change complementary state given the mutation
         nt.set_complement_state()
         # Update rates, omega key according to its new state
         self.sequence.get_substitution_rates(nt)
-        if pre_codons:
-            print(f"Codons{pre_codons}, POS {nt.codons}, position{nt.pos_in_seq}, {type(pre_codons[0])}\n")
 
 
     def update_nt_on_tree(self, nt, to_state):

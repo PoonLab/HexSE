@@ -92,15 +92,15 @@ class Sequence:
 
 
     def check_event_tree(self):
-        # for key1, to_nt in copy.deepcopy(self.event_tree['to_nt']).items():
+        """
+        When debugging, useful to check if nucleotides are being properly stored on the Event Tree
+        """
         for key1, to_nt in self.event_tree['to_nt'].items():
             subset = to_nt['from_nt']
 
             for key2, from_nt in subset.items():
                 if key2 != 'T' and from_nt and from_nt.get('nts_in_subs'):
                     nts_in_subs = list(from_nt['nts_in_subs'].keys())
-                    # test_meta = [str(tip).lower() for tip in nts_in_subs]
-                    # print(f'*** TEST META: from {key2}', test_meta)
                     if len([1 for tip in nts_in_subs if str(tip).lower() == 't0']) > 0:
                         meta2 = {'nts_in_subs': nts_in_subs}
                         print(f'>>>>>>>>>>>> meta2: from {key2}', meta2)
@@ -286,8 +286,6 @@ class Sequence:
 
                 # If nucleotide belongs to a codon
                 if nt.codons:
-                    # info = {"nt": nt, "to nt": to_nt, "sub rates": sub_rates, "state":nt.state}
-                    # print(info)
                     # If mutation introduce a STOP or is a START
                     if self.is_start_stop_codon(nt, to_nt):
                         sub_rates[to_nt] *= 0
@@ -319,7 +317,7 @@ class Sequence:
                                 my_dN_keys[to_nt] = None
                                 my_dS_keys[to_nt] = None
 
-                else: # Nucleotide does not belong to any codon
+                else:  # Nucleotide does not belong to any codon
                     my_dN_keys[to_nt] = None
                     my_dS_keys[to_nt] = None
 
@@ -332,7 +330,7 @@ class Sequence:
 
     def is_start_stop_codon(self, nt, to_nt):
         """"
-        Check if mutation is a STOP codon of if the codon is a start_pos
+        Check if mutation is a STOP codon or nucleotide belongs to a START codon
         :return: False if mutation does not create a STOP in any of the codons the nucleotide is part of
         """
         for codon in nt.codons:
@@ -517,7 +515,7 @@ class Nucleotide:
 
     def get_relevant_info(self):
         """
-        Create a dictionary with all relevant info related with the nucleotide
+        Create a dictionary with all relevant information related with the nucleotide
         (Useful for debugging)
         """
         info = {"state": self.state, "position": self.pos_in_seq,
