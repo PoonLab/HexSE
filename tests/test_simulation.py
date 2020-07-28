@@ -499,6 +499,7 @@ class TestSimulateOnBranch(unittest.TestCase):
         self.assertEqual('A', nt_to_mutate.state)
         self.assertEqual('T', nt_to_mutate.get_complement_state())
         self.assertEqual(expected_rates, nt_to_mutate.sub_rates)
+        self.assertEqual(expected_rates, nt_to_mutate.rates)
 
     def testMutateOnBranch(self):
         np.random.seed(9001)    # Used to draw waiting times
