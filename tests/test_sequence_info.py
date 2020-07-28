@@ -10,7 +10,6 @@ from src.sequence_info import Sequence
 class TestSequenceInfo(unittest.TestCase):
 
     def setUp(self):
-
         self.maxDiff = None
         random.seed(9001)     # Set seed for pseudo-random number generator
 
@@ -21,28 +20,50 @@ class TestSequenceInfo(unittest.TestCase):
         dN_values = [0.29327471612351436, 0.6550136761581515, 1.0699896623909886, 1.9817219453273531]
         dS_values = [0.29327471612351436, 0.6550136761581515, 1.0699896623909886, 1.9817219453273531]
 
-        self.sequence1 = Sequence(s1, {'+0': [(0, 21)]}, kappa, mu, pi1, dN_values, dS_values)
+        self.sequence1 = Sequence(s1, {'+0': [[(0, 21)]]}, kappa, mu, pi1, dN_values, dS_values)
 
         s2 = 'TTTTTTCTTTTTTT'
         pi2 = Sequence.get_frequency_rates(s2)
-        self.sequence2 = Sequence(s2, {'+0': [(0, 12)]}, kappa, mu, pi2, dN_values, dS_values)
+        self.sequence2 = Sequence(s2, {'+0': [[(0, 12)]]}, kappa, mu, pi2, dN_values, dS_values)
 
         s3 = 'AATTCATGAACGAAAATCTGTTCGCTTCATTCATTGCCCCCACAATCTAGGCCTACCC'
-        sorted_orfs = {'+0': [(5, 50)], '+1': [], '+2': [], '-0': [], '-1': [], '-2': [(30, 3)]}
+        sorted_orfs = {'+0': [[(5, 50)]], '+1': [], '+2': [], '-0': [], '-1': [], '-2': [[(30, 3)]]}
         pi3 = Sequence.get_frequency_rates(s3)
         self.sequence3 = Sequence(s3, sorted_orfs, kappa, mu, pi3, dN_values, dS_values)
 
         s4 = 'ATGACGTGGTGA'
-        sorted_orfs = {'+0': [(0, 12)], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
+        sorted_orfs = {'+0': [[(0, 12)]], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
         pi4 = Sequence.get_frequency_rates(s4)
         random.seed(9001)
         self.sequence4 = Sequence(s4, sorted_orfs, kappa, mu, pi4, dN_values, dS_values)
 
         s5 = 'ATGATGCCCTAA'
-        sorted_orfs = {'+0': [(0, 12)], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
+        sorted_orfs = {'+0': [[(0, 12)]], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
         pi5 = Sequence.get_frequency_rates(s5)
         random.seed(4000)
         self.sequence5 = Sequence(s5, sorted_orfs, kappa, mu, pi5, dN_values, dS_values)
+
+        s6 = 'ATGAATGCCTGACTAA'
+        sorted_orfs = {'+0': [[(0, 12)]], '+1': [[(4, 16)]], '+2': [], '-0': [], '-1': [], '-2': []}
+        pi6 = Sequence.get_frequency_rates(s6)
+        random.seed(4000)
+        self.sequence6 = Sequence(s6, sorted_orfs, kappa, mu, pi6, dN_values, dS_values)
+
+    def testReverseComplement(self):
+        s = "atgcatgcatgc"
+        expected = "GCATGCATGCAT"
+        result = Sequence.complement(s, rev=True)
+        self.assertEqual(expected, result)
+
+        s = "ATGAAATTTGGGCCCTAA"
+        expected = "TTAGGGCCCAAATTTCAT"
+        result = Sequence.complement(s, rev=True)
+        self.assertEqual(expected, result)
+
+        s = "ATGAAATTTGGGCCCTAA"
+        expected = "TACTTTAAACCCGGGATT"
+        result = Sequence.complement(s)
+        self.assertEqual(expected, result)
 
     def testDeepcopy(self):
         random.seed(9001)
@@ -70,8 +91,6 @@ class TestSequenceInfo(unittest.TestCase):
             self.assertEqual(nt.state, new_nt.state)
             self.assertEqual(nt.pos_in_seq, new_nt.pos_in_seq)
             self.assertEqual(nt.complement_state, new_nt.complement_state)
-            self.assertEqual(nt.sub_rates, new_nt.sub_rates)
-            self.assertEqual(nt.total_mut_rate, new_nt.total_mut_rate)
             self.assertEqual(nt.rates, new_nt.rates)
             self.assertEqual(nt.mutation_rate, new_nt.mutation_rate)
 
@@ -205,10 +224,8 @@ class TestSequenceInfo(unittest.TestCase):
         """
 
         # Finds codons in the forward strand
-        expected = [['G', 'T', 'A'], ['C', 'G', 'A'], ['T', 'C', 'G'], ['A', 'T', 'C'],
-                    ['G', 'A', 'T'], ['G', 'C', 'T'], ['A', 'G', 'C']]
-
-        result = self.sequence1.find_codons('+0', (0, 21))
+        expected = [['A', 'T', 'G'], ['A', 'T', 'G'], ['C', 'C', 'C'], ['T', 'A', 'A']]
+        result = self.sequence5.find_codons('+0', [(0, 12)])
         self.assertEqual(len(expected), len(result))
 
         for idx, codon in enumerate(result):
@@ -219,11 +236,32 @@ class TestSequenceInfo(unittest.TestCase):
         # Find codons in the reverse strand
         expected = [['C', 'G', 'A'], ['T', 'C', 'G'], ['T', 'A', 'G'], ['C', 'T', 'A'],
                     ['G', 'C', 'T'], ['A', 'G', 'C'], ['A', 'T', 'G']]
-        result = self.sequence1.find_codons('-0', (21, 0))
+        result = self.sequence1.find_codons('-0', [(0, 21)])
         self.assertEqual(len(expected), len(result))
 
         for idx, codon in enumerate(result):
             self.assertEqual(codon.frame, '-0')
+            for pos, nt in enumerate(codon.nts_in_codon):
+                self.assertEqual(expected[idx][pos], nt.state)
+
+        # Find codons in sequence with overlapping reading frames
+        # Check codons in +0 frame
+        expected = [['A', 'T', 'G'], ['A', 'A', 'T'], ['G', 'C', 'C'], ['T', 'G', 'A']]
+        result = self.sequence6.find_codons('+0', [(0, 12)])
+        self.assertEqual(len(expected), len(result))
+
+        for idx, codon in enumerate(result):
+            self.assertEqual(codon.frame, '+0')
+            for pos, nt in enumerate(codon.nts_in_codon):
+                self.assertEqual(expected[idx][pos], nt.state)
+
+        # Check Codons in +1 frame
+        expected = [['A', 'T', 'G'], ['C', 'C', 'T'], ['G', 'A', 'C'], ['T', 'A', 'A']]
+        result = self.sequence6.find_codons('+1', [(4, 16)])
+        self.assertEqual(len(expected), len(result))
+
+        for idx, codon in enumerate(result):
+            self.assertEqual(codon.frame, '+1')
             for pos, nt in enumerate(codon.nts_in_codon):
                 self.assertEqual(expected[idx][pos], nt.state)
 
@@ -617,29 +655,35 @@ class TestCodon(unittest.TestCase):
         pi1 = Sequence.get_frequency_rates(s1)
         dN_values = [0.29327471612351436, 0.6550136761581515, 1.0699896623909886, 1.9817219453273531]
         dS_values = [0.29327471612351436, 0.6550136761581515, 1.0699896623909886, 1.9817219453273531]
-        self.nt_seq1 = Sequence(s1, {'+0': [(0, 21)]}, kappa, mu, pi1, dN_values, dS_values)
+        self.nt_seq1 = Sequence(s1, {'+0': [[(0, 21)]]}, kappa, mu, pi1, dN_values, dS_values)
 
         s4 = 'ATGACGTGGTGA'
-        sorted_orfs = {'+0': [(0, 12)], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
+        sorted_orfs = {'+0': [[(0, 12)]], '+1': [], '+2': [], '-0': [], '-1': [[(0, 12)]], '-2': []}
         pi4 = Sequence.get_frequency_rates(s4)
         random.seed(9001)
         self.nt_seq4 = Sequence(s4, sorted_orfs, kappa, mu, pi4, dN_values, dS_values)
 
         s5 = 'ATGATGCCCTAA'
-        sorted_orfs = {'+0': [(0, 12)], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
+        sorted_orfs = {'+0': [[(0, 12)]], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
         pi5 = Sequence.get_frequency_rates(s5)
         random.seed(4000)
         self.nt_seq5 = Sequence(s5, sorted_orfs, kappa, mu, pi5, dN_values, dS_values)
 
+        s6 = 'ATGAATGCCTGACTAA'
+        sorted_orfs = {'+0': [[(0, 12)]], '+1': [[(4, 16)]], '+2': [], '-0': [], '-1': [], '-2': []}
+        pi6 = Sequence.get_frequency_rates(s6)
+        random.seed(4000)
+        self.nt_seq6 = Sequence(s6, sorted_orfs, kappa, mu, pi6, dN_values, dS_values)
+
     def testNtInPos(self):
-        codons = self.nt_seq1.find_codons('+0', (0, 12))
+        codons = self.nt_seq1.find_codons('+0', [(0, 12)])
         codon = codons[0]
         nt = self.nt_seq1.nt_sequence[0]
         expected = 0
         result = codon.nt_in_pos(nt)
         self.assertEqual(expected, result)
 
-        codons = self.nt_seq1.find_codons('+0', (0, 12))
+        codons = self.nt_seq1.find_codons('+0', [(0, 12)])
         codon = codons[1]
         nt = self.nt_seq1.nt_sequence[3]
         expected = 0
@@ -660,14 +704,14 @@ class TestCodon(unittest.TestCase):
         # Test Sequence 1
         # GTA CGA TCG ATC GAT GCT AGC
         # CAT GCT AGC TAG CTA CGA TCG
-        codons = self.nt_seq1.find_codons('+0', (0, 12))
+        codons = self.nt_seq1.find_codons('+0', [(0, 12)])
         exp_codon = ['G', 'T', 'A']
         exp_mutated = ['G', 'T', 'C']
         res_codon, res_mutated = codons[0].mutate_codon(2, 'C')
         self.assertEqual(exp_codon, res_codon)
         self.assertEqual(exp_mutated, res_mutated)
 
-        codons = self.nt_seq1.find_codons('-0', (12, 0))
+        codons = self.nt_seq1.find_codons('-0', [(0, 12)])
         exp_codon = ['G', 'A', 'T']
         exp_mutated = ['T', 'A', 'T']
         res_codon, res_mutated = codons[0].mutate_codon(0, 'A')
@@ -677,7 +721,7 @@ class TestCodon(unittest.TestCase):
     def testIsNonSyn(self):
         # Test Sequence 1
         # GTA CGA TCG ATC GAT GCT AGC
-        codons = self.nt_seq1.find_codons('+0', (0, 12))
+        codons = self.nt_seq1.find_codons('+0', [(0, 12)])
         codon = codons[0]                    # GTA = Valine
 
         # Mutation at wobble position
@@ -692,7 +736,7 @@ class TestCodon(unittest.TestCase):
 
         # Testing sequence 4
         # ATG ACG TGG TGA
-        codons = self.nt_seq4.find_codons('+0', (0, 12))
+        codons = self.nt_seq4.find_codons('+0', [(0, 12)])
         codon = codons[2]                   # TGG = Tryptophan
 
         # Mutation at second position
@@ -718,7 +762,7 @@ class TestCodon(unittest.TestCase):
         self.assertEqual(expected, result)
 
     def testIsStop(self):
-        codons = self.nt_seq1.find_codons('+0', (0, 12))
+        codons = self.nt_seq1.find_codons('+0', [(0, 12)])
         codon = codons[2]   # TCG = Serine
 
         # T to G mutation at first position (GCG = Alanine)
@@ -732,7 +776,7 @@ class TestCodon(unittest.TestCase):
         self.assertEqual(expected, result)
 
         # G to A mutation in middle position (TAA = STOP)
-        codons = self.nt_seq4.find_codons('+0', (0, 12))
+        codons = self.nt_seq4.find_codons('+0', [(0, 12)])
         codon = codons[3]
         expected = True
         result = codon.is_stop(1, 'A')
@@ -741,7 +785,7 @@ class TestCodon(unittest.TestCase):
     def testIsStart(self):
         # Testing sequence 1
         # GTA CGA TCG ATC GAT GCT AGC
-        codons = self.nt_seq1.find_codons('+0', (0, 12))
+        codons = self.nt_seq1.find_codons('+0', [(0, 12)])
         codon = codons[0]               # GTA = Valine
         expected = False
         result = codon.is_start()
@@ -749,7 +793,7 @@ class TestCodon(unittest.TestCase):
 
         # Testing sequence 4
         # ATG ACG TGG TGA
-        codons = self.nt_seq4.find_codons('+0', (0, 12))
+        codons = self.nt_seq4.find_codons('+0', [(0, 12)])
         codon = codons[0]               # first Methionine
         expected = True
         result = codon.is_start()
@@ -757,7 +801,7 @@ class TestCodon(unittest.TestCase):
 
         # Testing sequence 5
         # ATG ATG CCC TAA
-        codons = self.nt_seq5.find_codons('+0', (0, 12))
+        codons = self.nt_seq5.find_codons('+0', [(0, 12)])
         codon = codons[1]               # second Methionine
         expected = False
         result = codon.is_start()
