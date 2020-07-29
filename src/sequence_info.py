@@ -32,6 +32,7 @@ CODON_DICT = {'TTT': 'F', 'TTC': 'F', 'TTA': 'L', 'TTG': 'L',
               'GGT': 'G', 'GGC': 'G', 'GGA': 'G', 'GGG': 'G',
               '---': '-', 'XXX': '?'}
 
+
 class Sequence:
     """
     Store inputs and create sequence objects
@@ -86,29 +87,8 @@ class Sequence:
             self.get_substitution_rates(nt) # Get substitution rates for the nucleotide
             self.nt_in_event_tree(nt) # locate nucleotide in the event tree
 
-
         # Update event_tree to include a list of nucleotides on the tips
         self.event_tree = self.get_nts_on_tips()
-
-
-    def check_event_tree(self):
-        """
-        When debugging, useful to check if nucleotides are being properly stored on the Event Tree
-        """
-        for key1, to_nt in self.event_tree['to_nt'].items():
-            subset = to_nt['from_nt']
-
-            for key2, from_nt in subset.items():
-                if key2 != 'T' and from_nt and from_nt.get('nts_in_subs'):
-                    nts_in_subs = list(from_nt['nts_in_subs'].keys())
-                    if len([1 for tip in nts_in_subs if str(tip).lower() == 't0']) > 0:
-                        meta2 = {'nts_in_subs': nts_in_subs}
-                        print(f'>>>>>>>>>>>> meta2: from {key2}', meta2)
-                        sys.exit(1)
-
-
-    def get_codons(self):
-        return self.__codons
 
     def __deepcopy__(self, memodict):
         """
@@ -168,6 +148,25 @@ class Sequence:
         return self.event_tree
 
     @staticmethod
+    def complement(seq, rev=False):
+        """
+        Generates the complement of a DNA sequence
+        :param seq: the input sequence
+        :param <option> rev: option to find the reverse complement
+        :return s: The complement (or reverse complement) of the sequence
+        """
+        if rev:
+            s = reversed(seq.upper())
+        else:
+            s = seq
+
+        result = ''
+        for i in s:
+            result += COMPLEMENT_DICT[i]
+
+        return result
+
+    @staticmethod
     def get_frequency_rates(seq):
         """
         Frequency of nucleotides in the DNA sequence
@@ -216,7 +215,7 @@ class Sequence:
 
         return event_tree
 
-    def get_nts_on_tips(self, debug=False):
+    def get_nts_on_tips(self):
         """
         Look at the tips of the event tree and create keys and values for nucleotides in substitution and number of events
         :return: update_event_tree: A nested dictionary containing:
@@ -313,7 +312,7 @@ class Sequence:
                                 my_dN_keys[to_nt] = dN_in_sub
                                 my_dS_keys[to_nt] = dS_in_sub
 
-                            else: # Mutation in synonymous. No dN or dS keys for this mutation
+                            else:  # Mutation in synonymous. No dN or dS keys for this mutation
                                 my_dN_keys[to_nt] = None
                                 my_dS_keys[to_nt] = None
 
@@ -321,14 +320,14 @@ class Sequence:
                     my_dN_keys[to_nt] = None
                     my_dS_keys[to_nt] = None
 
-
         # Creates a nucleotide with its substitution rates and key values
         nt.set_rates(sub_rates)
         nt.set_dN(my_dN_keys)
         nt.set_dS(my_dS_keys)
         nt.get_mutation_rate()
 
-    def is_start_stop_codon(self, nt, to_nt):
+    @staticmethod
+    def is_start_stop_codon(nt, to_nt):
         """"
         Check if mutation is a STOP codon or nucleotide belongs to a START codon
         :return: False if mutation does not create a STOP in any of the codons the nucleotide is part of
@@ -371,9 +370,9 @@ class Sequence:
                     else:
                         current_dS[dS_keys] = [nt]
 
-                elif not nt.codons:  # If nucleotide is not part of a codon, mutation is treated as synonymous
-                    self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_syn'].append(nt)
-
+                else:  # If nucleotide is not part of a codon, mutation is treated as synonymous
+                    if nt not in self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_syn']:
+                        self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_syn'].append(nt)
 
     @staticmethod
     def is_transv(from_nt, to_nt):
@@ -409,7 +408,7 @@ class Sequence:
             yield my_orf[i:i + 3]
             i += 3
 
-    def find_codons(self, frame, orf):
+    def find_codons(self, frame, orf_coords):
         """
         Gets the Codon sequence
         :param frame: the frame of the ORF
@@ -417,21 +416,36 @@ class Sequence:
         :return: a list of Codon objects for the specified ORF
         """
         codons = []
-        start_pos = orf[0]
-        end_pos = orf[1]
+        cds = []
+        for coord in orf_coords:
+            cds.extend(self.nt_sequence[coord[0]: coord[1]])
 
-        # Reverse stand ORF
-        if start_pos > end_pos:
-            my_orf = self.nt_sequence[end_pos: start_pos]
-        else:
-            my_orf = self.nt_sequence[start_pos: end_pos]
+        # Reverse strand orf
+        if frame.startswith('-'):
+            cds = cds[::-1]
 
         # Iterate over list by threes and create Codons
-        for cdn in self.codon_iterator(my_orf, start_pos, end_pos-1):
-            codon = Codon(frame, orf, cdn)
+        for i in range(3, len(cds) + 1, 3):
+            cdn = cds[i - 3: i]
+            codon = Codon(frame, orf_coords, cdn)
             codons.append(codon)
 
         return codons
+
+    def check_event_tree(self):
+        """
+        When debugging, useful to check if nucleotides are being properly stored on the Event Tree
+        """
+        for key1, to_nt in self.event_tree['to_nt'].items():
+            subset = to_nt['from_nt']
+
+            for key2, from_nt in subset.items():
+                if key2 != 'T' and from_nt and from_nt.get('nts_in_subs'):
+                    nts_in_subs = list(from_nt['nts_in_subs'].keys())
+                    if len([1 for tip in nts_in_subs if str(tip).lower() == 't0']) > 0:
+                        meta2 = {'nts_in_subs': nts_in_subs}
+                        print(f'>>>>>>>>>>>> meta2: from {key2}', meta2)
+                        sys.exit(1)
 
 
 class Nucleotide:
@@ -524,6 +538,7 @@ class Nucleotide:
 
         return info
 
+
 class Codon:
     """
     Stores information about the frameshift, ORF, and pointers to 3 Nucleotide objects
@@ -560,7 +575,8 @@ class Codon:
         :param to_nt: the new state of the Nucleotide
         :return codon, mutated_codon: the codon and mutated codon represented as lists of strings
         """
-        if self.orf[0] < self.orf[1]:  # Positive strand
+        # Positive strand
+        if self.frame.startswith('+'):
             codon = [str(nt) for nt in self.nts_in_codon]  # Cast all Nucleotides in the Codon to strings
         else:
             codon = [nt.complement_state for nt in self.nts_in_codon]
@@ -598,9 +614,10 @@ class Codon:
         Checks if the codon is a start codon
         :return True of the codon is a start codon, False otherwise
         """
-        if self.orf[0] < self.orf[1]:  # Positive strand
+        # Postive strand
+        if self.frame.startswith('+'):
             codon = ''.join(str(nt) for nt in self.nts_in_codon)  # Cast all Nucleotides in the Codon to strings
         else:
             codon = ''.join(nt.complement_state for nt in self.nts_in_codon)
 
-        return codon == 'ATG' and self.nts_in_codon[0].pos_in_seq == self.orf[0]
+        return codon == 'ATG' and self.nts_in_codon[0].pos_in_seq == self.orf[0][0]

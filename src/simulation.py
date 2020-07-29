@@ -2,17 +2,14 @@
 
 import copy
 import random
-import sys
 
 import numpy as np
-
 
 
 def is_stop(to_nt, from_nt):
     """
     Check if a STOP codon is being introduced in the sequence
     """
-
     for codon in from_nt.codons:
         codon, mutated_codon = codon.mutate_codon(codon.nt_in_pos(from_nt), to_nt)
 
@@ -40,12 +37,10 @@ class SimulateOnBranch:
         """
         Select a substitution by moving over the event_tree according to the generation of random numbers
         """
-
         # Select: to nucleotide
         events = self.event_tree['total_events']
         to_mutation = self.select_weighted_values(self.event_tree['to_nt'], events,
                                                   'events_for_nt', 'stationary_frequency')
-
 
         # Select: possible from nucleotides
         from_dict = self.event_tree['to_nt'][to_mutation]['from_nt']
@@ -100,6 +95,7 @@ class SimulateOnBranch:
         :param sum_values: sum all values on dict to establish the limit for the mutation
         :return: random key from dict
         """
+        key = None
         iter_object = iter(dictionary.items())
         limit = random.uniform(0, sum_values)
         s = 0
@@ -202,7 +198,7 @@ class SimulateOnBranch:
 
                 # Remove nt from dictionary of nucleotides in substitution
                 if nt in my_branch['nts_in_subs']:
-                    removed_value = my_branch['nts_in_subs'].pop(nt, None)
+                    my_branch['nts_in_subs'].pop(nt, None)
 
                 # Remove nt from non-synonymous mutations
                 for dN_key in list(my_branch['is_nonsyn']['dN'].keys()):
@@ -219,7 +215,6 @@ class SimulateOnBranch:
                     if not dS_nt_list:        # Remove dS keys with no associated nucleotides
                         del my_branch['is_nonsyn']['dS'][dS_key]
 
-
     def update_nucleotide(self, nt, to_state):
         """
         Update parameters on the mutated nucleotide
@@ -231,7 +226,6 @@ class SimulateOnBranch:
         nt.set_complement_state()
         # Update rates, omega key according to its new state
         self.sequence.get_substitution_rates(nt)
-
 
     def update_nt_on_tree(self, nt, to_state):
         """
@@ -263,9 +257,7 @@ class SimulateOnTree:
     """
     Simulate evolution within a sequence throughout an entire phylogeny
     """
-
     def __init__(self, root_sequence, phylo_tree, outfile=None):
-        # Not double linked list -- whole sequence object
         self.root_sequence = root_sequence  # Sequence object
         self.phylo_tree = phylo_tree  # Phylogenetic tree over which sequence will evolve
         self.outfile = outfile
@@ -275,7 +267,6 @@ class SimulateOnTree:
         :param child_clade: current clade
         :return: path to the parent clade
         """
-
         node_path = self.phylo_tree.get_path(child_clade)
         return node_path[-2] if len(node_path) > 1 else self.phylo_tree.root
 
@@ -284,7 +275,6 @@ class SimulateOnTree:
         Mutate a sequence along a phylogeny by traversing it in level-order
         :return phylo_tree: A Phylo tree with Clade objects annotated with sequences.
         """
-
         # Assign root_seq to root Clade
         self.phylo_tree.root.sequence = self.root_sequence
         root = self.phylo_tree.root
@@ -298,8 +288,8 @@ class SimulateOnTree:
 
             # Create a deep copy of the parent sequence
             parent_sequence = copy.deepcopy(parent.sequence)
-            # Mutate sequence and store it on clade
 
+            # Mutate sequence and store it on clade
             print("Simulating on Branch", clade)
             simulation = SimulateOnBranch(parent_sequence, clade.branch_length)
             clade.sequence = simulation.mutate_on_branch()
@@ -310,7 +300,6 @@ class SimulateOnTree:
         """
         Iterates over tips (terminal nodes) of tree and returns sequence
         """
-
         final_tree = self.traverse_tree()
 
         if outfile is not None:

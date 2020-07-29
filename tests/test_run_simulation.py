@@ -41,40 +41,37 @@ class TestValidORFs(unittest.TestCase):
     """
     def testCorrectInput(self):
         s = "ATGCGTAAACGGGCTAGAGCTAGCA"
-        orfs = [(0, 9)]     # 0-based exclusive indexing
-        expected = []
-        result = valid_orfs(orfs, len(s))
+        orf_locations = {1: [[(0, 9)]], -1: []}   # 0-based exclusive indexing
+        expected = {1: [], -1: []}
+        result = valid_orfs(orf_locations, len(s))
         self.assertEqual(expected, result)
 
     def testNotOrf(self):
         s = "ATGCGCGCATGACGA"
-        orfs = [(1, 1)]
-        expected = [(1, 1)]
+        orfs = {1: [[(1, 1)]], -1: []}
+        expected = {1: [[(1, 1)]], -1: []}
+        result = valid_orfs(orfs, len(s))
+        self.assertEqual(expected, result)
+
+    def testMultipleNotOrfs(self):
+        s = "ATGCGCGCATGACGA"
+        orfs = {1: [[(1, 1)], [(2, 4)]], -1: [[(0, 1), (2, 3)]]}
+        expected = {1: [[(1, 1)], [(2, 4)]], -1: [[(0, 1), (2, 3)]]}
         result = valid_orfs(orfs, len(s))
         self.assertEqual(expected, result)
 
     def testNotMultipleOfThree(self):
         s = "ATGTCGATGCATGC"
-        orfs = [(1, 11)]
-        expected = [(1, 11)]
+        orfs = {1: [[(1, 11)]], -1: []}
+        expected = {1: [[(1, 11)]], -1: []}
         result = valid_orfs(orfs, len(s))
         self.assertEqual(expected, result)
 
-
-class TestReverseAndComplement(unittest.TestCase):
-    """
-    Tests reverse_and_complement
-    """
-    def testLowerCaseInputSimple(self):
-        s = "atgcatgcatgc"
-        expected = "GCATGCATGCAT"
-        result = reverse_and_complement(s)
-        self.assertEqual(expected, result)
-
-    def testSimpleUse(self):
-        s = "ATGAAATTTGGGCCCTAA"
-        expected = "TTAGGGCCCAAATTTCAT"
-        result = reverse_and_complement(s)
+    def testOutsideRangeOfSequence(self):
+        s = "ATGTCGATGCATGC"
+        orfs = {1: [[(0, 12)]], -1: [[(1, 20)]]}
+        expected = {1: [], -1: [[(1, 20)]]}
+        result = valid_orfs(orfs, len(s))
         self.assertEqual(expected, result)
 
 
@@ -205,29 +202,40 @@ class TestSortOrfs(unittest.TestCase):
     Tests sort_orfs
     """
     def testSimpleUse(self):
-        expected = {'+0': [(0, 11)], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
-        result = sort_orfs([(0, 11)])
+        expected = {'+0': [[(0, 11)]], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
+        orfs = {1: [[(0, 11)]], -1: []}
+        result = sort_orfs(orfs)
         self.assertEqual(expected, result)
 
     def testMultipleOrfs(self):
-        expected = {'+0': [(0, 23)], '+1': [], '+2': [(5, 19)], '-0': [], '-1': [], '-2': []}
-        result = sort_orfs([(0, 23), (5, 19)])
+        expected = {'+0': [[(0, 23)]], '+1': [], '+2': [[(5, 19)]], '-0': [], '-1': [], '-2': []}
+        orfs = {1: [[(0, 23)], [(5, 19)]], -1: []}
+        result = sort_orfs(orfs)
+        self.assertEqual(expected, result)
+
+    def testSplicedOrf(self):
+        expected = {'+0': [[(0, 23), (5, 19)]], '+1': [], '+2': [[(8, 21)]], '-0': [], '-1': [], '-2': []}
+        orfs = {1: [[(0, 23), (5, 19)], [(8, 21)]], -1: []}
+        result = sort_orfs(orfs)
         self.assertEqual(expected, result)
 
     def testBacktoBackOrfs(self):
-        expected = {'+0': [(1, 9), (16, 24)], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
-        result = sort_orfs([(1, 9), (16, 24)])
+        expected = {'+0': [[(1, 9)], [(16, 24)]], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
+        orfs = {1: [[(1, 9)], [(16, 24)]], -1: []}
+        result = sort_orfs(orfs)
         self.assertEqual(expected, result)
 
     def testFwdReverseOrfs(self):
-        expected = {'+0': [(5, 49)], '+1': [], '+2': [], '-0': [], '-1': [], '-2': [(29, 3)]}
-        result = sort_orfs([(5, 49), (29, 3)])
+        expected = {'+0': [[(5, 49)]], '+1': [], '+2': [], '-0': [], '-1': [], '-2': [[(3, 29)]]}
+        orfs = {1: [[(5, 49)]], -1: [[(3, 29)]]}
+        result = sort_orfs(orfs)
         self.assertEqual(expected, result)
 
     def testAllSixOrfs(self):
-        expected = {'+0': [(0, 8)], '+1': [(1, 9)], '+2': [(2, 10)],
-                    '-0': [(8, 0)], '-1': [(10, 2)], '-2': [(9, 1)]}
-        result = sort_orfs([(0, 8), (8, 0), (1, 9), (9, 1), (2, 10), (10, 2)])
+        expected = {'+0': [[(0, 8)]], '+1': [[(1, 9)]], '+2': [[(2, 10)]],
+                    '-0': [[(0, 8)]], '-1': [[(1, 9)]], '-2': [[(2, 10)]]}
+        orfs = {1: [[(0, 8)], [(1, 9)], [(2, 10)]], -1: [[(0, 8)], [(1, 9)], [(2, 10)]]}
+        result = sort_orfs(orfs)
         self.assertEqual(expected, result)
 
 
@@ -236,8 +244,9 @@ class TestParseInput(unittest.TestCase):
     def testParseGenbank(self):
         in_seq = os.path.join(CURR_ABSPATH, 'fixtures/NC_003977.2_HBV.gb')
         exp_seq = 'AATTCCACAACCTTCCACCAAACTCTGCAAGATCCCAGAGTGAGAGGCCTGTATTTCCCTGCTGGTGGCT'
-        exp_orfs = [(2308, 3182), (0, 1625), (2849, 3182), (0, 837), (3173, 3182), (156, 837),
-                    (1375, 1840), (1815, 2454), (1853, 1922), (1902, 2454)]
+        exp_orfs = {1: [[(2308, 3182), (0, 1625)], [(2849, 3182), (0, 837)], [(3173, 3182), (0, 837)],
+                        [(156, 837)], [(1375, 1840)], [(1815, 2454)], [(1853, 1922)], [(1902, 2454)]],
+                    -1: []}
 
         res_seq, res_orfs = parse_genbank(in_seq)
         self.assertEqual(exp_seq, res_seq[:70])     # First 70 nucleotides of the HBV genome
