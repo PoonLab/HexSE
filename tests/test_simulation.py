@@ -26,26 +26,26 @@ class TestSimulateOnBranch(unittest.TestCase):
         pi1 = Sequence.get_frequency_rates(s1)
         dN_values = [0.29327471612351436, 0.6550136761581515, 1.0699896623909886, 1.9817219453273531]
         dS_values = [0.29327471612351436, 0.6550136761581515, 1.0699896623909886, 1.9817219453273531]
-        sequence1 = Sequence(s1, {'+0': [(0, 21)]}, kappa, mu, pi1, dN_values, dS_values)
+        sequence1 = Sequence(s1, {'+0': [[(0, 21)]]}, kappa, mu, pi1, dN_values, dS_values)
         branch_length = 0.1
         self.sim_on_branch1 = SimulateOnBranch(sequence1, branch_length)
 
         random.seed(9001)
         s2 = 'TTTTTTCTTTTTTT'
         pi2 = Sequence.get_frequency_rates(s2)
-        sequence2 = Sequence(s2, {'+0': [(0, 12)]}, kappa, mu, pi2, dN_values, dS_values)
+        sequence2 = Sequence(s2, {'+0': [[(0, 12)]]}, kappa, mu, pi2, dN_values, dS_values)
         self.sim_on_branch2 = SimulateOnBranch(sequence2, branch_length)
 
         random.seed(9001)
         s3 = 'AATTCATGAACGAAAATCTGTTCGCTTCATTCATTGCCCCCACAATCTAGGCCTACCC'
-        sorted_orfs = {'+0': [(5, 50)], '+1': [], '+2': [], '-0': [], '-1': [], '-2': [(30, 3)]}
+        sorted_orfs = {'+0': [[(5, 50)]], '+1': [], '+2': [], '-0': [], '-1': [], '-2': [[(30, 3)]]}
         pi3 = Sequence.get_frequency_rates(s3)
         sequence3 = Sequence(s3, sorted_orfs, kappa, mu, pi3, dN_values, dS_values)
         self.sim_on_branch3 = SimulateOnBranch(sequence3, branch_length)
 
         random.seed(9001)
         s4 = 'ATGACGTGGTGA'
-        sorted_orfs = {'+0': [(0, 12)], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
+        sorted_orfs = {'+0': [[(0, 12)]], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
         pi4 = Sequence.get_frequency_rates(s4)
         sequence4 = Sequence(s4, sorted_orfs, kappa, mu, pi4, dN_values, dS_values)
         self.sim_on_branch4 = SimulateOnBranch(sequence4, branch_length)
@@ -66,7 +66,7 @@ class TestSimulateOnBranch(unittest.TestCase):
 
         # AATTCATGAACGAAAATCTGTTCGCTTCATTCATTGCCCCCACAATCTAGGCCTACCC
         # Expected TGT --> TGC substitution
-        expected = (self.sim_on_branch3.sequence.nt_sequence[33], 'C')
+        expected = (self.sim_on_branch3.sequence.nt_sequence[29], 'C')
         result = self.sim_on_branch3.get_substitution()
         self.assertEqual(expected, result)
 
@@ -91,7 +91,7 @@ class TestSimulateOnBranch(unittest.TestCase):
         result = self.sim_on_branch2.sum_rates()
         self.assertEqual(expected, result)
 
-        expected = 19.195101263175278
+        expected = 16.793266966449128
         result = self.sim_on_branch3.sum_rates()
         self.assertEqual(expected, result)
 
@@ -169,7 +169,7 @@ class TestSimulateOnBranch(unittest.TestCase):
 
         # Selecting the final from_nucleotide for seq1
         seq4_candidate_nts = self.sim_on_branch4.event_tree['to_nt'][exp_to_nt]['from_nt'][exp_from_nt]['nts_in_subs']
-        seq4_rates_list = [nt.total_mut_rate for nt in seq4_candidate_nts]
+        seq4_rates_list = [nt.mutation_rate for nt in seq4_candidate_nts]
         seq4_candidate_dict = dict(zip(seq4_candidate_nts, seq4_rates_list))
 
         exp_final_nt = 't9'
@@ -494,11 +494,11 @@ class TestSimulateOnBranch(unittest.TestCase):
         new_state = str(selected_mutation[1])       # A
         self.sim_on_branch4.update_nucleotide(nt_to_mutate, new_state)
 
-        expected_rates =  {'A': None, 'C': 0.0375,       'G': 0.125,        'T': 0.0375}
+        expected_rates = {'A': None, 'C': 0.0375, 'G': 0.125, 'T': 0.0375}
 
         self.assertEqual('A', nt_to_mutate.state)
         self.assertEqual('T', nt_to_mutate.get_complement_state())
-        self.assertEqual(expected_rates, nt_to_mutate.sub_rates)
+        self.assertEqual(expected_rates, nt_to_mutate.rates)
         self.assertEqual(expected_rates, nt_to_mutate.rates)
 
     def testMutateOnBranch(self):
@@ -663,9 +663,9 @@ class TestSimulateOnBranch(unittest.TestCase):
         # a3 should no longer appear in the tree, while t3 should appear in the 'from_nt'-T branches of the tree
         self.sim_on_branch4.remove_nt(a3)
         self.sim_on_branch4.update_nucleotide(a3, 'T')
-        self.sim_on_branch4.update_num_syn_events(a3, 'T')
+        self.sim_on_branch4.update_nt_on_tree(a3, 'T')
         t3 = self.sim_on_branch4.sequence.nt_sequence[3]  # Get mutated nucleotide
-        self.sim_on_branch4.sequence.count_synonymous_events()
+        self.sim_on_branch4.sequence.get_nts_on_tips()
 
         expected_event_tree = \
             {'to_nt': {'A': {'stationary_frequency': 0.25,
@@ -798,7 +798,7 @@ class TestSimulateOnTree(unittest.TestCase):
         pi1 = Sequence.get_frequency_rates(s1)
         dN_values = [0.29327471612351436, 0.6550136761581515, 1.0699896623909886, 1.9817219453273531]
         dS_values = [0.29327471612351436, 0.6550136761581515, 1.0699896623909886, 1.9817219453273531]
-        sequence1 = Sequence(s1, {'+0': [(0, 21)]}, kappa, mu, pi1, dN_values, dS_values)
+        sequence1 = Sequence(s1, {'+0': [[(0, 21)]]}, kappa, mu, pi1, dN_values, dS_values)
 
         phylo_tree = Phylo.read(TEST_TREE, 'newick', rooted=True)
         self.sim_on_tree1 = SimulateOnTree(sequence1, phylo_tree)

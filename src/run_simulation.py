@@ -342,6 +342,48 @@ def check_orfs(in_orfs=None, s=None):
     return orf_coords
 
 
+def create_log_file(input_file_name):
+    """
+    Create a log file with information for the run
+    """
+    # Select name of the input file
+    file_name = input_file_name.split("/")[-1]
+    file_name = file_name.split(".")[0]
+    LOG_FILENAME = "{}_evol_simulation.log".format(file_name)
+
+    return LOG_FILENAME
+
+
+def stop_in_seq(seq, start, end):
+    """
+    Look for stop codons inside the CDS
+    """
+    cds = seq[start:end]
+    stop =  ["TGA", "TAG", "TAA"]
+    stop_count = 0
+    for codon, nt in codon_iterator(cds, start, end):
+        if codon in stop:
+            stop_count += 1
+
+    return stop_count
+
+
+def codon_iterator(my_orf, start_pos, end_pos):
+    """
+    Generator to move every three nucleotides (codon)
+    :param my_orf: A list of Nucleotides in the ORF
+    :param start_pos: The start position of the ORF
+    :param end_pos: The end position of the ORF
+    :yield codon
+    """
+    if start_pos > end_pos:  # Negative strand
+        my_orf.reverse()
+    i = 0
+    while i < len(my_orf):
+        yield (my_orf[i:i + 3], i)
+        i += 3
+
+
 def count_internal_stop_codons(seq, strand, orf_coords):
     """
     Look for stop codons inside the CDS

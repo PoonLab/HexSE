@@ -370,8 +370,9 @@ class Sequence:
                     else:
                         current_dS[dS_keys] = [nt]
 
-                elif not nt.codons:  # If nucleotide is not part of a codon, mutation is treated as synonymous
-                    self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_syn'].append(nt)
+                else:  # If nucleotide is not part of a codon, mutation is treated as synonymous
+                    if nt not in self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_syn']:
+                        self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_syn'].append(nt)
 
     @staticmethod
     def is_transv(from_nt, to_nt):
