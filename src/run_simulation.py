@@ -219,27 +219,29 @@ def sort_orfs(orf_locations):
     """
     sorted_orfs = {'+0': [], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
 
-    forward_orfs = orf_locations[1]
-    reverse_orfs = orf_locations[-1]
-    first_orf = forward_orfs[0]
+    if orf_locations[1]:
 
-    for fwd_orf in forward_orfs:
-        difference = abs(fwd_orf[0][0] - first_orf[0][0]) % 3
-        if difference == 0:
-            sorted_orfs['+0'].append(fwd_orf)
-        elif difference == 1:
-            sorted_orfs['+1'].append(fwd_orf)
-        elif difference == 2:
-            sorted_orfs['+2'].append(fwd_orf)
+        forward_orfs = orf_locations[1]
+        reverse_orfs = orf_locations[-1]
+        first_orf = forward_orfs[0]
 
-    for rev_orf in reverse_orfs:
-        difference = abs(rev_orf[0][0] - first_orf[0][0])
-        if difference == 0:
-            sorted_orfs['-0'].append(rev_orf)
-        elif difference == 1:
-            sorted_orfs['-1'].append(rev_orf)
-        elif difference == 2:
-            sorted_orfs['-2'].append(rev_orf)
+        for fwd_orf in forward_orfs:
+            difference = abs(fwd_orf[0][0] - first_orf[0][0]) % 3
+            if difference == 0:
+                sorted_orfs['+0'].append(fwd_orf)
+            elif difference == 1:
+                sorted_orfs['+1'].append(fwd_orf)
+            elif difference == 2:
+                sorted_orfs['+2'].append(fwd_orf)
+
+        for rev_orf in reverse_orfs:
+            difference = abs(rev_orf[0][0] - first_orf[0][0])
+            if difference == 0:
+                sorted_orfs['-0'].append(rev_orf)
+            elif difference == 1:
+                sorted_orfs['-1'].append(rev_orf)
+            elif difference == 2:
+                sorted_orfs['-2'].append(rev_orf)
 
     return sorted_orfs
 
@@ -328,18 +330,49 @@ def check_orfs(in_orfs=None, s=None):
     """
     # Check if the user specified orfs
     if in_orfs is None:
-        orf_coords = get_open_reading_frames(s)
+        orf_locations = get_open_reading_frames(s)
 
     # Read ORFs as a list of tuples
     else:
-        orf_coords = []
+        orf_locations = {1: [], -1: []}
         with open(in_orfs) as orf_handle:
             for line in orf_handle:
-                line = line.split(',')
-                orf = (int(line[0]), int(line[1]))
-                orf_coords.append(orf)
+                line = line.strip()
 
-    return orf_coords
+                # Spliced ORF
+                if ':' in line:
+                    orf_coords = []
+                    line = line.split(':')
+
+                    # Read in partial ORFs
+                    strand = 0
+                    for coords in line:
+                        coords = coords.split(',')
+                        if len(coords) == 3:
+                            strand = int(coords[2])
+                        orf = (int(coords[0]), int(coords[1]))
+                        orf_coords.append(orf)
+
+                    # Check if the strand is valid
+                    if strand != 1 and strand != -1:
+                        print("Invalid strand: {}".format(strand))
+                        sys.exit(1)
+
+                    orf_locations[strand].append(orf_coords)
+
+                else:
+                    line = line.split(',')
+                    strand = int(line[2])
+
+                    # Check if the strand is valid
+                    if strand != 1 and strand != -1:
+                        print("Invalid strand: {}".format(strand))
+                        sys.exit(1)
+
+                    orf = (int(line[0]), int(line[1]))
+                    orf_locations[strand].append([orf])
+
+    return orf_locations
 
 
 def create_log_file(input_file_name):
