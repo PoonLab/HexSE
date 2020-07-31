@@ -38,7 +38,7 @@ class Sequence:
     Store inputs and create sequence objects
     """
 
-    def __init__(self, str_sequence, orfs, kappa, mu, pi, dN_values, dS_values, circular=False):
+    def __init__(self, str_sequence, orfs, kappa, mu, pi, dN_values, dS_values, nt_categories_dict, circular=False):
         """
         Creates a list of nucleotides, locates open reading frames, and creates a list of codons.
         :param orfs: A dictionary of ORFs, sorted by reading frame where:
@@ -61,6 +61,7 @@ class Sequence:
         self.__codons = []      # Store references to all codons
         self.nt_sequence = []   # List of Nucleotide objects
         self.is_circular = circular  # True if the genome is circular, False otherwise
+        self.nt_categories = nt_categories_dict # Values drawn from a gamma distribution to categorize nucleotides according to their mutation rates
 
         # Create Nucleotides
         for pos_in_seq, nt in enumerate(str_sequence):
@@ -82,10 +83,20 @@ class Sequence:
         # Create event tree containing all possible mutations and the parameters needed to calculate the rates
         self.event_tree = self.create_event_tree()  # Nested dict containing info about all possible mutation events
 
+        all_rates = []
         # Calculate mutation rates for each nucleotide in sequence, populate the event tree which each nucleotide
         for nt in self.nt_sequence:
             self.get_substitution_rates(nt) # Get substitution rates for the nucleotide
             self.nt_in_event_tree(nt) # locate nucleotide in the event tree
+
+
+            all_rates.extend(nt.rates.values())
+        print(all_rates)
+
+
+
+
+
 
         # Update event_tree to include a list of nucleotides on the tips
         self.event_tree = self.get_nts_on_tips()
@@ -180,10 +191,11 @@ class Sequence:
 
         return frequencies
 
-    def create_event_tree(self):
+    def create_event_tree(self, nt_categories):
         """
         Create an event tree (nested dictionaries) that stores pi, kappa, mu,
         and information about whether a mutation is a transition or transversion.
+        :param nt_categories: Dictionary with in which to store nucleotides with the same mutation rates
         :return event tree: a nested dictionary containing information about the mutation event
         """
         event_tree = {'to_nt': {'A': {}, 'T': {}, 'C': {}, 'G': {}}}
@@ -209,11 +221,12 @@ class Sequence:
 
                         event_tree['to_nt'][to_nt]['from_nt'][from_nt] = trv_dict
 
-                        # Create key that will store information about nucleotides affected by nonsyn mutations
-                        event_tree['to_nt'][to_nt]['from_nt'][from_nt].update([('is_nonsyn', {'dN': {}, 'dS': {}})])
-                        event_tree['to_nt'][to_nt]['from_nt'][from_nt].update([('is_syn', [])])
+                        # Create key that will store information about nucleotides affected by syn and non syn mutation in the possible classes
+                        event_tree['to_nt'][to_nt]['from_nt'][from_nt].update([('is_nonsyn', {'True':self.nt_categories, 'False':self.nt_categories})])
 
         return event_tree
+
+
 
     def get_nts_on_tips(self):
         """
@@ -348,14 +361,21 @@ class Sequence:
         for to_nt in NUCLEOTIDES:
 
             if to_nt != current_nt and not self.is_start_stop_codon(nt, to_nt):
+                curren_nt_rate = nt.rates[to_nt]
 
-                # Check dS and dN values on the Event Tree
-                current_dS = self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_nonsyn']['dS']
-                current_dN = self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_nonsyn']['dN']
+                # Check syn and nonsyn substitutions on the Event Tree
+                syn_subs = self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_nonsyn']['False']
+                non_syn_subs = self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_nonsyn']['True']
 
                 # If nucleotide has dN and dS keys associated to it
-                if nt.dN_keys[to_nt] and nt.dS_keys[to_nt]:
-                    dN_keys = nt.dN_keys[to_nt]
+                if nt.omega_keys[to_nt]:
+                    # Check to which category the nucleotides falls in
+                    #TODO: find the right category
+                    if any(lower <= curren_nt_rate <= upper for (lower, upper) in ranges):
+                        return raange
+
+
+                    non_syn_subs = nt.dN_keys[to_nt]
                     dS_keys = nt.dS_keys[to_nt]
 
                     # Create dN key if needed, associate it with the current nucleotide

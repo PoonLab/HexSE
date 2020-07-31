@@ -252,9 +252,11 @@ def get_rate_values(alpha, ncat):
     :param alpha: shape parameter
     :param ncat: Number of categories (expected dS values)
     :return: list of ncat number of omega values (e.i. if ncat = 3, omega_values = [0.29, 0.65, 1.06])
+
     """
     values = discretize_gamma(alpha, ncat)
     rate_values = list(values)
+    print(rate_values)
     return rate_values
 
 
@@ -274,6 +276,7 @@ def discretize_gamma(alpha, ncat):
     for i in range(ncat - 1):
         rates[i] = ncat * scipy.integrate.quad(lambda x: x * dist.pdf(x), quantiles[i], quantiles[i + 1])[0]
     rates[ncat - 1] = ncat * scipy.integrate.quad(lambda x: x * dist.pdf(x), quantiles[ncat - 1], np.inf)[0]
+    print(rates)
     return rates
 
 
@@ -445,6 +448,15 @@ def count_internal_stop_codons(seq, strand, orf_coords):
 
     return stop_count
 
+def create_nucleotide_categories_dict(alpha, ncat):
+
+    nt_categories = get_rate_values(alpha, ncat)
+    nt_categories_dict = {}
+    for i in range(len(nt_categories)):
+        cat = f"cat{i+1}"
+        nt_categories_dict[cat]={'value':nt_categories[i], 'nts_in_cat':[]}
+
+    return nt_categories_dict
 
 def main():
     start_time = datetime.now()
@@ -539,20 +551,24 @@ def main():
                          args.dNclasses, args.dNshape, dN_values,
                          args.dSclasses, args.dSshape, dS_values))
 
+    # TODO: Allow user to modify alpha and ncat. Use this values as default                     
+    nt_categories_dict = create_nucleotide_categories_dict(alpha = 0.1, ncat= 4)
+
     # Read in the tree
-    phylo_tree = Phylo.read(args.tree, 'newick', rooted=True)
-    logging.info("Phylogenetic tree: {}".format(args.tree))
-
-    # Make Sequence object
+    # phylo_tree = Phylo.read(args.tree, 'newick', rooted=True)
+    # logging.info("Phylogenetic tree: {}".format(args.tree))
+    #
+    # # Make Sequence object
     print("\nCreating root sequence")
-    root_sequence = Sequence(s, orfs, args.kappa, args.mu, pi, dN_values, dS_values, args.circular)
+    root_sequence = Sequence(s, orfs, args.kappa, args.mu, pi, dN_values, dS_values, args.circular, nt_categories_dict)
 
-    # Run simulation
-    print("\nRunning simulation")
-    simulation = SimulateOnTree(root_sequence, phylo_tree, args.outfile)
-    simulation.get_alignment(args.outfile)
 
-    print("Simulation duration: {} seconds".format(datetime.now() - start_time))
+    # # Run simulation
+    # print("\nRunning simulation")
+    # simulation = SimulateOnTree(root_sequence, phylo_tree, args.outfile)
+    # simulation.get_alignment(args.outfile)
+    #
+    # print("Simulation duration: {} seconds".format(datetime.now() - start_time))
 
 
 if __name__ == '__main__':
