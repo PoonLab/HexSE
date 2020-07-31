@@ -191,11 +191,11 @@ class Sequence:
 
         return frequencies
 
-    def create_event_tree(self, nt_categories):
+    def create_event_tree(self):
         """
         Create an event tree (nested dictionaries) that stores pi, kappa, mu,
         and information about whether a mutation is a transition or transversion.
-        :param nt_categories: Dictionary with in which to store nucleotides with the same mutation rates
+        :param nt_categories: Dictionary with classes to store nucleotides with the same mutation rates
         :return event tree: a nested dictionary containing information about the mutation event
         """
         event_tree = {'to_nt': {'A': {}, 'T': {}, 'C': {}, 'G': {}}}
@@ -364,35 +364,19 @@ class Sequence:
                 curren_nt_rate = nt.rates[to_nt]
 
                 # Check syn and nonsyn substitutions on the Event Tree
-                syn_subs = self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_nonsyn']['False']
-                non_syn_subs = self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_nonsyn']['True']
+                if nt.omega_keys[to_nt]:  # If mutation is nonsynonymous
+                    dict =  self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_nonsyn']['True']
 
-                # If nucleotide has dN and dS keys associated to it
-                if nt.omega_keys[to_nt]:
-                    # Check to which category the nucleotides falls in
-                    #TODO: find the right category
-                    if any(lower <= curren_nt_rate <= upper for (lower, upper) in ranges):
-                        return raange
+                else:  # If mutation is synonymous
+                    dict = self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_nonsyn']['False']
 
+                # Find the right category for the nucleotide
+                for key, value in self.nt_categories.items():
+                    mean_cat_value = value['value']
+                    if curren_nt_rate <= mean_cat_value:
+                        dict[value]['nts_in_cat'].append(nt)
+                        break
 
-                    non_syn_subs = nt.dN_keys[to_nt]
-                    dS_keys = nt.dS_keys[to_nt]
-
-                    # Create dN key if needed, associate it with the current nucleotide
-                    if dN_keys in current_dN:
-                        current_dN[dN_keys].append(nt)
-                    else:
-                        current_dN[dN_keys] = [nt]
-
-                    # Create dS key if needed, associate it with the current nucleotide
-                    if dS_keys in current_dS:
-                        current_dS[dS_keys].append(nt)
-                    else:
-                        current_dS[dS_keys] = [nt]
-
-                else:  # If nucleotide is not part of a codon, mutation is treated as synonymous
-                    if nt not in self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_syn']:
-                        self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_syn'].append(nt)
 
     @staticmethod
     def is_transv(from_nt, to_nt):

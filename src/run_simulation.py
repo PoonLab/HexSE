@@ -449,12 +449,18 @@ def count_internal_stop_codons(seq, strand, orf_coords):
     return stop_count
 
 def create_nucleotide_categories_dict(alpha, ncat):
+    """
+    Creates categories drawn from a discretized gamma distribution to store each nucleotide according to its mutation rates
+    :param alpha: shape parameter
+    :param ncat: Number of catefories
+    """
 
     nt_categories = get_rate_values(alpha, ncat)
+    print(nt_categories)
     nt_categories_dict = {}
-    for i in range(len(nt_categories)):
+    for i, item in enumerate(nt_categories):
         cat = f"cat{i+1}"
-        nt_categories_dict[cat]={'value':nt_categories[i], 'nts_in_cat':[]}
+        nt_categories_dict[cat]={'value':item, 'nts_in_cat':[]}
 
     return nt_categories_dict
 
@@ -551,8 +557,10 @@ def main():
                          args.dNclasses, args.dNshape, dN_values,
                          args.dSclasses, args.dSshape, dS_values))
 
-    # TODO: Allow user to modify alpha and ncat. Use this values as default                     
+    # TODO: Allow user to modify alpha and ncat. Use this values as default
     nt_categories_dict = create_nucleotide_categories_dict(alpha = 0.1, ncat= 4)
+    print(">>> CATEGORIES")
+    print(nt_categories_dict)
 
     # Read in the tree
     # phylo_tree = Phylo.read(args.tree, 'newick', rooted=True)
