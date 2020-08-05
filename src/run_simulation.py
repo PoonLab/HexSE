@@ -47,20 +47,20 @@ def get_args(parser):
              'the program will use the empirical frequencies in the sequence. Format: [A, T, G, C]'
     )
     parser.add_argument(
-        '--dNclasses', type=int, default=4,
-        help='The number of dN classes'
+        '--omega_classes', type=int, default=4,
+        help='The number of omega classes'
     )
     parser.add_argument(
-        '--dNshape', type=float, default=2.0,
-        help='The shape parameter of the gamma distribution, from which dN values are drawn'
+        '--omega_shape', type=float, default=2.0,
+        help='The shape parameter of the gamma distribution, from which omega values are drawn'
     )
     parser.add_argument(
-        '--dSclasses', type=int, default=4,
-        help='The number of dS classes'
+        '--nc_classes', type=int, default=4,
+        help='Number of nucleotide classes: The number of classes in which we are going to classify nucleotides on the Event Tree'
     )
     parser.add_argument(
-        '--dSshape', type=float, default=2.0,
-        help='The shape parameter of the gamma distribution, from which dS values are drawn'
+        '--nc_shape', type=float, default=0.1,
+        help='The shape parameter of the gamma distribution, from which rate values are drawn to clasify nucleotides on the Event Tree'
     )
     parser.add_argument(
         '--circular', action='store_true',
@@ -256,7 +256,6 @@ def get_rate_values(alpha, ncat):
     """
     values = discretize_gamma(alpha, ncat)
     rate_values = list(values)
-    print(rate_values)
     return rate_values
 
 
@@ -275,8 +274,7 @@ def discretize_gamma(alpha, ncat):
 
     for i in range(ncat - 1):
         rates[i] = ncat * scipy.integrate.quad(lambda x: x * dist.pdf(x), quantiles[i], quantiles[i + 1])[0]
-    rates[ncat - 1] = ncat * scipy.integrate.quad(lambda x: x * dist.pdf(x), quantiles[ncat - 1], np.inf)[0]
-    print(rates)
+
     return rates
 
 
@@ -450,17 +448,16 @@ def count_internal_stop_codons(seq, strand, orf_coords):
 
 def create_nucleotide_categories_dict(alpha, ncat):
     """
-    Creates categories drawn from a discretized gamma distribution to store each nucleotide according to its mutation rates
+    Creates categories drawn from a discretized gamma distribution to store each nucleotide according to its mutation rates on the Event Tree
     :param alpha: shape parameter
     :param ncat: Number of catefories
     """
 
     nt_categories = get_rate_values(alpha, ncat)
-    print(nt_categories)
     nt_categories_dict = {}
     for i, item in enumerate(nt_categories):
         cat = f"cat{i+1}"
-        nt_categories_dict[cat]={'value':item, 'nts_in_cat':[]}
+        nt_categories_dict[cat]={'value':item}
 
     return nt_categories_dict
 
@@ -506,8 +503,10 @@ def main():
             for orf in orfs:
                 invalid_orf_msg += " {} ".format(orf)
                 orf_locations[strand].remove(orf)
-        print("\nOmitted orfs: {}\n".format(invalid_orf_msg))
-        logging.warning("Omitted orfs: {}".format(invalid_orf_msg))
+
+        if invalid_orf_msg:
+            print("\nOmitted orfs: {}\n".format(invalid_orf_msg))
+            logging.warning("Omitted orfs: {}".format(invalid_orf_msg))
 
     # Check if the CDSs have stop codons inside them
     for strand in orf_locations:
@@ -546,19 +545,16 @@ def main():
         print("Invalid input: {}".format(args.pi))
         exit(0)
 
-    # Draw dN and dS values from a gamma distribution
-    dN_values = get_rate_values(args.dNshape, args.dNclasses)
-    dS_values = get_rate_values(args.dSshape, args.dSclasses)
+    # Draw omeg values and create classes to classify nucleotides on the Event Tree
+    omega_values = get_rate_values(args.omega_shape, args.omega_classes)
+    nt_categories_dict = create_nucleotide_categories_dict(args.nc_shape, args.nc_classes)
 
-    logging.info("Parameters for the run: \nPi: {}\nMu: {}\nKappa: {}\n"
-                 "Number of dN classes: {}\ndN shape parameter: {}\ndN values: {}\n"
-                 "Number of dS classes: {}\ndS shape parameter: {}\ndS values: {}\n"
-                 .format(pi, args.mu, args.kappa,
-                         args.dNclasses, args.dNshape, dN_values,
-                         args.dSclasses, args.dSshape, dS_values))
+    logging.info(f"Parameters for the run: \nPi: {pi}\nMu: {args.mu}\nKappa: {args.kappa}\nNumber of omega classes: {args.omega_classes}\n\
+    Omega shape parameter: {args.omega_shape}\nRates classification values: {nt_categories_dict}\n\
+    Number of nucleotide classification classes: {args.nc_classes}\nNucleotide clasification shape parameter: {args.nc_shape}")
 
     # TODO: Allow user to modify alpha and ncat. Use this values as default
-    nt_categories_dict = create_nucleotide_categories_dict(alpha = 0.1, ncat= 4)
+
     print(">>> CATEGORIES")
     print(nt_categories_dict)
 
@@ -568,7 +564,7 @@ def main():
     #
     # # Make Sequence object
     print("\nCreating root sequence")
-    root_sequence = Sequence(s, orfs, args.kappa, args.mu, pi, dN_values, dS_values, args.circular, nt_categories_dict)
+    root_sequence = Sequence(s, orfs, args.kappa, args.mu, pi, omega_values, nt_categories_dict, args.circular)
 
 
     # # Run simulation
