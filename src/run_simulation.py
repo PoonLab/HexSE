@@ -89,7 +89,7 @@ def valid_orfs(orf_locations, seq_length):
     :param seq_length: The length of the original sequence
     :return: <True> if the ORFs are valid, <False> otherwise
     """
-    invalid_orfs = {1: [], -1: []}
+    invalid_orfs = {'+': [], '-': []}   # ORF locations sorted by strand
 
     for strand in orf_locations:
         orf_coords = orf_locations[strand]
@@ -219,10 +219,10 @@ def sort_orfs(orf_locations):
     """
     sorted_orfs = {'+0': [], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
 
-    if orf_locations[1]:
+    if orf_locations['+']:
 
-        forward_orfs = orf_locations[1]
-        reverse_orfs = orf_locations[-1]
+        forward_orfs = orf_locations['+']
+        reverse_orfs = orf_locations['-']
         first_orf = forward_orfs[0]
 
         for fwd_orf in forward_orfs:
@@ -284,7 +284,7 @@ def parse_genbank(in_seq, in_orfs=None):
     :param in_orfs: file handle containing the orfs
     :return tuple: (sequence, orfs)
     """
-    orf_locations = {1: [], -1: []}
+    orf_locations = {'+': [], '-': []}  # ORF locations sorted by strand
     # Loop through records
     for rec in SeqIO.parse(in_seq, format="genbank"):
         seq = rec.seq
@@ -294,9 +294,12 @@ def parse_genbank(in_seq, in_orfs=None):
             # Record the first occurrence of the ORFs
             for cd in cds:
                 coords = []
-                strand = 0
+                strand = ''
                 for loc in cd.location.parts:
-                    strand = loc.strand
+                    if loc.strand > 0:
+                        strand = '+'
+                    else:
+                        strand = '-'
                     coords.append((int(loc.start), int(loc.end)))
                 orf_locations[strand].append(coords)
 
@@ -334,7 +337,7 @@ def check_orfs(in_orfs=None, s=None):
 
     # Read ORFs as a list of tuples
     else:
-        orf_locations = {1: [], -1: []}
+        orf_locations = {'+': [], '-': []}  # ORF locations sorted by strand
         with open(in_orfs) as orf_handle:
             for line in orf_handle:
                 line = line.strip()
@@ -345,16 +348,19 @@ def check_orfs(in_orfs=None, s=None):
                     line = line.split(':')
 
                     # Read in partial ORFs
-                    strand = 0
+                    strand = ''
                     for coords in line:
                         coords = coords.split(',')
                         if len(coords) == 3:
-                            strand = int(coords[2])
+                            if int(coords[2]) > 0:
+                                strand = '+'
+                            else:
+                                strand = '-'
                         orf = (int(coords[0]), int(coords[1]))
                         orf_coords.append(orf)
 
                     # Check if the strand is valid
-                    if strand != 1 and strand != -1:
+                    if strand != '+' and strand != '-':
                         print("Invalid strand: {}".format(strand))
                         sys.exit(1)
 
@@ -362,10 +368,13 @@ def check_orfs(in_orfs=None, s=None):
 
                 else:
                     line = line.split(',')
-                    strand = int(line[2])
+                    if int(line[2]) > 0:
+                        strand = '+'
+                    else:
+                        strand = '-'
 
                     # Check if the strand is valid
-                    if strand != 1 and strand != -1:
+                    if strand != '+' and strand != '-':
                         print("Invalid strand: {}".format(strand))
                         sys.exit(1)
 
@@ -433,7 +442,7 @@ def count_internal_stop_codons(seq, strand, orf_coords):
     for coord in orf_coords:
         cds += seq[coord[0]:coord[1]]
 
-    if strand == -1:    # Reverse strand
+    if strand == '-':    # Reverse strand
         cds = cds[::-1]
     stop_matches = reg.finditer(str(cds))
 
@@ -470,7 +479,6 @@ def main():
         s = parse_fasta(args.seq)
         orf_locations = check_orfs(args.orfs, s)
         logging.info("Input sequence is: {} in fasta format".format(input))
-        print(orf_locations)
 
     else:
         print("Sequence files must end in '.fa', '.fasta', '.gb', 'genbank'")
