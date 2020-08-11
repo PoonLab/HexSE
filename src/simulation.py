@@ -38,9 +38,8 @@ class SimulateOnBranch:
         Select a substitution by moving over the event_tree according to the generation of random numbers
         """
         # Select: to nucleotide
-        events = self.event_tree['total_events']
-        to_mutation = self.select_weighted_values(self.event_tree['to_nt'], events,
-                                                  'events_for_nt', 'stationary_frequency')
+        events = self.sequence.count_nts_on_event_tree()
+        to_mutation = self.weighted_random_choice(self.sequence.pi, events)
 
         # Select: possible from nucleotides
         from_dict = self.event_tree['to_nt'][to_mutation]['from_nt']

@@ -3,6 +3,7 @@
 import random
 import copy
 import sys
+from collections import Counter
 
 TRANSITIONS_DICT = {'A': 'G', 'G': 'A', 'T': 'C', 'C': 'T'}
 
@@ -86,6 +87,34 @@ class Sequence:
         for nt in self.nt_sequence:
             self.set_substitution_rates(nt)  # Get substitution rates for the nucleotide
             self.nt_in_event_tree(nt)  # Locate nucleotide in the event tree
+
+        print(self.event_tree)
+        print(self.count_nts_on_event_tree())
+
+
+    def count_nts_on_event_tree(self):
+        """
+        Traverse event tree and count total number of nucleotides on the tips
+        Note: Final count should be around sequence length*3
+        """
+
+        total_nts = 0
+
+        for to_nt in NUCLEOTIDES:
+
+            for from_nt in NUCLEOTIDES:
+
+                if to_nt != from_nt:
+                    branch = self.event_tree['to_nt'][to_nt]['from_nt'][from_nt]['class']
+
+                    for classification in branch.keys():
+                        branch_class = branch[classification]
+
+                        for omega_key in branch_class.keys():
+                            nts_in_branch = len(branch_class[omega_key])
+                            total_nts += nts_in_branch
+
+        return total_nts
 
     def __deepcopy__(self, memodict):
         """
@@ -187,7 +216,7 @@ class Sequence:
         event_tree = {'to_nt': {'A': {}, 'T': {}, 'C': {}, 'G': {}}}
 
 
-        for to_nt in self.pi.keys():
+        for to_nt in NUCLEOTIDES:
             if to_nt in event_tree['to_nt'].keys():
                 # Update nucleotides with possible mutations
                 event_tree['to_nt'][to_nt].update([('from_nt', {'A': {'class':{}}, 'T': {'class':{}}, 'C': {'class':{}}, 'G': {'class':{}}})])
@@ -197,20 +226,6 @@ class Sequence:
                     # Nucleotide cannot change to itself
                     if from_nt == to_nt:
                         event_tree['to_nt'][to_nt]['from_nt'][from_nt] = None
-                    # else:
-                    #     trv_dict = {'is_trv': True, 'kappa': self.kappa}
-                    #     # If the mutation is a transition, set kappa to 1
-                    #     if not self.is_transv(from_nt, to_nt):
-                    #         trv_dict['is_trv'] = False
-                    #         trv_dict['kappa'] = 1
-                    #
-                    #     event_tree['to_nt'][to_nt]['from_nt'][from_nt] = trv_dict
-                    #
-                    #     # Create key that will store information about nucleotides affected by syn and non syn mutation in the possible classes
-                    #     # Deep copies are used to avoid cross referencing the newly created dictionaries
-                    #     nt_categories_copy_true = copy.deepcopy(self.cat_values)
-                    #     nt_categories_copy_false = copy.deepcopy(self.cat_values)
-                    #     event_tree['to_nt'][to_nt]['from_nt'][from_nt].update([('is_nonsyn', {'True': nt_categories_copy_true, 'False':nt_categories_copy_false})])
 
         return event_tree
 
@@ -257,21 +272,20 @@ class Sequence:
                     else:  # Mutation introduce a STOP or nt is part of a START
                         sub_rates[to_nt] *= 0
 
-                    # Randomly select one of the mu Values
-                    selected_cat = random.choice(list(self.cat_values))
-                    sub_rates[to_nt] *=  self.cat_values[selected_cat]
+                # Randomly select one of the mu Values
+                selected_cat = random.choice(list(self.cat_values))
+                sub_rates[to_nt] *=  self.cat_values[selected_cat]
 
-                    my_omega_keys[to_nt] = chosen_omegas  # Store omega keys used in the substitution
-                                                          # If mutation is synonymous, omega_keys list will be empty
-                    my_categories_keys[to_nt] = selected_cat
+                my_omega_keys[to_nt] = chosen_omegas  # Store omega keys used in the substitution
+                                                      # If mutation is synonymous, omega_keys list will be empty
+                my_categories_keys[to_nt] = selected_cat
 
         # Set substitution rates and key values for the nucleotide object
         nt.set_rates(sub_rates)
         nt.set_categories(my_categories_keys)
         nt.set_omega(my_omega_keys)
         nt.get_mutation_rate()
-        print(nt.omega_keys)
-        print(nt.categories_keys)
+
 
     @staticmethod
     def is_start_stop_codon(nt, to_nt):
@@ -297,6 +311,7 @@ class Sequence:
 
             if to_nt != current_nt and not self.is_start_stop_codon(nt, to_nt):
                 omega_class = "_".join(nt.omega_keys[to_nt])  # Create one nucleotide key with all the omegas for that substitution
+
                 category = nt.categories_keys[to_nt]
                 branch = self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['class']
 
@@ -437,6 +452,8 @@ class Nucleotide:
         new_nucletotide.complement_state = copy.deepcopy(self.complement_state, memodict)
         new_nucletotide.rates = copy.deepcopy(self.rates, memodict)
         new_nucletotide.mutation_rate = copy.deepcopy(self.mutation_rate, memodict)
+        new_nucletotide.omega_keys = copy.deepcopy(self.omega_keys, memodict)
+        new_nucletotide.categories_keys = copy.deepcopy(self.categories_keys, memodict)
         new_nucletotide.codons = []     # References to Codons will be set when the Sequence is deep-copied
 
         return new_nucletotide
