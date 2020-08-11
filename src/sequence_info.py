@@ -38,7 +38,7 @@ class Sequence:
     Store inputs and create sequence objects
     """
 
-    def __init__(self, str_sequence, orfs, kappa, mu, pi, omega_values, nt_categories_dict, circular=False):
+    def __init__(self, str_sequence, orfs, kappa, mu, pi, omega_values, cat_values, circular=False):
         """
         Creates a list of nucleotides, locates open reading frames, and creates a list of codons.
         :param orfs: A dictionary of ORFs, sorted by reading frame where:
@@ -60,7 +60,7 @@ class Sequence:
         self.__codons = []      # Store references to all codons
         self.nt_sequence = []   # List of Nucleotide objects
         self.is_circular = circular  # True if the genome is circular, False otherwise
-        self.nt_categories = nt_categories_dict # Values drawn from a gamma distribution to categorize nucleotides according to their mutation rates
+        self.cat_values = cat_values # Values drawn from a gamma distribution to categorize nucleotides according to their mutation rates
 
         # Create Nucleotides
         for pos_in_seq, nt in enumerate(str_sequence):
@@ -189,30 +189,28 @@ class Sequence:
 
         for to_nt in self.pi.keys():
             if to_nt in event_tree['to_nt'].keys():
-                # Add stationary frequencies to every nucleotide in the event tree
-                event_tree['to_nt'][to_nt]['stationary_frequency'] = self.pi[to_nt]
                 # Update nucleotides with possible mutations
-                event_tree['to_nt'][to_nt].update([('from_nt', {'A': {}, 'T': {}, 'C': {}, 'G': {}})])
+                event_tree['to_nt'][to_nt].update([('from_nt', {'A': {'class':{}}, 'T': {'class':{}}, 'C': {'class':{}}, 'G': {'class':{}}})])
 
                 # For possible mutations, check if they are a transition or a transversion
                 for from_nt in event_tree['to_nt'][to_nt]['from_nt'].keys():
                     # Nucleotide cannot change to itself
                     if from_nt == to_nt:
                         event_tree['to_nt'][to_nt]['from_nt'][from_nt] = None
-                    else:
-                        trv_dict = {'is_trv': True, 'kappa': self.kappa}
-                        # If the mutation is a transition, set kappa to 1
-                        if not self.is_transv(from_nt, to_nt):
-                            trv_dict['is_trv'] = False
-                            trv_dict['kappa'] = 1
-
-                        event_tree['to_nt'][to_nt]['from_nt'][from_nt] = trv_dict
-
-                        # Create key that will store information about nucleotides affected by syn and non syn mutation in the possible classes
-                        # Deep copies are used to avoid cross referencing the newly created dictionaries
-                        nt_categories_copy_true = copy.deepcopy(self.nt_categories)
-                        nt_categories_copy_false = copy.deepcopy(self.nt_categories)
-                        event_tree['to_nt'][to_nt]['from_nt'][from_nt].update([('is_nonsyn', {'True': nt_categories_copy_true, 'False':nt_categories_copy_false})])
+                    # else:
+                    #     trv_dict = {'is_trv': True, 'kappa': self.kappa}
+                    #     # If the mutation is a transition, set kappa to 1
+                    #     if not self.is_transv(from_nt, to_nt):
+                    #         trv_dict['is_trv'] = False
+                    #         trv_dict['kappa'] = 1
+                    #
+                    #     event_tree['to_nt'][to_nt]['from_nt'][from_nt] = trv_dict
+                    #
+                    #     # Create key that will store information about nucleotides affected by syn and non syn mutation in the possible classes
+                    #     # Deep copies are used to avoid cross referencing the newly created dictionaries
+                    #     nt_categories_copy_true = copy.deepcopy(self.cat_values)
+                    #     nt_categories_copy_false = copy.deepcopy(self.cat_values)
+                    #     event_tree['to_nt'][to_nt]['from_nt'][from_nt].update([('is_nonsyn', {'True': nt_categories_copy_true, 'False':nt_categories_copy_false})])
 
         return event_tree
 
@@ -227,6 +225,7 @@ class Sequence:
         current_nt = nt.state
         sub_rates = {}
         my_omega_keys = {}
+        my_categories_keys = {}
 
         for to_nt in NUCLEOTIDES:
 
@@ -240,40 +239,39 @@ class Sequence:
                 if self.is_transv(current_nt, to_nt):
                     sub_rates[to_nt] *= self.kappa
 
+                chosen_omegas = []
                 # If nucleotide belongs to a codon
                 if nt.codons:
-                    # If mutation introduce a STOP or is a START
-                    if self.is_start_stop_codon(nt, to_nt):
-                        sub_rates[to_nt] *= 0
-                        my_omega_keys[to_nt] = None
 
-                    else:
-                        chosen_omega = [0 for _ in range(len(self.omega_values))]
-
+                    # If mutation does not introduce a STOP and nucleotide is not part of a START codon
+                    if not self.is_start_stop_codon(nt, to_nt):
                         for codon in nt.codons:
                             pos_in_codon = codon.nt_in_pos(nt)
 
                             # Apply omega when mutation is non-synonymous
                             if codon.is_nonsyn(pos_in_codon, to_nt):
-                                omega_index = random.randrange(len(self.omega_values))
-                                sub_rates[to_nt] *= (self.omega_values[omega_index])
-                                chosen_omega[omega_index] += 1
+                                selected_omega = random.choice(list(self.omega_values))  # Radomly select a key in the omega values dictionary
+                                sub_rates[to_nt] *= self.omega_values[selected_omega]
+                                chosen_omegas.append(selected_omega)
 
-                                # Store omega key to omega values
-                                omega_in_sub = tuple(chosen_omega)
-                                my_omega_keys[to_nt] = omega_in_sub
+                    else:  # Mutation introduce a STOP or nt is part of a START
+                        sub_rates[to_nt] *= 0
 
+                    # Randomly select one of the mu Values
+                    selected_cat = random.choice(list(self.cat_values))
+                    sub_rates[to_nt] *=  self.cat_values[selected_cat]
 
-                            else:  # Mutation in synonymous. No dN or dS keys for this mutation
-                                my_omega_keys[to_nt] = None
+                    my_omega_keys[to_nt] = chosen_omegas  # Store omega keys used in the substitution
+                                                          # If mutation is synonymous, omega_keys list will be empty
+                    my_categories_keys[to_nt] = selected_cat
 
-                else:  # Nucleotide does not belong to any codon
-                    my_omega_keys[to_nt] = None
-
-        # Creates a nucleotide with its substitution rates and key values
+        # Set substitution rates and key values for the nucleotide object
         nt.set_rates(sub_rates)
+        nt.set_categories(my_categories_keys)
         nt.set_omega(my_omega_keys)
         nt.get_mutation_rate()
+        print(nt.omega_keys)
+        print(nt.categories_keys)
 
     @staticmethod
     def is_start_stop_codon(nt, to_nt):
@@ -288,6 +286,7 @@ class Sequence:
 
         return False
 
+
     def nt_in_event_tree(self, nt):
         """
         Store nucleotide in each branch of the Event Tree where it belongs
@@ -297,24 +296,27 @@ class Sequence:
         for to_nt in NUCLEOTIDES:
 
             if to_nt != current_nt and not self.is_start_stop_codon(nt, to_nt):
-                curren_nt_rate = nt.rates[to_nt]
+                omega_class = "_".join(nt.omega_keys[to_nt])  # Create one nucleotide key with all the omegas for that substitution
+                category = nt.categories_keys[to_nt]
+                branch = self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['class']
 
-                if nt.omega_keys[to_nt]:  # If mutation is nonsynonymous
-                    branch =  self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_nonsyn']['True']
+                if category in branch:  # If category of the nucleotide is already a key on the event tree
+                    cat_branch = branch[category]  # Enter that branch
 
-                else:  # If mutation is synonymous
-                    branch = self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['is_nonsyn']['False']
+                else:  # Category key has not been created on the Event Tree
+                    branch[category] = {'syn_mutations': []}  # Create new branch
+                    cat_branch = branch[category]
 
-                # Find the right category for the nucleotide and store it on the Event Tree
-                for category, info in branch.items():
-                    mean_cat_value = info['value']
-                    if curren_nt_rate <= mean_cat_value:
-                        # Create nucleotide in category if needed. Store nucleotide on the branch otherwise
-                        if 'nts_in_cat' not in branch[category].keys():
-                            branch[category]['nts_in_cat'] = [nt]
-                        else:
-                            branch[category]['nts_in_cat'].append(nt)
-                        break
+                # Store nucleotide according to omega keys
+                if omega_class:  # substitution is nonsyn for at least one codon
+                    if omega_class in cat_branch:
+                        cat_branch[omega_class].append(nt)
+                    else:
+                        cat_branch[omega_class] = [nt]
+
+                else:  # Mutation is syn in all Codons
+                    cat_branch['syn_mutations'].append(nt)
+
 
 
     @staticmethod
@@ -407,7 +409,8 @@ class Nucleotide:
         self.codons = []  # A list of codon objects the Nucleotide is part of
         self.complement_state = COMPLEMENT_DICT[self.state]  # The complement state
         self.rates = {}  # A dictionary of mutation rates
-        self.omega_keys = []  # omega chosen when calculating rates
+        self.omega_keys = {}  # omega keys chosen when calculating rates
+        self.categories_keys = {}  # category keys chosen when calculating rates
         self.mutation_rate = 0  # The total mutation rate
         self.relevant_info = {}
 
@@ -455,6 +458,9 @@ class Nucleotide:
 
     def set_omega(self, omega_keys):
         self.omega_keys = omega_keys
+
+    def set_categories(self, cat_keys):
+        self.categories_keys = cat_keys
 
     def add_codon(self, codon):
         self.codons.append(codon)

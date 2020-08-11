@@ -55,11 +55,19 @@ def get_args(parser):
         help='The shape parameter of the gamma distribution, from which omega values are drawn'
     )
     parser.add_argument(
-        '--nc_classes', type=int, default=4,
+        '--omega_dist', type=float, default=ss.gamma,
+        help='The shape parameter of the gamma distribution, from which omega values are drawn'
+    )
+    parser.add_argument(
+        '--mu_classes', type=int, default=4,
         help='Number of nucleotide classes: The number of classes in which we are going to classify nucleotides on the Event Tree'
     )
     parser.add_argument(
-        '--nc_shape', type=float, default=0.1,
+        '--mu_shape', type=float, default=0.5,
+        help='The shape parameter of the gamma distribution, from which rate values are drawn to clasify nucleotides on the Event Tree'
+    )
+    parser.add_argument(
+        '--mu_dist', type=float, default=ss.lognorm,
         help='The shape parameter of the gamma distribution, from which rate values are drawn to clasify nucleotides on the Event Tree'
     )
     parser.add_argument(
@@ -246,35 +254,44 @@ def sort_orfs(orf_locations):
     return sorted_orfs
 
 
-def get_rate_values(alpha, ncat):
+def create_values_dict(alpha, ncat, string, dist):
     """
-    Draw ncat number of dN or dS values from a discretized gamma distribution
+    Creates dictionary with values (as rates) drawn from a discretized gamma distribution
     :param alpha: shape parameter
-    :param ncat: Number of categories (expected dS values)
-    :return: list of ncat number of omega values (e.i. if ncat = 3, omega_values = [0.29, 0.65, 1.06])
-
+    :param ncat: Number of catefories
+    :param string: strings like "omega" or "mu" to name the keys of the dictionary
     """
-    values = discretize_gamma(alpha, ncat)
-    rate_values = list(values)
-    return rate_values
+
+    nt_categories = discretize(alpha, ncat, dist)
+    nt_categories_dict = {}
+    for i, item in enumerate(nt_categories):
+        cat = f"{string}{i+1}"
+        nt_categories_dict[cat]=item
+
+    return nt_categories_dict
 
 
-def discretize_gamma(alpha, ncat):
+def discretize(alpha, ncat, dist):
     """
     Divide the gamma distribution into a number of intervals with equal probability and get the mid point of those intervals
     From https://gist.github.com/kgori/95f604131ce92ec15f4338635a86dfb9
     :param alpha: shape parameter
     :param ncat: Number of categories
+    :param dist: distribution of probabilities
     :return: array with ncat number of values
     """
-    dist = ss.gamma(alpha, scale=1 / alpha)
 
+    if dist == ss.gamma:
+        dist = dist(alpha, scale=1 / alpha)
+    elif dist == ss.lognorm:
+        dist = dist(s=alpha, scale=np.exp(0.5 * alpha**2))
     quantiles = dist.ppf(np.arange(0, ncat) / ncat)
-    rates = np.zeros(ncat, dtype=np.double)  # return a new array of shape ncat and type double
-
-    for i in range(ncat - 1):
-        rates[i] = ncat * scipy.integrate.quad(lambda x: x * dist.pdf(x), quantiles[i], quantiles[i + 1])[0]
-
+    rates = np.zeros(ncat, dtype=np.double)
+    for i in range(ncat-1):
+        rates[i] = (ncat * scipy.integrate.quad(lambda x: x * dist.pdf(x),
+                                               quantiles[i], quantiles[i+1])[0])
+    rates[ncat-1] = ncat * scipy.integrate.quad(lambda x: x * dist.pdf(x),
+                                                quantiles[ncat-1], np.inf)[0]
     return rates
 
 
@@ -446,20 +463,6 @@ def count_internal_stop_codons(seq, strand, orf_coords):
 
     return stop_count
 
-def create_nucleotide_categories_dict(alpha, ncat):
-    """
-    Creates categories drawn from a discretized gamma distribution to store each nucleotide according to its mutation rates on the Event Tree
-    :param alpha: shape parameter
-    :param ncat: Number of catefories
-    """
-
-    nt_categories = get_rate_values(alpha, ncat)
-    nt_categories_dict = {}
-    for i, item in enumerate(nt_categories):
-        cat = f"cat{i+1}"
-        nt_categories_dict[cat]={'value':item}
-
-    return nt_categories_dict
 
 def main():
     start_time = datetime.now()
@@ -546,17 +549,16 @@ def main():
         exit(0)
 
     # Draw omeg values and create classes to classify nucleotides on the Event Tree
-    omega_values = get_rate_values(args.omega_shape, args.omega_classes)
-    nt_categories_dict = create_nucleotide_categories_dict(args.nc_shape, args.nc_classes)
+    omega_values = create_values_dict(args.omega_shape, args.omega_classes, "omega", args.omega_dist)
+    mu_values = create_values_dict(args.mu_shape, args.mu_classes, "mu", args.mu_dist)
+    print(f"Omega values: {omega_values}")
+    print(f"Categories: {mu_values}")
+
 
     logging.info(f"Parameters for the run: \nPi: {pi}\nMu: {args.mu}\nKappa: {args.kappa}\nNumber of omega classes: {args.omega_classes}\n\
-    Omega shape parameter: {args.omega_shape}\nRates classification values: {nt_categories_dict}\n\
-    Number of nucleotide classification classes: {args.nc_classes}\nNucleotide clasification shape parameter: {args.nc_shape}")
+    Omega shape parameter: {args.omega_shape}\nRates classification values: {mu_values}\n\
+    Number of nucleotide classification classes: {args.mu_classes}\nNucleotide clasification shape parameter: {args.mu_shape}")
 
-    # TODO: Allow user to modify alpha and ncat. Use this values as default
-
-    print(">>> CATEGORIES")
-    print(nt_categories_dict)
 
     # Read in the tree
     # phylo_tree = Phylo.read(args.tree, 'newick', rooted=True)
@@ -564,7 +566,7 @@ def main():
     #
     # # Make Sequence object
     print("\nCreating root sequence")
-    root_sequence = Sequence(s, orfs, args.kappa, args.mu, pi, omega_values, nt_categories_dict, args.circular)
+    root_sequence = Sequence(s, orfs, args.kappa, args.mu, pi, omega_values, mu_values, args.circular)
 
 
     # # Run simulation
