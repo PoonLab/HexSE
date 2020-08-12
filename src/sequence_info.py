@@ -221,9 +221,8 @@ class Sequence:
                 # Update nucleotides with possible mutations
                 event_tree['to_nt'][to_nt].update([('from_nt', {'A': {'class':{}}, 'T': {'class':{}}, 'C': {'class':{}}, 'G': {'class':{}}})])
 
-                # For possible mutations, check if they are a transition or a transversion
+                # Nucleotide cannot change to itself
                 for from_nt in event_tree['to_nt'][to_nt]['from_nt'].keys():
-                    # Nucleotide cannot change to itself
                     if from_nt == to_nt:
                         event_tree['to_nt'][to_nt]['from_nt'][from_nt] = None
 
