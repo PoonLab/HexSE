@@ -90,6 +90,52 @@ class Sequence:
 
         print(self.event_tree)
         print(self.count_nts_on_event_tree())
+        print(self.create_probability_tree())
+
+
+
+    def create_probability_tree(self):
+        """
+        Get the probabilities of transition and transversion for latter selection of the branch on the tree
+        """
+        prob_tree = {'to_nt': {'A': {}, 'T': {}, 'C': {}, 'G': {}}}
+
+
+        for to_nt in NUCLEOTIDES:
+            if to_nt in prob_tree['to_nt'].keys():
+                # Update Probabiliy tree
+                prob_tree['to_nt'][to_nt].update([('from_nt', {'A': {'tr_p':0, 'class_p':{} }, 'T':  {'tr_p':0, 'class_p':{} }, 'C':  {'tr_p':0, 'class_p':{} }, 'G':  {'tr_p':0, 'class_p':{} }})])
+
+                # Nucleotide cannot change to itself
+                for from_nt in prob_tree['to_nt'][to_nt]['from_nt'].keys():
+                    if from_nt == to_nt:
+                        prob_tree['to_nt'][to_nt]['from_nt'][from_nt] = None
+                    else:
+                        current_branch = prob_tree['to_nt'][to_nt]['from_nt'][from_nt]
+
+                        # Update transition-transversion probability value
+                        if  self.is_transv(from_nt, to_nt):  # Substitution is tranversion
+                            current_branch['tr_p'] += (self.kappa/(1+2*self.kappa))
+                        else:  # Substitution is transition
+                            current_branch['tr_p'] += (1/1+2*self.kappa)
+
+                        # Update mu classes
+                        for mu_class in self.cat_values.keys():
+                            mu_p = (self.cat_values[mu_class]/sum(self.cat_values.values()))
+                            current_branch['class_p'].update([(mu_class, {'mu_pro':mu_p, 'omega_p': {}})])
+                            omegas = self.event_tree['to_nt'][to_nt]['from_nt'][from_nt]['class'][mu_class].keys()
+
+                            # Calculate omega probability for omegas on the tree
+                            # TO DO: How can we do this for several omegas?? Must be an easier way (i.e: Create that key on the omega_values dictionary)
+                            for omega in omegas:
+                                if omega != 'syn_mutations':
+                                    omega_p = (self.omega_values[omega]/1+sum(self.omega_values.values()))
+                                else:
+                                    omega_p = (1 / 1+sum(self.omega_values.values()))
+
+                                current_branch['class_p'][mu_class]['omega_p'][omega] = omega_p
+
+        return prob_tree
 
 
     def count_nts_on_event_tree(self):
