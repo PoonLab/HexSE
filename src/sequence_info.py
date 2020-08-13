@@ -39,7 +39,7 @@ class Sequence:
     Store inputs and create sequence objects
     """
 
-    def __init__(self, str_sequence, orfs, kappa, mu, pi, omega_values, cat_values, circular=False):
+    def __init__(self, str_sequence, orfs, kappa, global_rate, pi, omega_values, cat_values, circular=False):
         """
         Creates a list of nucleotides, locates open reading frames, and creates a list of codons.
         :param orfs: A dictionary of ORFs, sorted by reading frame where:
@@ -55,13 +55,14 @@ class Sequence:
         """
         self.orfs = orfs  # Dictionary of of ORFs sorted by reading frame
         self.kappa = kappa  # Transition/ transversion rate ratio
-        self.mu = mu  # The global rate (substitutions/site/unit time)
+        self.global_rate = global_rate  # The global rate (substitutions/site/unit time)
         self.pi = pi  # Frequency of nucleotides, with nucleotide as keys
         self.omega_values = omega_values  # Numeric values for omega (drawn from a gamma distribution by default)
         self.__codons = []      # Store references to all codons
         self.nt_sequence = []   # List of Nucleotide objects
         self.is_circular = circular  # True if the genome is circular, False otherwise
         self.cat_values = cat_values # Values drawn from a gamma distribution to categorize nucleotides according to their mutation rates
+        self.total_omegas = {}  # Dictionary of every possible combination of omegas present on the event tree
 
         # Create Nucleotides
         for pos_in_seq, nt in enumerate(str_sequence):
@@ -80,7 +81,7 @@ class Sequence:
                             nt.codons.append(codon)
                         self.__codons.append(codon)
 
-        # Create event tree containing all possible mutations and the parameters needed to calculate the rates
+        # Create event tree containing all possible mutations
         self.event_tree = self.create_event_tree()  # Nested dict containing info about all possible mutation events
 
         # Calculate mutation rates for each nucleotide in sequence, populate the event tree which each nucleotide
@@ -88,9 +89,10 @@ class Sequence:
             self.set_substitution_rates(nt)  # Get substitution rates for the nucleotide
             self.nt_in_event_tree(nt)  # Locate nucleotide in the event tree
 
-        print(self.event_tree)
-        print(self.count_nts_on_event_tree())
-        print(self.create_probability_tree())
+        #print(self.event_tree)
+        # print(self.count_nts_on_event_tree())
+        # Create probability tree with the probabilities for each brnach
+        self.probability_tree = self.create_probability_tree()
 
 
 
@@ -122,16 +124,16 @@ class Sequence:
                         # Update mu classes
                         for mu_class in self.cat_values.keys():
                             mu_p = (self.cat_values[mu_class]/sum(self.cat_values.values()))
-                            current_branch['class_p'].update([(mu_class, {'mu_pro':mu_p, 'omega_p': {}})])
+                            current_branch['class_p'].update([(mu_class, {'mu_p':mu_p, 'omega_p': {}})])
                             omegas = self.event_tree['to_nt'][to_nt]['from_nt'][from_nt]['class'][mu_class].keys()
 
                             # Calculate omega probability for omegas on the tree
                             # TO DO: How can we do this for several omegas?? Must be an easier way (i.e: Create that key on the omega_values dictionary)
                             for omega in omegas:
                                 if omega != 'syn_mutations':
-                                    omega_p = (self.omega_values[omega]/1+sum(self.omega_values.values()))
+                                    omega_p = (self.total_omegas[omega]/1+sum(self.total_omegas.values()))
                                 else:
-                                    omega_p = (1 / 1+sum(self.omega_values.values()))
+                                    omega_p = (1 / 1+sum(self.total_omegas.values()))
 
                                 current_branch['class_p'][mu_class]['omega_p'][omega] = omega_p
 
@@ -219,6 +221,9 @@ class Sequence:
     def get_event_tree(self):
         return self.event_tree
 
+    def get_probability_tree(self):
+        return self.probability_tree
+
     @staticmethod
     def complement(seq, rev=False):
         """
@@ -295,7 +300,7 @@ class Sequence:
 
             else:
                 # Apply global substitution rate and stationary nucleotide frequency
-                sub_rates[to_nt] = self.mu * self.pi[current_nt]
+                sub_rates[to_nt] = self.global_rate * self.pi[current_nt]
                 if self.is_transv(current_nt, to_nt):
                     sub_rates[to_nt] *= self.kappa
 
@@ -369,10 +374,15 @@ class Sequence:
 
                 # Store nucleotide according to omega keys
                 if omega_class:  # substitution is nonsyn for at least one codon
-                    if omega_class in cat_branch:
+                    if omega_class in cat_branch:  # Omega class is already created on the Event Tree
                         cat_branch[omega_class].append(nt)
-                    else:
+                    else:  # Create the new omega class
                         cat_branch[omega_class] = [nt]
+                        if omega_class not in self.total_omegas:  # If key is not in total omegas dict, create it
+                            value = 1
+                            for cat in nt.omega_keys[to_nt]:
+                                value *= self.omega_values[cat]
+                            self.total_omegas[omega_class] = value  # Store all possible combinations of omega, and their values
 
                 else:  # Mutation is syn in all Codons
                     cat_branch['syn_mutations'].append(nt)

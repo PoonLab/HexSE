@@ -31,6 +31,7 @@ class SimulateOnBranch:
         """
         self.sequence = sequence  # Sequence object
         self.event_tree = sequence.get_event_tree()  # Tree of all possible mutations related to sequence
+        self.probability_tree = sequence.get_probability_tree()
         self.branch_length = branch_length
 
     def get_substitution(self):
@@ -38,53 +39,36 @@ class SimulateOnBranch:
         Select a substitution by moving over the event_tree according to the generation of random numbers
         """
         # Select: to nucleotide
-        events = self.sequence.count_nts_on_event_tree()
-        to_mutation = self.weighted_random_choice(self.sequence.pi, events)
+        to_mutation = self.weighted_random_choice(self.sequence.pi, sum(self.sequence.pi.values()))
 
-        # Select: possible from nucleotides
-        from_dict = self.event_tree['to_nt'][to_mutation]['from_nt']
-        events_for_nt = self.event_tree['to_nt'][to_mutation]['events_for_nt']
-        from_mutation = self.select_weighted_values(from_dict, events_for_nt, 'number_of_events', 'kappa')
-        final_mutation = self.event_tree['to_nt'][to_mutation]['from_nt'][from_mutation]
+        # Select: from nt
+        from_tree = self.probability_tree['to_nt'][to_mutation]['from_nt']
+        trans_transv_dict = {}  # Dictionary contaning keys to from nucleotide weighted according to transition-transversion probability
+        for from_nt, dict in from_tree.items():  # Create dictionary with probabilities for this branch
+            if dict:  # Not none
+                prob = from_tree[from_nt]['tr_p']
+                trans_transv_dict[from_nt] = prob
+        from_mutation = self.weighted_random_choice(trans_transv_dict, sum(trans_transv_dict.values()))
 
-        # List of nucleotides that are candidates to mutate
-        candidate_nts = final_mutation['nts_in_subs']
-        rates_list = [nt.mutation_rate for nt in candidate_nts]
-        nt_dict = dict(zip(candidate_nts, rates_list))
+        # Select: mu class
+        class_tree = self.probability_tree['to_nt'][to_mutation]['from_nt'][from_mutation]['class_p']
+        mu_dict = {}  # Dictionary contaning keys to mu classes weighted according to mu probability
+        for mu_class, dict in class_tree.items():
+            mu_dict[mu_class] = dict['mu_p']
+        selected_class = self.weighted_random_choice(mu_dict, sum(mu_dict.values()))
 
-        # Select weighted nucleotide
-        from_nucleotide = self.weighted_random_choice(nt_dict, sum(rates_list))
-        get_substitution_meta = {
-            'candidate_nts': candidate_nts.keys(),
-        }
+        # Select omega branch
+        omega_dict = self.probability_tree['to_nt'][to_mutation]['from_nt'][from_mutation]['class_p'][selected_class]['omega_p']
+        selected_omega = self.weighted_random_choice(omega_dict, sum(omega_dict.values()))
+
+        # Select nucleotide
+        nt_list = self.event_tree['to_nt'][to_mutation]['from_nt'][from_mutation]['class'][selected_class][selected_omega]
+        from_nucleotide = random.choice(nt_list)
+
+        print(from_nucleotide, from_nucleotide.pos_in_seq)
 
         return from_nucleotide, to_mutation
 
-    def select_weighted_values(self, dictionary, number_of_total_events, key_for_local_events, key_to_weight):
-        """
-        Randomly selected a key from a dictionary of events with weighted values
-        :param number_of_total_events: Number of total number of events on branch
-        :param key_for_local_events: key to the number of events for each specific value
-        :param key_to_weight: Depending on the level of the branch, this could be:
-                - the key to stationary frequency
-                - the key to transition/transversion rate ratio
-        """
-
-        total_events = number_of_total_events
-        temp = {}
-        sum_values = 0
-
-        # Create a temp dictionary to store the weighted values
-        for key, value in dictionary.items():
-            if value:
-                # weight values
-                temp[key] = (value[key_for_local_events] / total_events) * value[key_to_weight]
-                sum_values += temp[key]
-            else:
-                temp[key] = None
-
-        # Randomly selected a key on the dictionary
-        return self.weighted_random_choice(temp, sum_values)
 
     @staticmethod
     def weighted_random_choice(dictionary, sum_values):
@@ -97,6 +81,7 @@ class SimulateOnBranch:
         key = None
         iter_object = iter(dictionary.items())
         limit = random.uniform(0, sum_values)
+
         s = 0
         while s < limit:
             try:

@@ -34,7 +34,7 @@ def get_args(parser):
              'If no ORFS are specified, the program will find ORFs automatically'
     )
     parser.add_argument(
-        '--mu', type=float, default=0.0005,
+        '--global_rate', type=float, default=1,
         help='Global substitution rate per site per unit time'
     )
     parser.add_argument(
@@ -63,12 +63,12 @@ def get_args(parser):
         help='Number of nucleotide classes: The number of classes in which we are going to classify nucleotides on the Event Tree'
     )
     parser.add_argument(
-        '--mu_shape', type=float, default=0.5,
-        help='The shape parameter of the gamma distribution, from which rate values are drawn to clasify nucleotides on the Event Tree'
+        '--mu_shape', type=float, default=1,
+        help='The shape parameter of the mu distribution (log normal or gamma)'
     )
     parser.add_argument(
         '--mu_dist', type=float, default=ss.lognorm,
-        help='The shape parameter of the gamma distribution, from which rate values are drawn to clasify nucleotides on the Event Tree'
+        help='The distribution type from which get numbers for the mu classes'
     )
     parser.add_argument(
         '--circular', action='store_true',
@@ -273,7 +273,7 @@ def create_values_dict(alpha, ncat, string, dist):
 
 def discretize(alpha, ncat, dist):
     """
-    Divide the gamma distribution into a number of intervals with equal probability and get the mid point of those intervals
+    Divide a distribution into a number of intervals with equal probability and get the mid point of those intervals
     From https://gist.github.com/kgori/95f604131ce92ec15f4338635a86dfb9
     :param alpha: shape parameter
     :param ncat: Number of categories
@@ -282,9 +282,9 @@ def discretize(alpha, ncat, dist):
     """
 
     if dist == ss.gamma:
-        dist = dist(alpha, scale=1 / alpha)
+        dist = dist(alpha, scale=1 / alpha, loc=0)
     elif dist == ss.lognorm:
-        dist = dist(s=alpha, scale=np.exp(0.5 * alpha**2))
+        dist = dist(s=alpha, scale=np.exp(0.05 * alpha**2), loc= 0)
     quantiles = dist.ppf(np.arange(0, ncat) / ncat)
     rates = np.zeros(ncat, dtype=np.double)
     for i in range(ncat-1):
@@ -563,25 +563,25 @@ def main():
     print(f"Categories: {mu_values}")
 
 
-    logging.info(f"Parameters for the run: \nPi: {pi}\nMu: {args.mu}\nKappa: {args.kappa}\nNumber of omega classes: {args.omega_classes}\n\
+    logging.info(f"Parameters for the run: \nPi: {pi}\nGlobal rate: {args.global_rate}\nKappa: {args.kappa}\nNumber of omega classes: {args.omega_classes}\n\
     Omega shape parameter: {args.omega_shape}\nRates classification values: {mu_values}\n\
     Number of nucleotide classification classes: {args.mu_classes}\nNucleotide clasification shape parameter: {args.mu_shape}")
 
 
     # Read in the tree
-    # phylo_tree = Phylo.read(args.tree, 'newick', rooted=True)
+    phylo_tree = Phylo.read(args.tree, 'newick', rooted=True)
     # logging.info("Phylogenetic tree: {}".format(args.tree))
     #
     # # Make Sequence object
     print("\nCreating root sequence")
-    root_sequence = Sequence(s, orfs, args.kappa, args.mu, pi, omega_values, mu_values, args.circular)
+    root_sequence = Sequence(s, orfs, args.kappa, args.global_rate, pi, omega_values, mu_values, args.circular)
 
 
     # # Run simulation
     # print("\nRunning simulation")
-    # simulation = SimulateOnTree(root_sequence, phylo_tree, args.outfile)
-    # simulation.get_alignment(args.outfile)
-    #
+    simulation = SimulateOnTree(root_sequence, phylo_tree, args.outfile)
+    simulation.get_alignment(args.outfile)
+
     # print("Simulation duration: {} seconds".format(datetime.now() - start_time))
 
 
