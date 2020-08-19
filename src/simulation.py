@@ -30,8 +30,6 @@ class SimulateOnBranch:
         :param branch_length: length of the branch over which evolution is happening
         """
         self.sequence = sequence  # Sequence object
-        self.event_tree = sequence.get_event_tree()  # Tree of all possible mutations related to sequence
-        self.probability_tree = sequence.get_probability_tree()
         self.branch_length = branch_length
 
     def get_substitution(self):
@@ -42,41 +40,59 @@ class SimulateOnBranch:
         to_mutation = self.weighted_random_choice(self.sequence.pi, sum(self.sequence.pi.values()))
 
         # Select: from nt
-        from_tree = self.probability_tree['to_nt'][to_mutation]['from_nt']
-        trans_transv_dict = {}  # Dictionary contaning keys to from nucleotide weighted according to transition-transversion probability
-        for from_nt, dict in from_tree.items():  # Create dictionary with probabilities for this branch
-            if dict:  # Not none
-                prob = from_tree[from_nt]['tr_p']
-                trans_transv_dict[from_nt] = prob
-        from_mutation = self.weighted_random_choice(trans_transv_dict, sum(trans_transv_dict.values()))
+        from_tree = self.sequence.probability_tree['to_nt'][to_mutation]['from_nt']
+        from_mutation = self.select_key(from_tree)
 
-        # Select: mu class
-        class_tree = self.probability_tree['to_nt'][to_mutation]['from_nt'][from_mutation]['class_p']
-        mu_dict = {}  # Dictionary contaning keys to mu classes weighted according to mu probability
-        for mu_class, dict in class_tree.items():
-            mu_dict[mu_class] = dict['mu_p']
-        selected_class = self.weighted_random_choice(mu_dict, sum(mu_dict.values()))
+        # Select: mu clategory
+        def possible_cats():
+            cat_tree = copy.copy(self.sequence.probability_tree['to_nt'][to_mutation]['from_nt'][from_mutation]['cat'])
+            for i in list(cat_tree.keys()):
+                selected_cat = self.select_key(cat_tree)
+                cat_tree.pop(selected_cat)  # Remove empty key
+
+                yield selected_cat
 
         # Select omega branch
-        def possible_nts():
-            omega_dict = copy.copy(self.probability_tree['to_nt'][to_mutation]['from_nt'][from_mutation]['class_p'][selected_class]['omega_p'])
-            for i in range(1, len(omega_dict.keys())):
-                selected_omega = self.weighted_random_choice(omega_dict, sum(omega_dict.values()))
-                # Select nucleotide
-                nt_list = self.event_tree['to_nt'][to_mutation]['from_nt'][from_mutation]['class'][selected_class][selected_omega]
-                omega_dict.pop(selected_omega)
+        def possible_nts(selected_cat):
+            omega_dict = copy.copy(self.sequence.probability_tree['to_nt'][to_mutation]['from_nt'][from_mutation]['cat'][selected_cat]['omega'])
+            nt_dict = self.sequence.event_tree['to_nt'][to_mutation]['from_nt'][from_mutation]['category'][selected_cat]
 
-                yield nt_list
+            # Check if all tips of the tree for this class are empty
+            if all(not value for value in nt_dict.values()):
+                # print("all empty")
+                # print(nt_dict)
+                # print(to_mutation, from_mutation, selected_cat)
+                # print(self.sequence.event_tree['to_nt'][to_mutation]['from_nt'][from_mutation])
+                pass
 
-        for nt_list in possible_nts(): # Check if nt list is empty
-            if nt_list:
-                from_nucleotide = random.choice(nt_list)
+            else:
+                for i in range(1, len(omega_dict.keys())):
+                    selected_omega = self.weighted_random_choice(omega_dict, sum(omega_dict.values()))
+                    # Select nucleotide
+                    nt_list = self.sequence.event_tree['to_nt'][to_mutation]['from_nt'][from_mutation]['category'][selected_cat][selected_omega]
+                    omega_dict.pop(selected_omega)  # Remove empty key
 
-                # print("\nNucleotide to mutate")
-                # print(from_nucleotide, from_nucleotide.pos_in_seq)
-                # print(omega_dict)
-                print(from_nt, to_mutation)
-                return from_nucleotide, to_mutation
+                    yield nt_list
+
+        for selected_cat in possible_cats():
+            for nt_list in possible_nts(selected_cat): # Check if nt list is empty
+                if nt_list:
+                    from_nucleotide = random.choice(nt_list)
+                    return from_nucleotide, to_mutation
+
+        print("\n>>>> OH NO!!")
+        print(self.sequence.event_tree['to_nt'][to_mutation]['from_nt'][from_mutation])
+
+    def select_key(self, dictionary):
+        """
+        Select a random key using weighted_random_choice
+        """
+        temp_dict = {}  # Dictionary contaning keys to 'from nucleotides' or 'categories' and their probability (weigth)
+        for key, value in dictionary.items():
+            if value:
+                temp_dict[key] = value['prob']
+        selected_key = self.weighted_random_choice(temp_dict, sum(temp_dict.values()))
+        return(selected_key)
 
     @staticmethod
     def weighted_random_choice(dictionary, sum_values):
@@ -128,7 +144,6 @@ class SimulateOnBranch:
 
             # Draw a mutation
             mutation = self.get_substitution()
-            print(mutation)
             my_nt = mutation[0]
             to_state = mutation[1]
             instant_rate = instant_rate - my_nt.mutation_rate
@@ -160,7 +175,6 @@ class SimulateOnBranch:
                                 # Update instant rate for adjacent nucleotide
                                 instant_rate = instant_rate + adj_nt.mutation_rate
                                 break
-
         return self.sequence
 
     def remove_nt(self, nt):
@@ -169,20 +183,16 @@ class SimulateOnBranch:
         :param nt: The nucleotide to be removed from the event tree
         """
 
-        for to_nt, value_to_nt in self.event_tree['to_nt'].items():
+        for to_nt, value_to_nt in self.sequence.event_tree['to_nt'].items():
 
             if to_nt != nt.state:
 
                 # Find branches that contain my nucleotide
                 if to_nt in nt.omega_in_event_tree:  # Nucleotide may not have this key because it was not stored on the event tree (mutation would introduce a STOP or was part of a START)
-                    class_key = nt.class_keys[to_nt]
+                    cat_key = nt.cat_keys[to_nt]
                     omega_key = nt.omega_in_event_tree[to_nt]
-                    my_branch = self.event_tree['to_nt'][to_nt]['from_nt'][nt.state]['class'][class_key][omega_key]
+                    my_branch = self.sequence.event_tree['to_nt'][to_nt]['from_nt'][nt.state]['category'][cat_key][omega_key]
                     my_branch.remove(nt)
-
-                    # If after removal branch is empty, remove the omega key as well
-                    # if not my_branch:
-                    #      self.event_tree['to_nt'][to_nt]['from_nt'][nt.state]['class'][class_key].pop(omega_key)
 
 
     def update_nucleotide(self, nt, to_state):
@@ -190,11 +200,11 @@ class SimulateOnBranch:
         Update parameters on the mutated nucleotide
         """
 
-        # RESET All vallues
         # Update the state of the nucleotide
         nt.set_state(to_state)
         # Change complementary state given the mutation
         nt.set_complement_state()
+        # RESET All vallues
         # Rates
         nt.set_rates({})
         # Omega keys
@@ -208,7 +218,10 @@ class SimulateOnBranch:
 
         # Update rates, omega key according to its new state
         self.sequence.set_substitution_rates(nt)
-        self.sequence.nt_in_event_tree(nt)
+        new_omega = self.sequence.nt_in_event_tree(nt)  # Update nucleotide on the Event Tree and return new key if created
+
+        if new_omega: # If new omeka key is created in the event tree, update the probability tree
+            self.sequence.probability_tree = self.sequence.create_probability_tree()
 
 
 class SimulateOnTree:

@@ -55,7 +55,7 @@ def get_args(parser):
         help='The shape parameter of the gamma distribution, from which omega values are drawn'
     )
     parser.add_argument(
-        '--omega_dist', type=float, default=ss.gamma,
+        '--omega_dist', type=str, default=ss.gamma,
         help='The shape parameter of the gamma distribution, from which omega values are drawn'
     )
     parser.add_argument(
@@ -67,7 +67,7 @@ def get_args(parser):
         help='The shape parameter of the mu distribution (log normal or gamma)'
     )
     parser.add_argument(
-        '--mu_dist', type=float, default=ss.lognorm,
+        '--mu_dist', type=str, default=ss.lognorm, #ss.lognorm
         help='The distribution type from which get numbers for the mu classes'
     )
     parser.add_argument(
