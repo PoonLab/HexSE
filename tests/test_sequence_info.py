@@ -27,22 +27,99 @@ MU_VALUES_3 = {'mu1': 0.3965034306394888,
                'mu2': 1.0832728336432287,
                'mu3': 3.7199827893060657}
 
-EMPTY_EVENT_TREE = {'to_nt': {'A': {'from_nt': {'A': None,
-                                                'T': {'class': {}},
-                                                'C': {'class': {}},
-                                                'G': {'class': {}}}},
-                              'T': {'from_nt': {'A': {'class': {}},
-                                                'T': None,
-                                                'C': {'class': {}},
-                                                'G': {'class': {}}}},
-                              'C': {'from_nt': {'A': {'class': {}},
-                                                'T': {'class': {}},
-                                                'C': None,
-                                                'G': {'class': {}}}},
-                              'G': {'from_nt': {'A': {'class': {}},
-                                                'T': {'class': {}},
-                                                'C': {'class': {}},
-                                                'G': None}}}}
+EMPTY_EVENT_TREE_MU_4 = {'to_nt': {'A': {'from_nt': {'A': None,
+                                                     'C': {'category': {'mu1': {'syn_mutations': []},
+                                                                        'mu2': {'syn_mutations': []},
+                                                                        'mu3': {'syn_mutations': []},
+                                                                        'mu4': {'syn_mutations': []}}},
+                                                     'G': {'category': {'mu1': {'syn_mutations': []},
+                                                                        'mu2': {'syn_mutations': []},
+                                                                        'mu3': {'syn_mutations': []},
+                                                                        'mu4': {'syn_mutations': []}}},
+                                                     'T': {'category': {'mu1': {'syn_mutations': []},
+                                                                        'mu2': {'syn_mutations': []},
+                                                                        'mu3': {'syn_mutations': []},
+                                                                        'mu4': {'syn_mutations': []}}}}},
+                                   'C': {'from_nt': {'A': {'category': {'mu1': {'syn_mutations': []},
+                                                                        'mu2': {'syn_mutations': []},
+                                                                        'mu3': {'syn_mutations': []},
+                                                                        'mu4': {'syn_mutations': []}}},
+                                                     'C': None,
+                                                     'G': {'category': {'mu1': {'syn_mutations': []},
+                                                                        'mu2': {'syn_mutations': []},
+                                                                        'mu3': {'syn_mutations': []},
+                                                                        'mu4': {'syn_mutations': []}}},
+                                                     'T': {'category': {'mu1': {'syn_mutations': []},
+                                                                        'mu2': {'syn_mutations': []},
+                                                                        'mu3': {'syn_mutations': []},
+                                                                        'mu4': {'syn_mutations': []}}}}},
+                                   'G': {'from_nt': {'A': {'category': {'mu1': {'syn_mutations': []},
+                                                                        'mu2': {'syn_mutations': []},
+                                                                        'mu3': {'syn_mutations': []},
+                                                                        'mu4': {'syn_mutations': []}}},
+                                                     'C': {'category': {'mu1': {'syn_mutations': []},
+                                                                        'mu2': {'syn_mutations': []},
+                                                                        'mu3': {'syn_mutations': []},
+                                                                        'mu4': {'syn_mutations': []}}},
+                                                     'G': None,
+                                                     'T': {'category': {'mu1': {'syn_mutations': []},
+                                                                        'mu2': {'syn_mutations': []},
+                                                                        'mu3': {'syn_mutations': []},
+                                                                        'mu4': {'syn_mutations': []}}}}},
+                                   'T': {'from_nt': {'A': {'category': {'mu1': {'syn_mutations': []},
+                                                                        'mu2': {'syn_mutations': []},
+                                                                        'mu3': {'syn_mutations': []},
+                                                                        'mu4': {'syn_mutations': []}}},
+                                                     'C': {'category': {'mu1': {'syn_mutations': []},
+                                                                        'mu2': {'syn_mutations': []},
+                                                                        'mu3': {'syn_mutations': []},
+                                                                        'mu4': {'syn_mutations': []}}},
+                                                     'G': {'category': {'mu1': {'syn_mutations': []},
+                                                                        'mu2': {'syn_mutations': []},
+                                                                        'mu3': {'syn_mutations': []},
+                                                                        'mu4': {'syn_mutations': []}}},
+                                                     'T': None}}}}
+
+EMPTY_EVENT_TREE_MU_3 = {'to_nt': {'A': {'from_nt': {'A': None,
+                                                     'C': {'category': {'mu1': {'syn_mutations': []},
+                                                                        'mu2': {'syn_mutations': []},
+                                                                        'mu3': {'syn_mutations': []}}},
+                                                     'G': {'category': {'mu1': {'syn_mutations': []},
+                                                                        'mu2': {'syn_mutations': []},
+                                                                        'mu3': {'syn_mutations': []}}},
+                                                     'T': {'category': {'mu1': {'syn_mutations': []},
+                                                                        'mu2': {'syn_mutations': []},
+                                                                        'mu3': {'syn_mutations': []}}}}},
+                                   'C': {'from_nt': {'A': {'category': {'mu1': {'syn_mutations': []},
+                                                                        'mu2': {'syn_mutations': []},
+                                                                        'mu3': {'syn_mutations': []}}},
+                                                     'C': None,
+                                                     'G': {'category': {'mu1': {'syn_mutations': []},
+                                                                        'mu2': {'syn_mutations': []},
+                                                                        'mu3': {'syn_mutations': []}}},
+                                                     'T': {'category': {'mu1': {'syn_mutations': []},
+                                                                        'mu2': {'syn_mutations': []},
+                                                                        'mu3': {'syn_mutations': []}}}}},
+                                   'G': {'from_nt': {'A': {'category': {'mu1': {'syn_mutations': []},
+                                                                        'mu2': {'syn_mutations': []},
+                                                                        'mu3': {'syn_mutations': []}}},
+                                                     'C': {'category': {'mu1': {'syn_mutations': []},
+                                                                        'mu2': {'syn_mutations': []},
+                                                                        'mu3': {'syn_mutations': []}}},
+                                                     'G': None,
+                                                     'T': {'category': {'mu1': {'syn_mutations': []},
+                                                                        'mu2': {'syn_mutations': []},
+                                                                        'mu3': {'syn_mutations': []}}}}},
+                                   'T': {'from_nt': {'A': {'category': {'mu1': {'syn_mutations': []},
+                                                                        'mu2': {'syn_mutations': []},
+                                                                        'mu3': {'syn_mutations': []}}},
+                                                     'C': {'category': {'mu1': {'syn_mutations': []},
+                                                                        'mu2': {'syn_mutations': []},
+                                                                        'mu3': {'syn_mutations': []}}},
+                                                     'G': {'category': {'mu1': {'syn_mutations': []},
+                                                                        'mu2': {'syn_mutations': []},
+                                                                        'mu3': {'syn_mutations': []}}},
+                                                     'T': None}}}}
 
 
 class TestSequence1(unittest.TestCase):
@@ -83,6 +160,7 @@ class TestSequence1(unittest.TestCase):
         self.assertEqual(self.sequence1.omega_values, new_sequence1.omega_values)
         self.assertEqual(self.sequence1.cat_values, new_sequence1.cat_values)
         self.assertEqual(self.sequence1.is_circular, new_sequence1.is_circular)
+        self.assertEqual(self.sequence1.total_omegas, new_sequence1.total_omegas)
 
         # Event trees reference different Nucleotides, but the Nucleotides have the same states
         self.assertNotEqual(self.sequence1.event_tree, new_sequence1.event_tree)
@@ -97,9 +175,10 @@ class TestSequence1(unittest.TestCase):
             self.assertEqual(seq1_nt.pos_in_seq, new_nt.pos_in_seq)
             self.assertEqual(seq1_nt.complement_state, new_nt.complement_state)
             self.assertEqual(seq1_nt.rates, new_nt.rates)
-            self.assertEqual(seq1_nt.mutation_rate, new_nt.mutation_rate)
             self.assertEqual(seq1_nt.omega_keys, new_nt.omega_keys)
-            self.assertEqual(seq1_nt.categories_keys, new_nt.categories_keys)
+            self.assertEqual(seq1_nt.cat_keys, new_nt.cat_keys)
+            self.assertEqual(seq1_nt.omega_in_event_tree, new_nt.omega_in_event_tree)
+            self.assertEqual(seq1_nt.mutation_rate, new_nt.mutation_rate)
             self.assertEqual(str(seq1_nt.codons), str(new_nt.codons))
             self.assertEqual(len(seq1_nt.codons), len(new_nt.codons))
 
@@ -117,7 +196,7 @@ class TestSequence1(unittest.TestCase):
         self.assertEqual(expected, result)
 
     def testCreateEventTree(self):
-        expected = EMPTY_EVENT_TREE
+        expected = EMPTY_EVENT_TREE_MU_4
         result = self.sequence1.create_event_tree()
         self.assertEqual(expected, result)
 
@@ -126,12 +205,14 @@ class TestSequence1(unittest.TestCase):
 
         nt = self.sequence1.nt_sequence[0]  # First nucleotide is G
         self.sequence1.set_substitution_rates(nt)
-        exp_sub_rates = {'A': 4.252483383790958e-05, 'C': 4.654455031400801e-05,
-                         'G': None,                  'T': 4.654455031400801e-05}
-        exp_omegas = {'A': (1, 0, 0, 0), 'C': (0, 0, 1, 0), 'G': None, 'T': (0, 0, 1, 0)}
-        exp_total_rate = 0.0001356139344659256
+        exp_sub_rates = {'A': 0.12603317336204048, 'C': 0.030344325868823886,
+                         'G': None,                'T': 0.030344325868823886}
+        exp_omegas = {'A': ['omega1'], 'C': ['omega3'], 'G': None, 'T': ['omega3']}
+        exp_cat_keys = {'A': 'mu3', 'C': 'mu1', 'T': 'mu1'}
+        exp_total_rate = 0.18672182509968824
         self.assertEqual(exp_sub_rates, nt.rates)
         self.assertEqual(exp_omegas, nt.omega_keys)
+        self.assertEqual(exp_cat_keys, nt.cat_keys)
         self.assertEqual(exp_total_rate, nt.mutation_rate)
 
     def testIsTransv(self):
@@ -223,6 +304,8 @@ class TestSequence2(unittest.TestCase):
         self.assertEqual(self.sequence2.omega_values, new_sequence2.omega_values)
         self.assertEqual(self.sequence2.cat_values, new_sequence2.cat_values)
         self.assertEqual(self.sequence2.is_circular, new_sequence2.is_circular)
+        self.assertEqual(self.sequence2.total_omegas, new_sequence2.total_omegas)
+
 
         # Event trees reference different Nucleotides, but the Nucleotides have the same states
         self.assertNotEqual(self.sequence2.event_tree, new_sequence2.event_tree)
@@ -237,9 +320,10 @@ class TestSequence2(unittest.TestCase):
             self.assertEqual(seq2_nt.pos_in_seq, new_nt.pos_in_seq)
             self.assertEqual(seq2_nt.complement_state, new_nt.complement_state)
             self.assertEqual(seq2_nt.rates, new_nt.rates)
-            self.assertEqual(seq2_nt.mutation_rate, new_nt.mutation_rate)
             self.assertEqual(seq2_nt.omega_keys, new_nt.omega_keys)
-            self.assertEqual(seq2_nt.categories_keys, new_nt.categories_keys)
+            self.assertEqual(seq2_nt.cat_keys, new_nt.cat_keys)
+            self.assertEqual(seq2_nt.omega_in_event_tree, new_nt.omega_in_event_tree)
+            self.assertEqual(seq2_nt.mutation_rate, new_nt.mutation_rate)
             self.assertEqual(str(seq2_nt.codons), str(new_nt.codons))
             self.assertEqual(len(seq2_nt.codons), len(new_nt.codons))
 
@@ -252,7 +336,7 @@ class TestSequence2(unittest.TestCase):
                 self.assertEqual(str(codon.nts_in_codon), str(new_codon.nts_in_codon))
 
     def testCreateEventTree(self):
-        expected = EMPTY_EVENT_TREE
+        expected = EMPTY_EVENT_TREE_MU_3
         result = self.sequence2.create_event_tree()
         self.assertEqual(expected, result)
 
@@ -273,7 +357,7 @@ class TestSequence2(unittest.TestCase):
         exp_total_rate = 0.36499700599704527
         self.assertEqual(exp_sub_rates, nt.rates)
         self.assertEqual(exp_omega_keys, nt.omega_keys)
-        self.assertEqual(exp_cat_keys, nt.categories_keys)
+        self.assertEqual(exp_cat_keys, nt.cat_keys)
         self.assertEqual(exp_total_rate, nt.mutation_rate)
 
         # Mutation would destroy a START codon
@@ -286,7 +370,7 @@ class TestSequence2(unittest.TestCase):
         exp_total_rate = 0
         self.assertEqual(exp_sub_rates, nt.rates)
         self.assertEqual(exp_omega_keys, nt.omega_keys)
-        self.assertEqual(exp_cat_keys, nt.categories_keys)
+        self.assertEqual(exp_cat_keys, nt.cat_keys)
         self.assertEqual(exp_total_rate, nt.mutation_rate)
 
         # Non-synonymous mutation in both (+) and (-) strands
@@ -300,7 +384,7 @@ class TestSequence2(unittest.TestCase):
         exp_total_rate = 0.5555854037627037
         self.assertEqual(exp_sub_rates, nt.rates)
         self.assertEqual(exp_omega_keys, nt.omega_keys)
-        self.assertEqual(exp_cat_keys, nt.categories_keys)
+        self.assertEqual(exp_cat_keys, nt.cat_keys)
         self.assertEqual(exp_total_rate, nt.mutation_rate)
 
     def testIsTransv(self):
@@ -346,6 +430,118 @@ class TestSequence2(unittest.TestCase):
         nt = self.sequence2.nt_sequence[14]  # A in codon GTA (+ strand) and ATG (- strand)
         expected = True
         result = self.sequence2.is_start_stop_codon(nt, 'C')
+        self.assertEqual(expected, result)
+
+    def testCreateProbabilityTree(self):
+        expected = {'to_nt':
+                        {'A': {'from_nt': {'A': None,
+                                           'T':
+                                               {'prob': 0.18749999999999997,
+                                                'cat': {'mu1': {'prob': 0.07625419304108505,
+                                                                'omega': {'syn_mutations': 0.08764083251715918}},
+                                                        'mu2': {'prob': 0.20833135198746808,
+                                                                'omega': {'syn_mutations': 0.08764083251715918}},
+                                                        'mu3': {'prob': 0.7154144549714468,
+                                                                'omega': {'syn_mutations': 0.08764083251715918}}}},
+                                           'C': {'prob': 0.18749999999999997,
+                                                 'cat': {'mu1': {'prob': 0.07625419304108505,
+                                                                 'omega': {'syn_mutations': 0.08764083251715918}},
+                                                         'mu2': {'prob': 0.20833135198746808,
+                                                                 'omega': {'syn_mutations': 0.08764083251715918,
+                                                                           'omega1': 0.022345391732910336}},
+                                                         'mu3': {'prob': 0.7154144549714468,
+                                                                 'omega': {'syn_mutations': 0.08764083251715918,
+                                                                           'omega5_omega2': 0.10215306361964918,
+                                                                           'omega2': 0.048132455057992865}}}},
+                                           'G': {'prob': 0.625,
+                                                 'cat': {'mu1': {'prob': 0.07625419304108505,
+                                                                 'omega': {'syn_mutations': 0.08764083251715918}},
+                                                         'mu2': {'prob': 0.20833135198746808,
+                                                                 'omega': {'syn_mutations': 0.08764083251715918}},
+                                                         'mu3': {'prob': 0.7154144549714468,
+                                                                 'omega': {'syn_mutations': 0.08764083251715918}}}}}},
+                         'T': {'from_nt': {'A': {'prob': 0.18749999999999997,
+                                                 'cat': {'mu1': {'prob': 0.07625419304108505,
+                                                                 'omega': {'syn_mutations': 0.08764083251715918,
+                                                                           'omega2_omega5': 0.10215306361964918}},
+                                                         'mu2': {'prob': 0.20833135198746808,
+                                                                 'omega': {'syn_mutations': 0.08764083251715918,
+                                                                           'omega1_omega1': 0.0056973047534601695}},
+                                                         'mu3': {'prob': 0.7154144549714468,
+                                                                 'omega': {'syn_mutations': 0.08764083251715918}}}},
+                                           'T': None,
+                                           'C': {'prob': 0.625,
+                                                 'cat': {'mu1': {'prob': 0.07625419304108505,
+                                                                 'omega': {'syn_mutations': 0.08764083251715918}},
+                                                         'mu2': {'prob': 0.20833135198746808,
+                                                                 'omega': {'syn_mutations': 0.08764083251715918,
+                                                                           'omega5': 0.1860029688703295}},
+                                                         'mu3': {'prob': 0.7154144549714468,
+                                                                 'omega': {'syn_mutations': 0.08764083251715918,
+                                                                           'omega4_omega1': 0.02750390009204871,
+                                                                           'omega1': 0.022345391732910336}}}},
+                                           'G': {'prob': 0.18749999999999997,
+                                                 'cat': {'mu1': {'prob': 0.07625419304108505,
+                                                                 'omega': {'syn_mutations': 0.08764083251715918}},
+                                                         'mu2': {'prob': 0.20833135198746808,
+                                                                 'omega': {'syn_mutations': 0.08764083251715918}},
+                                                         'mu3': {'prob': 0.7154144549714468,
+                                                                 'omega': {'syn_mutations': 0.08764083251715918}}}}}},
+                         'C': {'from_nt': {'A': {'prob': 0.18749999999999997,
+                                                 'cat': {'mu1': {'prob': 0.07625419304108505,
+                                                                 'omega': {'syn_mutations': 0.08764083251715918,
+                                                                           'omega2_omega3': 0.0405586967181372}},
+                                                         'mu2': {'prob': 0.20833135198746808,
+                                                                 'omega': {'syn_mutations': 0.08764083251715918}},
+                                                         'mu3': {'prob': 0.7154144549714468,
+                                                                 'omega': {'syn_mutations': 0.08764083251715918,
+                                                                           'omega1_omega5': 0.04742434643210488}}}},
+                                           'T': {'prob': 0.625,
+                                                 'cat': {'mu1': {'prob': 0.07625419304108505,
+                                                                 'omega': {'syn_mutations': 0.08764083251715918}},
+                                                         'mu2': {'prob': 0.20833135198746808,
+                                                                 'omega': {'syn_mutations': 0.08764083251715918}},
+                                                         'mu3': {'prob': 0.7154144549714468,
+                                                                 'omega': {'syn_mutations': 0.08764083251715918}}}},
+                                           'C': None,
+                                           'G': {'prob': 0.18749999999999997,
+                                                 'cat': {'mu1': {'prob': 0.07625419304108505,
+                                                                 'omega': {'syn_mutations': 0.08764083251715918}},
+                                                         'mu2': {'prob': 0.20833135198746808,
+                                                                 'omega': {'syn_mutations': 0.08764083251715918}},
+                                                         'mu3': {'prob': 0.7154144549714468,
+                                                                 'omega': {'syn_mutations': 0.08764083251715918}}}}}},
+                         'G': {'from_nt': {'A': {'prob': 0.625,
+                                                 'cat': {'mu1': {'prob': 0.07625419304108505,
+                                                                 'omega': {'syn_mutations': 0.08764083251715918,
+                                                                           'omega5_omega3': 0.15673495137522697}},
+                                                         'mu2': {'prob': 0.20833135198746808,
+                                                                 'omega': {'syn_mutations': 0.08764083251715918,
+                                                                           'omega1': 0.022345391732910336,
+                                                                           'omega3': 0.07385033532791384}},
+                                                         'mu3': {'prob': 0.7154144549714468,
+                                                                 'omega': {'syn_mutations': 0.08764083251715918}}}},
+                                           'T': {'prob': 0.18749999999999997,
+                                                 'cat': {'mu1': {'prob': 0.07625419304108505,
+                                                                 'omega': {'syn_mutations': 0.08764083251715918}},
+                                                         'mu2': {'prob': 0.20833135198746808,
+                                                                 'omega': {'syn_mutations': 0.08764083251715918}},
+                                                         'mu3': {'prob': 0.7154144549714468,
+                                                                 'omega': {'syn_mutations': 0.08764083251715918}}}},
+                                           'C': {'prob': 0.18749999999999997,
+                                                 'cat': {'mu1': {'prob': 0.07625419304108505,
+                                                                 'omega': {'syn_mutations': 0.08764083251715918,
+                                                                           'omega2_omega4': 0.05924399316528073,
+                                                                           'omega3': 0.07385033532791384}},
+                                                         'mu2': {'prob': 0.20833135198746808,
+                                                                 'omega': {'syn_mutations': 0.08764083251715918}},
+                                                         'mu3': {'prob': 0.7154144549714468,
+                                                                 'omega': {'syn_mutations': 0.08764083251715918,
+                                                                           'omega2': 0.048132455057992865}}}},
+                                           'G': None}}}}
+
+        result = self.sequence2.create_probability_tree()
+        print(result)
         self.assertEqual(expected, result)
 
     def testNtInEventTree(self):
@@ -394,6 +590,7 @@ class TestSequence3(unittest.TestCase):
         self.assertEqual(self.sequence3.omega_values, new_sequence3.omega_values)
         self.assertEqual(self.sequence3.cat_values, new_sequence3.cat_values)
         self.assertEqual(self.sequence3.is_circular, new_sequence3.is_circular)
+        self.assertEqual(self.sequence3.total_omegas, new_sequence3.total_omegas)
 
         # Event trees reference different Nucleotides, but the Nucleotides have the same states
         self.assertNotEqual(self.sequence3.event_tree, new_sequence3.event_tree)
@@ -408,9 +605,10 @@ class TestSequence3(unittest.TestCase):
             self.assertEqual(seq3_nt.pos_in_seq, new_nt.pos_in_seq)
             self.assertEqual(seq3_nt.complement_state, new_nt.complement_state)
             self.assertEqual(seq3_nt.rates, new_nt.rates)
-            self.assertEqual(seq3_nt.mutation_rate, new_nt.mutation_rate)
             self.assertEqual(seq3_nt.omega_keys, new_nt.omega_keys)
-            self.assertEqual(seq3_nt.categories_keys, new_nt.categories_keys)
+            self.assertEqual(seq3_nt.cat_keys, new_nt.cat_keys)
+            self.assertEqual(seq3_nt.omega_in_event_tree, new_nt.omega_in_event_tree)
+            self.assertEqual(seq3_nt.mutation_rate, new_nt.mutation_rate)
             self.assertEqual(str(seq3_nt.codons), str(new_nt.codons))
             self.assertEqual(len(seq3_nt.codons), len(new_nt.codons))
 
@@ -428,7 +626,7 @@ class TestSequence3(unittest.TestCase):
         self.assertEqual(expected, result)
 
     def testCreateEventTree(self):
-        expected = EMPTY_EVENT_TREE
+        expected = EMPTY_EVENT_TREE_MU_3
         result = self.sequence3.create_event_tree()
         self.assertEqual(expected, result)
 
@@ -445,7 +643,7 @@ class TestSequence3(unittest.TestCase):
 
         self.assertEqual(exp_sub_rates, nt.rates)
         self.assertEqual(exp_omega_keys, nt.omega_keys)
-        self.assertEqual(exp_cat_keys, nt.categories_keys)
+        self.assertEqual(exp_cat_keys, nt.cat_keys)
         self.assertEqual(exp_total_rate, nt.mutation_rate)
 
         # Tests a mutation in TGG at position 2
@@ -459,7 +657,7 @@ class TestSequence3(unittest.TestCase):
 
         self.assertEqual(exp_sub_rates, nt.rates)
         self.assertEqual(exp_omega_keys, nt.omega_keys)
-        self.assertEqual(exp_cat_keys, nt.categories_keys)
+        self.assertEqual(exp_cat_keys, nt.cat_keys)
         self.assertEqual(exp_total_rate, nt.mutation_rate)
 
         # Tests a synonymous mutation
@@ -473,7 +671,7 @@ class TestSequence3(unittest.TestCase):
 
         self.assertEqual(exp_sub_rates, nt.rates)
         self.assertEqual(exp_omega_keys, nt.omega_keys)
-        self.assertEqual(exp_cat_keys, nt.categories_keys)
+        self.assertEqual(exp_cat_keys, nt.cat_keys)
         self.assertEqual(exp_total_rate, nt.mutation_rate)
 
         # Tests a mutation that would destroy a STOP codon
@@ -487,7 +685,7 @@ class TestSequence3(unittest.TestCase):
 
         self.assertEqual(exp_sub_rates, nt.rates)
         self.assertEqual(exp_omega_keys, nt.omega_keys)
-        self.assertEqual(exp_cat_keys, nt.categories_keys)
+        self.assertEqual(exp_cat_keys, nt.cat_keys)
         self.assertEqual(exp_total_rate, nt.mutation_rate)
 
     def testIsTransv(self):
@@ -581,6 +779,7 @@ class TestSequence4(unittest.TestCase):
         self.assertEqual(self.sequence4.omega_values, new_sequence4.omega_values)
         self.assertEqual(self.sequence4.cat_values, new_sequence4.cat_values)
         self.assertEqual(self.sequence4.is_circular, new_sequence4.is_circular)
+        self.assertEqual(self.sequence4.total_omegas, new_sequence4.total_omegas)
 
         # Event trees reference different Nucleotides, but the Nucleotides have the same states
         self.assertNotEqual(self.sequence4.event_tree, new_sequence4.event_tree)
@@ -595,10 +794,10 @@ class TestSequence4(unittest.TestCase):
             self.assertEqual(seq4_nt.pos_in_seq, new_nt.pos_in_seq)
             self.assertEqual(seq4_nt.complement_state, new_nt.complement_state)
             self.assertEqual(seq4_nt.rates, new_nt.rates)
-            self.assertEqual(seq4_nt.mutation_rate, new_nt.mutation_rate)
             self.assertEqual(seq4_nt.omega_keys, new_nt.omega_keys)
-            self.assertEqual(seq4_nt.categories_keys, new_nt.categories_keys)
-
+            self.assertEqual(seq4_nt.cat_keys, new_nt.cat_keys)
+            self.assertEqual(seq4_nt.omega_in_event_tree, new_nt.omega_in_event_tree)
+            self.assertEqual(seq4_nt.mutation_rate, new_nt.mutation_rate)
             self.assertEqual(str(seq4_nt.codons), str(new_nt.codons))
             self.assertEqual(len(seq4_nt.codons), len(new_nt.codons))
 
@@ -616,7 +815,7 @@ class TestSequence4(unittest.TestCase):
         self.assertEqual(expected, result)
 
     def testCreateEventTree(self):
-        expected = EMPTY_EVENT_TREE
+        expected = EMPTY_EVENT_TREE_MU_4
         result = self.sequence4.create_event_tree()
         self.assertEqual(expected, result)
 
@@ -632,7 +831,7 @@ class TestSequence4(unittest.TestCase):
         exp_total_rate = 0.37984858304121133
         self.assertEqual(exp_sub_rates, nt.rates)
         self.assertEqual(exp_omega_keys, nt.omega_keys)
-        self.assertEqual(exp_cat_keys, nt.categories_keys)
+        self.assertEqual(exp_cat_keys, nt.cat_keys)
         self.assertEqual(exp_total_rate, nt.mutation_rate)
 
         # Tests mutation in internal methionine
@@ -645,7 +844,7 @@ class TestSequence4(unittest.TestCase):
         exp_total_rate = 1.4758438940247642
         self.assertEqual(exp_sub_rates, nt.rates)
         self.assertEqual(exp_omega_keys, nt.omega_keys)
-        self.assertEqual(exp_cat_keys, nt.categories_keys)
+        self.assertEqual(exp_cat_keys, nt.cat_keys)
         self.assertEqual(exp_total_rate, nt.mutation_rate)
 
     def testIsTransv(self):
@@ -729,28 +928,30 @@ class TestSequence5(unittest.TestCase):
         self.assertEqual(self.sequence5.omega_values, new_sequence5.omega_values)
         self.assertEqual(self.sequence5.cat_values, new_sequence5.cat_values)
         self.assertEqual(self.sequence5.is_circular, new_sequence5.is_circular)
+        self.assertEqual(self.sequence5.total_omegas, new_sequence5.total_omegas)
 
         # Event trees reference different Nucleotides, but the Nucleotides have the same states
         self.assertNotEqual(self.sequence5.event_tree, new_sequence5.event_tree)
         self.assertCountEqual(self.sequence5.event_tree, new_sequence5.event_tree)
 
         # Check that Nucleotides are different objects with the same attributes
-        for pos, seeq5_nt in enumerate(self.sequence5.nt_sequence):
+        for pos, seq5_nt in enumerate(self.sequence5.nt_sequence):
             new_nt = new_sequence5.nt_sequence[pos]
-            self.assertIsNot(seeq5_nt, new_nt)
+            self.assertIsNot(seq5_nt, new_nt)
 
-            self.assertEqual(seeq5_nt.state, new_nt.state)
-            self.assertEqual(seeq5_nt.pos_in_seq, new_nt.pos_in_seq)
-            self.assertEqual(seeq5_nt.complement_state, new_nt.complement_state)
-            self.assertEqual(seeq5_nt.rates, new_nt.rates)
-            self.assertEqual(seeq5_nt.mutation_rate, new_nt.mutation_rate)
-            self.assertEqual(seeq5_nt.omega_keys, new_nt.omega_keys)
-            self.assertEqual(seeq5_nt.categories_keys, new_nt.categories_keys)
-            self.assertEqual(str(seeq5_nt.codons), str(new_nt.codons))
-            self.assertEqual(len(seeq5_nt.codons), len(new_nt.codons))
+            self.assertEqual(seq5_nt.state, new_nt.state)
+            self.assertEqual(seq5_nt.pos_in_seq, new_nt.pos_in_seq)
+            self.assertEqual(seq5_nt.complement_state, new_nt.complement_state)
+            self.assertEqual(seq5_nt.rates, new_nt.rates)
+            self.assertEqual(seq5_nt.omega_keys, new_nt.omega_keys)
+            self.assertEqual(seq5_nt.cat_keys, new_nt.cat_keys)
+            self.assertEqual(seq5_nt.omega_in_event_tree, new_nt.omega_in_event_tree)
+            self.assertEqual(seq5_nt.mutation_rate, new_nt.mutation_rate)
+            self.assertEqual(str(seq5_nt.codons), str(new_nt.codons))
+            self.assertEqual(len(seq5_nt.codons), len(new_nt.codons))
 
             # Check that Codons are different objects with the same attributes
-            for i, codon in enumerate(seeq5_nt.codons):
+            for i, codon in enumerate(seq5_nt.codons):
                 new_codon = new_nt.codons[i]
                 self.assertIsNot(codon, new_codon)
                 self.assertEqual(codon.orf, new_codon.orf)
@@ -762,8 +963,8 @@ class TestSequence5(unittest.TestCase):
         result = Sequence.get_frequency_rates(str(self.sequence5))
         self.assertEqual(expected, result)
 
-    def testEventTree(self):
-        expected = EMPTY_EVENT_TREE
+    def testCreateEventTree(self):
+        expected = EMPTY_EVENT_TREE_MU_4
         result = self.sequence5.create_event_tree()
         self.assertEqual(expected, result)
 
@@ -778,7 +979,7 @@ class TestSequence5(unittest.TestCase):
         exp_total_rate = 0
         self.assertEqual(exp_sub_rates, nt.rates)
         self.assertEqual(exp_omega_keys, nt.omega_keys)
-        self.assertEqual(exp_cat_keys, nt.categories_keys)
+        self.assertEqual(exp_cat_keys, nt.cat_keys)
         self.assertEqual(exp_total_rate, nt.mutation_rate)
 
         # Tests mutations that would destroy a stop codon in +1 frame
@@ -786,12 +987,12 @@ class TestSequence5(unittest.TestCase):
         nt = self.sequence5.nt_sequence[9]
         self.sequence5.set_substitution_rates(nt)
         exp_sub_rates = {'A': 0.0, 'C': 0.0, 'G': 0.0, 'T': None}
-        exp_omega_keys = {'A': None, 'C': None, 'G': None, 'T': None}
-        exp_cat_keys = {'A': ['omega1'], 'C': ['omega1'], 'G': ['omega4'], 'T': None}
+        exp_omega_keys = {'A': [], 'C': [], 'G': [], 'T': None}
+        exp_cat_keys = {'A': 'mu1', 'C': 'mu1', 'G': 'mu1'}
         exp_total_rate = 0
         self.assertEqual(exp_sub_rates, nt.rates)
         self.assertEqual(exp_omega_keys, nt.omega_keys)
-        self.assertEqual(exp_cat_keys, nt.categories_keys)
+        self.assertEqual(exp_cat_keys, nt.cat_keys)
         self.assertEqual(exp_total_rate, nt.mutation_rate)
 
     def testIsTransv(self):
@@ -889,27 +1090,29 @@ class TestSequence6(unittest.TestCase):
         self.assertEqual(self.sequence6.omega_values, new_sequence6.omega_values)
         self.assertEqual(self.sequence6.cat_values, new_sequence6.cat_values)
         self.assertEqual(self.sequence6.is_circular, new_sequence6.is_circular)
+        self.assertEqual(self.sequence6.total_omegas, new_sequence6.total_omegas)
 
         # Event trees reference different Nucleotides, but the Nucleotides have the same states
         self.assertNotEqual(self.sequence6.event_tree, new_sequence6.event_tree)
         self.assertCountEqual(self.sequence6.event_tree, new_sequence6.event_tree)
 
         # Check that Nucleotides are different objects with the same attributes
-        for pos, nt in enumerate(self.sequence6.nt_sequence):
+        for pos, seq6_nt in enumerate(self.sequence6.nt_sequence):
             new_nt = new_sequence6.nt_sequence[pos]
-            self.assertIsNot(nt, new_nt)
-            self.assertEqual(nt.state, new_nt.state)
-            self.assertEqual(nt.pos_in_seq, new_nt.pos_in_seq)
-            self.assertEqual(nt.complement_state, new_nt.complement_state)
-            self.assertEqual(nt.rates, new_nt.rates)
-            self.assertEqual(nt.mutation_rate, new_nt.mutation_rate)
-            self.assertEqual(nt.omega_keys, new_nt.omega_keys)
-            self.assertEqual(nt.categories_keys, new_nt.categories_keys)
-            self.assertEqual(str(nt.codons), str(new_nt.codons))
-            self.assertEqual(len(nt.codons), len(new_nt.codons))
+            self.assertIsNot(seq6_nt, new_nt)
+            self.assertEqual(seq6_nt.state, new_nt.state)
+            self.assertEqual(seq6_nt.pos_in_seq, new_nt.pos_in_seq)
+            self.assertEqual(seq6_nt.complement_state, new_nt.complement_state)
+            self.assertEqual(seq6_nt.rates, new_nt.rates)
+            self.assertEqual(seq6_nt.omega_keys, new_nt.omega_keys)
+            self.assertEqual(seq6_nt.cat_keys, new_nt.cat_keys)
+            self.assertEqual(seq6_nt.omega_in_event_tree, new_nt.omega_in_event_tree)
+            self.assertEqual(seq6_nt.mutation_rate, new_nt.mutation_rate)
+            self.assertEqual(str(seq6_nt.codons), str(new_nt.codons))
+            self.assertEqual(len(seq6_nt.codons), len(new_nt.codons))
 
             # Check that Codons are different objects with the same attributes
-            for i, codon in enumerate(nt.codons):
+            for i, codon in enumerate(seq6_nt.codons):
                 new_codon = new_nt.codons[i]
                 self.assertIsNot(codon, new_codon)
                 self.assertEqual(codon.orf, new_codon.orf)
@@ -922,7 +1125,7 @@ class TestSequence6(unittest.TestCase):
         self.assertEqual(expected, result)
 
     def testCreateEventTree(self):
-        expected = EMPTY_EVENT_TREE
+        expected = EMPTY_EVENT_TREE_MU_3
         result = self.sequence6.create_event_tree()
         self.assertEqual(expected, result)
 
@@ -938,7 +1141,7 @@ class TestSequence6(unittest.TestCase):
         exp_total_rate = 0.3986444027807081
         self.assertEqual(exp_sub_rates, nt.rates)
         self.assertEqual(exp_omega_keys, nt.omega_keys)
-        self.assertEqual(exp_cat_keys, nt.categories_keys)
+        self.assertEqual(exp_cat_keys, nt.cat_keys)
         self.assertEqual(exp_total_rate, nt.mutation_rate)
 
         # Tests internal methionine
@@ -951,7 +1154,7 @@ class TestSequence6(unittest.TestCase):
         exp_total_rate = 1.7334158423505746
         self.assertEqual(exp_sub_rates, nt.rates)
         self.assertEqual(exp_omega_keys, nt.omega_keys)
-        self.assertEqual(exp_cat_keys, nt.categories_keys)
+        self.assertEqual(exp_cat_keys, nt.cat_keys)
         self.assertEqual(exp_total_rate, nt.mutation_rate)
 
     def testIsTransv(self):
