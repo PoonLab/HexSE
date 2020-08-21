@@ -282,9 +282,9 @@ def discretize(alpha, ncat, dist):
     """
 
     if dist == ss.gamma:
-        dist = dist(alpha, scale=1 / alpha, loc=0)
+        dist = dist(alpha, scale=0.4)
     elif dist == ss.lognorm:
-        dist = dist(s=alpha, scale=np.exp(0.05 * alpha**2), loc= 0)
+        dist = dist(s=alpha, scale=0.5 )  # scale=np.exp(0.05 * alpha**2)
     quantiles = dist.ppf(np.arange(0, ncat) / ncat)
     rates = np.zeros(ncat, dtype=np.double)
     for i in range(ncat-1):
