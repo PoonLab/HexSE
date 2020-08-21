@@ -284,7 +284,7 @@ class Sequence:
     def set_substitution_rates(self, nt):
         """
         Calculates substitution rates of a nucleotide
-        Sets the sub-rates, omega values, rate classes, and totoal mutation rate of a Nucleotide
+        Sets the sub-rates, omega values, rate classes, and total mutation rate of a Nucleotide
         :param nt: object of class Nucleotide
         """
         current_nt = nt.state
@@ -315,8 +315,8 @@ class Sequence:
 
                             # Apply omega when mutation is non-synonymous
                             if codon.is_nonsyn(pos_in_codon, to_nt):
-                                selected_omega = random.choice(
-                                    list(self.omega_values))  # Radomly select a key in the omega values dictionary
+                                # Randomly select a key in the omega values dictionary
+                                selected_omega = random.choice(list(self.omega_values))
                                 sub_rates[to_nt] *= self.omega_values[selected_omega]
                                 chosen_omegas.append(selected_omega)
 
@@ -365,16 +365,20 @@ class Sequence:
             if to_nt != current_nt:
 
                 if not self.is_start_stop_codon(nt, to_nt):
-                    omega_cat = "_".join(
-                        nt.omega_keys[to_nt])  # Create one nucleotide key with all the omegas for that substitution
+                    # Create one nucleotide key with all the omegas for that substitution
+                    omega_cat = "_".join(nt.omega_keys[to_nt])
                     category = nt.cat_keys[to_nt]
                     cat_branch = self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['category'][category]
 
                     # Store nucleotide according to omega keys
                     if omega_cat:  # substitution is nonsyn for at least one codon
                         nt_omega_in_tree[to_nt] = omega_cat  # Store string in the nucleotide dict for omega on the tree
+
                         if omega_cat in cat_branch:  # Omega class is already created on the Event Tree
-                            cat_branch[omega_cat].append(nt)
+                            # Check if nucleotide is already in the branch
+                            if nt not in cat_branch[omega_cat]:
+                                cat_branch[omega_cat].append(nt)
+
                         else:  # Create the new omega class
                             cat_branch[omega_cat] = [nt]
                             new_omega_key[to_nt] = {'cat': category, 'new_omega': omega_cat}
@@ -383,8 +387,8 @@ class Sequence:
                                 value = 1
                                 for cat in nt.omega_keys[to_nt]:
                                     value *= self.omega_values[cat]
-                                self.total_omegas[
-                                    omega_cat] = value  # Store key of combined omegas, and their multiplied value
+                                # Store key of combined omegas, and their multiplied value
+                                self.total_omegas[omega_cat] = value
 
                     else:  # Mutation is syn in all Codons
                         cat_branch['syn_mutations'].append(nt)

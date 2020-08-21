@@ -258,11 +258,303 @@ class TestSequence1(unittest.TestCase):
         result = self.sequence1.is_start_stop_codon(nt, 'C')
         self.assertEqual(expected, result)
 
-    def testNtInEventTree(self):
-        pass
+    def testCreateProbabilityTree(self):
+        expected = {'to_nt':
+                    {'A': {'from_nt':
+                           {'A': None,
+                            'T': {'prob': 0.18749999999999997,
+                                  'cat': {'mu1': {'prob': 0.04701719357592987,
+                                                  'omega': {'syn_mutations': 0.1999999999999997,
+                                                            'omega4': 0.39634438906547004}},
+                                          'mu2': {'prob': 0.11163806035536104,
+                                                  'omega': {'syn_mutations': 0.1999999999999997,
+                                                            'omega4': 0.39634438906547004}},
+                                          'mu3': {'prob': 0.21374220928782836,
+                                                  'omega': {'syn_mutations': 0.1999999999999997,
+                                                            'omega3': 0.2139979324781974}},
+                                          'mu4': {'prob': 0.6276025367808807,
+                                                  'omega': {'syn_mutations': 0.1999999999999997,
+                                                            'omega4': 0.39634438906547004}}}},
+                            'C': {'prob': 0.18749999999999997,
+                                  'cat': {'mu1': {'prob': 0.04701719357592987,
+                                                  'omega': {'syn_mutations': 0.1999999999999997}},
+                                          'mu2': {'prob': 0.11163806035536104,
+                                                  'omega': {'syn_mutations': 0.1999999999999997,
+                                                            'omega2': 0.1310027352316301,
+                                                            'omega1': 0.058654943224702785}},
+                                          'mu3': {'prob': 0.21374220928782836,
+                                                  'omega': {'syn_mutations': 0.1999999999999997}},
+                                          'mu4': {'prob': 0.6276025367808807,
+                                                  'omega': {'syn_mutations': 0.1999999999999997}}}},
+                            'G': {'prob': 0.625,
+                                  'cat': {'mu1': {'prob': 0.04701719357592987,
+                                                  'omega': {'syn_mutations': 0.1999999999999997,
+                                                            'omega2': 0.1310027352316301}},
+                                          'mu2': {'prob': 0.11163806035536104,
+                                                  'omega': {'syn_mutations': 0.1999999999999997,
+                                                            'omega2': 0.1310027352316301}},
+                                          'mu3': {'prob': 0.21374220928782836,
+                                                  'omega': {'syn_mutations': 0.1999999999999997,
+                                                            'omega1': 0.058654943224702785}},
+                                          'mu4': {'prob': 0.6276025367808807,
+                                                  'omega': {'syn_mutations': 0.1999999999999997,
+                                                            'omega3': 0.2139979324781974}}}}}},
+                     'T': {'from_nt':
+                           {'A': {'prob': 0.18749999999999997,
+                                  'cat': {'mu1': {'prob': 0.04701719357592987,
+                                                  'omega': {'syn_mutations': 0.1999999999999997}},
+                                          'mu2': {'prob': 0.11163806035536104,
+                                                  'omega': {'syn_mutations': 0.1999999999999997,
+                                                            'omega2': 0.1310027352316301}},
+                                          'mu3': {'prob': 0.21374220928782836,
+                                                  'omega': {'syn_mutations': 0.1999999999999997,
+                                                            'omega1': 0.058654943224702785}},
+                                          'mu4': {'prob': 0.6276025367808807,
+                                                  'omega': {'syn_mutations': 0.1999999999999997,
+                                                            'omega4': 0.39634438906547004}}}},
+                            'T': None,
+                            'C': {'prob': 0.625,
+                                  'cat': {'mu1': {'prob': 0.04701719357592987,
+                                                  'omega': {'syn_mutations': 0.1999999999999997,
+                                                            'omega1': 0.058654943224702785}},
+                                          'mu2': {'prob': 0.11163806035536104,
+                                                  'omega': {'syn_mutations': 0.1999999999999997,
+                                                            'omega1': 0.058654943224702785}},
+                                          'mu3': {'prob': 0.21374220928782836,
+                                                  'omega': {'syn_mutations': 0.1999999999999997}},
+                                          'mu4': {'prob': 0.6276025367808807,
+                                                  'omega': {'syn_mutations': 0.1999999999999997}}}},
+                            'G': {'prob': 0.18749999999999997,
+                                  'cat': {'mu1': {'prob': 0.04701719357592987,
+                                                  'omega': {'syn_mutations': 0.1999999999999997,
+                                                            'omega3': 0.2139979324781974}},
+                                          'mu2': {'prob': 0.11163806035536104,
+                                                  'omega': {'syn_mutations': 0.1999999999999997,
+                                                            'omega3': 0.2139979324781974}},
+                                          'mu3': {'prob': 0.21374220928782836,
+                                                  'omega': {'syn_mutations': 0.1999999999999997,
+                                                            'omega2': 0.1310027352316301,
+                                                            'omega1': 0.058654943224702785}},
+                                          'mu4': {'prob': 0.6276025367808807,
+                                                  'omega': {'syn_mutations': 0.1999999999999997}}}}}},
+                     'C': {'from_nt':
+                           {'A': {'prob': 0.18749999999999997,
+                                  'cat': {'mu1': {'prob': 0.04701719357592987,
+                                                  'omega': {'syn_mutations': 0.1999999999999997,
+                                                            'omega3': 0.2139979324781974}},
+                                          'mu2': {'prob': 0.11163806035536104,
+                                                  'omega': {'syn_mutations': 0.1999999999999997}},
+                                          'mu3': {'prob': 0.21374220928782836,
+                                                  'omega': {'syn_mutations': 0.1999999999999997,
+                                                            'omega2': 0.1310027352316301}},
+                                          'mu4': {'prob': 0.6276025367808807,
+                                                  'omega': {'syn_mutations': 0.1999999999999997,
+                                                            'omega1': 0.058654943224702785}}}},
+                            'T': {'prob': 0.625,
+                                  'cat': {'mu1': {'prob': 0.04701719357592987,
+                                                  'omega': {'syn_mutations': 0.1999999999999997,
+                                                            'omega3': 0.2139979324781974,
+                                                            'omega2': 0.1310027352316301}},
+                                          'mu2': {'prob': 0.11163806035536104,
+                                                  'omega': {'syn_mutations': 0.1999999999999997,
+                                                            'omega1': 0.058654943224702785}},
+                                          'mu3': {'prob': 0.21374220928782836,
+                                                  'omega': {'syn_mutations': 0.1999999999999997}},
+                                          'mu4': {'prob': 0.6276025367808807,
+                                                  'omega': {'syn_mutations': 0.1999999999999997}}}},
+                            'C': None,
+                            'G': {'prob': 0.18749999999999997,
+                                  'cat': {'mu1': {'prob': 0.04701719357592987,
+                                                  'omega': {'syn_mutations': 0.1999999999999997,
+                                                            'omega3': 0.2139979324781974}},
+                                          'mu2': {'prob': 0.11163806035536104,
+                                                  'omega': {'syn_mutations': 0.1999999999999997}},
+                                          'mu3': {'prob': 0.21374220928782836,
+                                                  'omega': {'syn_mutations': 0.1999999999999997,
+                                                            'omega2': 0.1310027352316301}},
+                                          'mu4': {'prob': 0.6276025367808807,
+                                                  'omega': {'syn_mutations': 0.1999999999999997,
+                                                            'omega4': 0.39634438906547004,
+                                                            'omega3': 0.2139979324781974}}}}}},
+                     'G': {'from_nt':
+                           {'A': {'prob': 0.625,
+                                  'cat': {'mu1': {'prob': 0.04701719357592987,
+                                                  'omega': {'syn_mutations': 0.1999999999999997}},
+                                          'mu2': {'prob': 0.11163806035536104,
+                                                  'omega': {'syn_mutations': 0.1999999999999997}},
+                                          'mu3': {'prob': 0.21374220928782836,
+                                                  'omega': {'syn_mutations': 0.1999999999999997}},
+                                          'mu4': {'prob': 0.6276025367808807,
+                                                  'omega': {'syn_mutations': 0.1999999999999997,
+                                                            'omega3': 0.2139979324781974,
+                                                            'omega4': 0.39634438906547004,
+                                                            'omega2': 0.1310027352316301}}}},
+                            'T': {'prob': 0.18749999999999997,
+                                  'cat': {'mu1': {'prob': 0.04701719357592987,
+                                                  'omega': {'syn_mutations': 0.1999999999999997,
+                                                            'omega4': 0.39634438906547004}},
+                                          'mu2': {'prob': 0.11163806035536104,
+                                                  'omega': {'syn_mutations': 0.1999999999999997,
+                                                            'omega4': 0.39634438906547004,
+                                                            'omega2': 0.1310027352316301}},
+                                          'mu3': {'prob': 0.21374220928782836,
+                                                  'omega': {'syn_mutations': 0.1999999999999997,
+                                                            'omega4': 0.39634438906547004}},
+                                          'mu4': {'prob': 0.6276025367808807,
+                                                  'omega': {'syn_mutations': 0.1999999999999997}}}},
+                            'C': {'prob': 0.18749999999999997,
+                                  'cat': {'mu1': {'prob': 0.04701719357592987,
+                                                  'omega': {'syn_mutations': 0.1999999999999997,
+                                                            'omega2': 0.1310027352316301}},
+                                          'mu2': {'prob': 0.11163806035536104,
+                                                  'omega': {'syn_mutations': 0.1999999999999997,
+                                                            'omega4': 0.39634438906547004,
+                                                            'omega1': 0.058654943224702785}},
+                                          'mu3': {'prob': 0.21374220928782836,
+                                                  'omega': {'syn_mutations': 0.1999999999999997,
+                                                            'omega4': 0.39634438906547004}},
+                                          'mu4': {'prob': 0.6276025367808807,
+                                                  'omega': {'syn_mutations': 0.1999999999999997}}}},
+                            'G': None}}}}
+        result = self.sequence1.create_probability_tree()
+        self.assertEqual(expected, result)
 
-    def testMutationRate(self):
-        pass
+    def testNtInEventTree(self):
+        random.seed(9001)
+
+        g0 = self.sequence1.nt_sequence[0]
+        t1 = self.sequence1.nt_sequence[1]
+        a2 = self.sequence1.nt_sequence[2]
+        c3 = self.sequence1.nt_sequence[3]
+        g4 = self.sequence1.nt_sequence[4]
+        a5 = self.sequence1.nt_sequence[5]
+        t6 = self.sequence1.nt_sequence[6]
+        c7 = self.sequence1.nt_sequence[7]
+        g8 = self.sequence1.nt_sequence[8]
+        a9 = self.sequence1.nt_sequence[9]
+        t10 = self.sequence1.nt_sequence[10]
+        c11 = self.sequence1.nt_sequence[11]
+        g12 = self.sequence1.nt_sequence[12]
+        a13 = self.sequence1.nt_sequence[13]
+        t14 = self.sequence1.nt_sequence[14]
+        g15 = self.sequence1.nt_sequence[15]
+        c16 = self.sequence1.nt_sequence[16]
+        t17 = self.sequence1.nt_sequence[17]
+        a18 = self.sequence1.nt_sequence[18]
+        g19 = self.sequence1.nt_sequence[19]
+        c20 = self.sequence1.nt_sequence[20]
+
+        exp_event_tree = {'to_nt':
+                          {'A': {'from_nt':
+                                 {'A': None,
+                                  'T': {'category': {'mu1': {'syn_mutations': [],
+                                                             'omega4': [t6]},
+                                                     'mu2': {'syn_mutations': [t17],
+                                                             'omega4': [t14]},
+                                                     'mu3': {'syn_mutations': [],
+                                                             'omega3': [t1]},
+                                                     'mu4': {'syn_mutations': [],
+                                                             'omega4': [t10]}}},
+                                  'C': {'category': {'mu1': {'syn_mutations': [c11]},
+                                                     'mu2': {'syn_mutations': [c3],
+                                                             'omega2': [c16],
+                                                             'omega1': [c20]},
+                                                     'mu3': {'syn_mutations': []},
+                                                     'mu4': {'syn_mutations': []}}},
+                                  'G': {'category': {'mu1': {'syn_mutations': [],
+                                                             'omega2': [g15]},
+                                                     'mu2': {'syn_mutations': [],
+                                                             'omega2': [g4, g19]},
+                                                     'mu3': {'syn_mutations': [g8],
+                                                             'omega1': [g0]},
+                                                     'mu4': {'syn_mutations': [],
+                                                             'omega3': [g12]}}}}},
+                           'T': {'from_nt':
+                                 {'A': {'category': {'mu1': {'syn_mutations': [a5]},
+                                                     'mu2': {'syn_mutations': [a2],
+                                                             'omega2': [a13]},
+                                                     'mu3': {'syn_mutations': [],
+                                                             'omega1': [a9]},
+                                                     'mu4': {'syn_mutations': [],
+                                                             'omega4': [a18]}}},
+                                  'T': None,
+                                  'C': {'category': {'mu1': {'syn_mutations': [],
+                                                             'omega1': [c16]},
+                                                     'mu2': {'syn_mutations': [c20],
+                                                             'omega1': [c7]},
+                                                     'mu3': {'syn_mutations': [c11]},
+                                                     'mu4': {'syn_mutations': []}}},
+                                  'G': {'category': {'mu1': {'syn_mutations': [],
+                                                             'omega3': [g0]},
+                                                     'mu2': {'syn_mutations': [],
+                                                             'omega3': [g4]},
+                                                     'mu3': {'syn_mutations': [g8],
+                                                             'omega2': [g12, g15],
+                                                             'omega1': [g19]},
+                                                     'mu4': {'syn_mutations': []}}}}},
+                           'C': {'from_nt':
+                                 {'A': {'category': {'mu1': {'syn_mutations': [],
+                                                             'omega3': [a9]},
+                                                     'mu2': {'syn_mutations': []},
+                                                     'mu3': {'syn_mutations': [a5],
+                                                             'omega2': [a18]},
+                                                     'mu4': {'syn_mutations': [a2],
+                                                             'omega1': [a13]}}},
+                                  'T': {'category': {'mu1': {'syn_mutations': [],
+                                                             'omega3': [t1],
+                                                             'omega2': [t6]},
+                                                     'mu2': {'syn_mutations': [t14],
+                                                             'omega1': [t10]},
+                                                     'mu3': {'syn_mutations': []},
+                                                     'mu4': {'syn_mutations': [t17]}}},
+                                  'C': None,
+                                  'G': {'category': {'mu1': {'syn_mutations': [],
+                                                             'omega3': [g0]},
+                                                     'mu2': {'syn_mutations': []},
+                                                     'mu3': {'syn_mutations': [g8],
+                                                             'omega2': [g12]},
+                                                     'mu4': {'syn_mutations': [],
+                                                             'omega4': [g4, g19],
+                                                             'omega3': [g15]}}}}},
+                           'G': {'from_nt':
+                                 {'A': {'category': {'mu1': {'syn_mutations': []},
+                                                     'mu2': {'syn_mutations': []},
+                                                     'mu3': {'syn_mutations': []},
+                                                     'mu4': {'syn_mutations': [a2, a5],
+                                                             'omega3': [a9],
+                                                             'omega4': [a13],
+                                                             'omega2': [a18]}}},
+                                  'T': {'category': {'mu1': {'syn_mutations': [],
+                                                             'omega4': [t10]},
+                                                     'mu2': {'syn_mutations': [],
+                                                             'omega4': [t1],
+                                                             'omega2': [t14]},
+                                                     'mu3': {'syn_mutations': [t17],
+                                                             'omega4': [t6]},
+                                                     'mu4': {'syn_mutations': []}}},
+                                  'C': {'category': {'mu1': {'syn_mutations': [],
+                                                             'omega2': [c20]},
+                                                     'mu2': {'syn_mutations': [],
+                                                             'omega4': [c3],
+                                                             'omega1': [c11, c16]},
+                                                     'mu3': {'syn_mutations': [],
+                                                             'omega4': [c7]},
+                                                     'mu4': {'syn_mutations': []}}},
+                                  'G': None}}}}
+
+        res_omega_key = self.sequence1.nt_in_event_tree(g0)
+        self.assertEqual(exp_event_tree, self.sequence1.event_tree)
+
+        # No new omega keys are created initially
+        self.assertEqual({}, res_omega_key)
+
+        # Only 4 possible omegas because there is only 1 ORF
+        self.assertEqual(OMEGA_VALUES_4, self.sequence1.total_omegas)
+
+    def testCountNtsOnEventTree(self):
+        exp_count = 61
+        res_count = self.sequence1.count_nts_on_event_tree()
+        self.assertEqual(exp_count, res_count)
 
 
 class TestSequence2(unittest.TestCase):
@@ -373,15 +665,29 @@ class TestSequence2(unittest.TestCase):
         self.assertEqual(exp_cat_keys, nt.cat_keys)
         self.assertEqual(exp_total_rate, nt.mutation_rate)
 
-        # Non-synonymous mutation in both (+) and (-) strands
+        # Mutation in STOP codon on reverse strand ORF
         random.seed(4001)  # Set seed value to initialize pseudo-random number generator
         nt = self.sequence2.nt_sequence[4]
         self.sequence2.set_substitution_rates(nt)
-        exp_sub_rates = {'A': None, 'C': 0.09666062791987462, 'G': 0.32220209306624875, 'T': 0.13672268277658034}
-        # FIXME (maybe??): same omega values used, but different keys
-        exp_omega_keys = {'A': None, 'C': ['omega4', 'omega2'], 'G': ['omega2', 'omega4'], 'T': ['omega4', 'omega5']}
-        exp_cat_keys = {'C': 'mu2', 'G': 'mu2', 'T': 'mu1'}
-        exp_total_rate = 0.5555854037627037
+        exp_sub_rates = {'A': None, 'C': 0.0, 'G': 0.0, 'T': 0.0}
+        exp_omega_keys = {'A': None, 'C': [], 'G': [], 'T': []}
+        exp_cat_keys = {'C': 'mu2', 'G': 'mu3', 'T': 'mu1'}
+        exp_total_rate = 0.0
+        self.assertEqual(exp_sub_rates, nt.rates)
+        self.assertEqual(exp_omega_keys, nt.omega_keys)
+        self.assertEqual(exp_cat_keys, nt.cat_keys)
+        self.assertEqual(exp_total_rate, nt.mutation_rate)
+
+        # Non-synonymous mutation in both (+) and (-) strands
+        random.seed(4001)
+        nt = self.sequence2.nt_sequence[10]
+        self.sequence2.set_substitution_rates(nt)
+        exp_sub_rates = {'A': 0.037346151696315194, 'C': None,
+                         'G': 0.037346151696315194, 'T': 0.17608224296983835}
+        exp_omega_keys = {'A': ['omega4', 'omega2'],  'C': None,
+                          'G': ['omega2', 'omega4'],  'T': ['omega4', 'omega5']}
+        exp_cat_keys = {'A': 'mu2', 'G': 'mu2', 'T': 'mu1'}
+        exp_total_rate = 0.25077454636246876
         self.assertEqual(exp_sub_rates, nt.rates)
         self.assertEqual(exp_omega_keys, nt.omega_keys)
         self.assertEqual(exp_cat_keys, nt.cat_keys)
@@ -434,121 +740,209 @@ class TestSequence2(unittest.TestCase):
 
     def testCreateProbabilityTree(self):
         expected = {'to_nt':
-                        {'A': {'from_nt': {'A': None,
-                                           'T':
-                                               {'prob': 0.18749999999999997,
-                                                'cat': {'mu1': {'prob': 0.07625419304108505,
-                                                                'omega': {'syn_mutations': 0.08764083251715918}},
-                                                        'mu2': {'prob': 0.20833135198746808,
-                                                                'omega': {'syn_mutations': 0.08764083251715918}},
-                                                        'mu3': {'prob': 0.7154144549714468,
-                                                                'omega': {'syn_mutations': 0.08764083251715918}}}},
-                                           'C': {'prob': 0.18749999999999997,
-                                                 'cat': {'mu1': {'prob': 0.07625419304108505,
-                                                                 'omega': {'syn_mutations': 0.08764083251715918}},
-                                                         'mu2': {'prob': 0.20833135198746808,
-                                                                 'omega': {'syn_mutations': 0.08764083251715918,
-                                                                           'omega1': 0.022345391732910336}},
-                                                         'mu3': {'prob': 0.7154144549714468,
-                                                                 'omega': {'syn_mutations': 0.08764083251715918,
-                                                                           'omega5_omega2': 0.10215306361964918,
-                                                                           'omega2': 0.048132455057992865}}}},
-                                           'G': {'prob': 0.625,
-                                                 'cat': {'mu1': {'prob': 0.07625419304108505,
-                                                                 'omega': {'syn_mutations': 0.08764083251715918}},
-                                                         'mu2': {'prob': 0.20833135198746808,
-                                                                 'omega': {'syn_mutations': 0.08764083251715918}},
-                                                         'mu3': {'prob': 0.7154144549714468,
-                                                                 'omega': {'syn_mutations': 0.08764083251715918}}}}}},
-                         'T': {'from_nt': {'A': {'prob': 0.18749999999999997,
-                                                 'cat': {'mu1': {'prob': 0.07625419304108505,
-                                                                 'omega': {'syn_mutations': 0.08764083251715918,
-                                                                           'omega2_omega5': 0.10215306361964918}},
-                                                         'mu2': {'prob': 0.20833135198746808,
-                                                                 'omega': {'syn_mutations': 0.08764083251715918,
-                                                                           'omega1_omega1': 0.0056973047534601695}},
-                                                         'mu3': {'prob': 0.7154144549714468,
-                                                                 'omega': {'syn_mutations': 0.08764083251715918}}}},
-                                           'T': None,
-                                           'C': {'prob': 0.625,
-                                                 'cat': {'mu1': {'prob': 0.07625419304108505,
-                                                                 'omega': {'syn_mutations': 0.08764083251715918}},
-                                                         'mu2': {'prob': 0.20833135198746808,
-                                                                 'omega': {'syn_mutations': 0.08764083251715918,
-                                                                           'omega5': 0.1860029688703295}},
-                                                         'mu3': {'prob': 0.7154144549714468,
-                                                                 'omega': {'syn_mutations': 0.08764083251715918,
-                                                                           'omega4_omega1': 0.02750390009204871,
-                                                                           'omega1': 0.022345391732910336}}}},
-                                           'G': {'prob': 0.18749999999999997,
-                                                 'cat': {'mu1': {'prob': 0.07625419304108505,
-                                                                 'omega': {'syn_mutations': 0.08764083251715918}},
-                                                         'mu2': {'prob': 0.20833135198746808,
-                                                                 'omega': {'syn_mutations': 0.08764083251715918}},
-                                                         'mu3': {'prob': 0.7154144549714468,
-                                                                 'omega': {'syn_mutations': 0.08764083251715918}}}}}},
-                         'C': {'from_nt': {'A': {'prob': 0.18749999999999997,
-                                                 'cat': {'mu1': {'prob': 0.07625419304108505,
-                                                                 'omega': {'syn_mutations': 0.08764083251715918,
-                                                                           'omega2_omega3': 0.0405586967181372}},
-                                                         'mu2': {'prob': 0.20833135198746808,
-                                                                 'omega': {'syn_mutations': 0.08764083251715918}},
-                                                         'mu3': {'prob': 0.7154144549714468,
-                                                                 'omega': {'syn_mutations': 0.08764083251715918,
-                                                                           'omega1_omega5': 0.04742434643210488}}}},
-                                           'T': {'prob': 0.625,
-                                                 'cat': {'mu1': {'prob': 0.07625419304108505,
-                                                                 'omega': {'syn_mutations': 0.08764083251715918}},
-                                                         'mu2': {'prob': 0.20833135198746808,
-                                                                 'omega': {'syn_mutations': 0.08764083251715918}},
-                                                         'mu3': {'prob': 0.7154144549714468,
-                                                                 'omega': {'syn_mutations': 0.08764083251715918}}}},
-                                           'C': None,
-                                           'G': {'prob': 0.18749999999999997,
-                                                 'cat': {'mu1': {'prob': 0.07625419304108505,
-                                                                 'omega': {'syn_mutations': 0.08764083251715918}},
-                                                         'mu2': {'prob': 0.20833135198746808,
-                                                                 'omega': {'syn_mutations': 0.08764083251715918}},
-                                                         'mu3': {'prob': 0.7154144549714468,
-                                                                 'omega': {'syn_mutations': 0.08764083251715918}}}}}},
-                         'G': {'from_nt': {'A': {'prob': 0.625,
-                                                 'cat': {'mu1': {'prob': 0.07625419304108505,
-                                                                 'omega': {'syn_mutations': 0.08764083251715918,
-                                                                           'omega5_omega3': 0.15673495137522697}},
-                                                         'mu2': {'prob': 0.20833135198746808,
-                                                                 'omega': {'syn_mutations': 0.08764083251715918,
-                                                                           'omega1': 0.022345391732910336,
-                                                                           'omega3': 0.07385033532791384}},
-                                                         'mu3': {'prob': 0.7154144549714468,
-                                                                 'omega': {'syn_mutations': 0.08764083251715918}}}},
-                                           'T': {'prob': 0.18749999999999997,
-                                                 'cat': {'mu1': {'prob': 0.07625419304108505,
-                                                                 'omega': {'syn_mutations': 0.08764083251715918}},
-                                                         'mu2': {'prob': 0.20833135198746808,
-                                                                 'omega': {'syn_mutations': 0.08764083251715918}},
-                                                         'mu3': {'prob': 0.7154144549714468,
-                                                                 'omega': {'syn_mutations': 0.08764083251715918}}}},
-                                           'C': {'prob': 0.18749999999999997,
-                                                 'cat': {'mu1': {'prob': 0.07625419304108505,
-                                                                 'omega': {'syn_mutations': 0.08764083251715918,
-                                                                           'omega2_omega4': 0.05924399316528073,
-                                                                           'omega3': 0.07385033532791384}},
-                                                         'mu2': {'prob': 0.20833135198746808,
-                                                                 'omega': {'syn_mutations': 0.08764083251715918}},
-                                                         'mu3': {'prob': 0.7154144549714468,
-                                                                 'omega': {'syn_mutations': 0.08764083251715918,
-                                                                           'omega2': 0.048132455057992865}}}},
-                                           'G': None}}}}
-
+                    {'A': {'from_nt':
+                           {'A': None,
+                            'T':
+                                {'prob': 0.18749999999999997,
+                                 'cat': {'mu1': {'prob': 0.07625419304108505,
+                                                 'omega': {'syn_mutations': 0.08764083251715918}},
+                                         'mu2': {'prob': 0.20833135198746808,
+                                                 'omega': {'syn_mutations': 0.08764083251715918}},
+                                         'mu3': {'prob': 0.7154144549714468,
+                                                 'omega': {'syn_mutations': 0.08764083251715918}}}},
+                            'C': {'prob': 0.18749999999999997,
+                                  'cat': {'mu1': {'prob': 0.07625419304108505,
+                                                  'omega': {'syn_mutations': 0.08764083251715918}},
+                                          'mu2': {'prob': 0.20833135198746808,
+                                                  'omega': {'syn_mutations': 0.08764083251715918,
+                                                            'omega1': 0.022345391732910336}},
+                                          'mu3': {'prob': 0.7154144549714468,
+                                                  'omega': {'syn_mutations': 0.08764083251715918,
+                                                            'omega2_omega5': 0.10215306361964918,
+                                                            'omega2': 0.048132455057992865}}}},
+                            'G': {'prob': 0.625,
+                                  'cat': {'mu1': {'prob': 0.07625419304108505,
+                                                  'omega': {'syn_mutations': 0.08764083251715918}},
+                                          'mu2': {'prob': 0.20833135198746808,
+                                                  'omega': {'syn_mutations': 0.08764083251715918}},
+                                          'mu3': {'prob': 0.7154144549714468,
+                                                  'omega': {'syn_mutations': 0.08764083251715918}}}}}},
+                     'T': {'from_nt': {'A': {'prob': 0.18749999999999997,
+                                             'cat': {'mu1': {'prob': 0.07625419304108505,
+                                                             'omega': {'syn_mutations': 0.08764083251715918,
+                                                                       'omega2_omega5': 0.10215306361964918}},
+                                                     'mu2': {'prob': 0.20833135198746808,
+                                                             'omega': {'syn_mutations': 0.08764083251715918,
+                                                                       'omega1_omega1': 0.0056973047534601695}},
+                                                     'mu3': {'prob': 0.7154144549714468,
+                                                             'omega': {'syn_mutations': 0.08764083251715918}}}},
+                                       'T': None,
+                                       'C': {'prob': 0.625,
+                                             'cat': {'mu1': {'prob': 0.07625419304108505,
+                                                             'omega': {'syn_mutations': 0.08764083251715918}},
+                                                     'mu2': {'prob': 0.20833135198746808,
+                                                             'omega': {'syn_mutations': 0.08764083251715918,
+                                                                       'omega5': 0.1860029688703295}},
+                                                     'mu3': {'prob': 0.7154144549714468,
+                                                             'omega': {'syn_mutations': 0.08764083251715918,
+                                                                       'omega1_omega4': 0.02750390009204871,
+                                                                       'omega1': 0.022345391732910336}}}},
+                                       'G': {'prob': 0.18749999999999997,
+                                             'cat': {'mu1': {'prob': 0.07625419304108505,
+                                                             'omega': {'syn_mutations': 0.08764083251715918}},
+                                                     'mu2': {'prob': 0.20833135198746808,
+                                                             'omega': {'syn_mutations': 0.08764083251715918}},
+                                                     'mu3': {'prob': 0.7154144549714468,
+                                                             'omega': {'syn_mutations': 0.08764083251715918}}}}}},
+                     'C': {'from_nt': {'A': {'prob': 0.18749999999999997,
+                                             'cat': {'mu1': {'prob': 0.07625419304108505,
+                                                             'omega': {'syn_mutations': 0.08764083251715918,
+                                                                       'omega2_omega3': 0.0405586967181372}},
+                                                     'mu2': {'prob': 0.20833135198746808,
+                                                             'omega': {'syn_mutations': 0.08764083251715918}},
+                                                     'mu3': {'prob': 0.7154144549714468,
+                                                             'omega': {'syn_mutations': 0.08764083251715918,
+                                                                       'omega1_omega5': 0.04742434643210488}}}},
+                                       'T': {'prob': 0.625,
+                                             'cat': {'mu1': {'prob': 0.07625419304108505,
+                                                             'omega': {'syn_mutations': 0.08764083251715918}},
+                                                     'mu2': {'prob': 0.20833135198746808,
+                                                             'omega': {'syn_mutations': 0.08764083251715918}},
+                                                     'mu3': {'prob': 0.7154144549714468,
+                                                             'omega': {'syn_mutations': 0.08764083251715918}}}},
+                                       'C': None,
+                                       'G': {'prob': 0.18749999999999997,
+                                             'cat': {'mu1': {'prob': 0.07625419304108505,
+                                                             'omega': {'syn_mutations': 0.08764083251715918}},
+                                                     'mu2': {'prob': 0.20833135198746808,
+                                                             'omega': {'syn_mutations': 0.08764083251715918}},
+                                                     'mu3': {'prob': 0.7154144549714468,
+                                                             'omega': {'syn_mutations': 0.08764083251715918}}}}}},
+                     'G': {'from_nt': {'A': {'prob': 0.625,
+                                             'cat': {'mu1': {'prob': 0.07625419304108505,
+                                                             'omega': {'syn_mutations': 0.08764083251715918,
+                                                                       'omega3_omega5': 0.15673495137522697}},
+                                                     'mu2': {'prob': 0.20833135198746808,
+                                                             'omega': {'syn_mutations': 0.08764083251715918,
+                                                                       'omega1': 0.022345391732910336,
+                                                                       'omega3': 0.07385033532791384}},
+                                                     'mu3': {'prob': 0.7154144549714468,
+                                                             'omega': {'syn_mutations': 0.08764083251715918}}}},
+                                       'T': {'prob': 0.18749999999999997,
+                                             'cat': {'mu1': {'prob': 0.07625419304108505,
+                                                             'omega': {'syn_mutations': 0.08764083251715918}},
+                                                     'mu2': {'prob': 0.20833135198746808,
+                                                             'omega': {'syn_mutations': 0.08764083251715918}},
+                                                     'mu3': {'prob': 0.7154144549714468,
+                                                             'omega': {'syn_mutations': 0.08764083251715918}}}},
+                                       'C': {'prob': 0.18749999999999997,
+                                             'cat': {'mu1': {'prob': 0.07625419304108505,
+                                                             'omega': {'syn_mutations': 0.08764083251715918,
+                                                                       'omega2_omega4': 0.05924399316528073,
+                                                                       'omega3': 0.07385033532791384}},
+                                                     'mu2': {'prob': 0.20833135198746808,
+                                                             'omega': {'syn_mutations': 0.08764083251715918}},
+                                                     'mu3': {'prob': 0.7154144549714468,
+                                                             'omega': {'syn_mutations': 0.08764083251715918,
+                                                                       'omega2': 0.048132455057992865}}}},
+                                       'G': None}}}}
         result = self.sequence2.create_probability_tree()
-        print(result)
         self.assertEqual(expected, result)
 
     def testNtInEventTree(self):
-        pass
+        random.seed(4001)
 
-    def testMutationRate(self):
-        pass
+        # All other nucleotides are part of START or STOP codons
+        a6 = self.sequence2.nt_sequence[6]
+        a7 = self.sequence2.nt_sequence[7]
+        a8 = self.sequence2.nt_sequence[8]
+        c9 = self.sequence2.nt_sequence[9]
+        c10 = self.sequence2.nt_sequence[10]
+        c11 = self.sequence2.nt_sequence[11]
+
+        exp_event_tree = {'to_nt':
+                          {'A':
+                           {'from_nt': {'A': None,
+                                        'C': {'category': {'mu1': {'syn_mutations': []},
+                                                           'mu2': {'omega1': [c9],
+                                                                   'syn_mutations': []},
+                                                           'mu3': {'omega2': [c11],
+                                                                   'omega2_omega5': [c10],
+                                                                   'syn_mutations': []}}},
+                                        'G': {'category': {'mu1': {'syn_mutations': []},
+                                                           'mu2': {'syn_mutations': []},
+                                                           'mu3': {'syn_mutations': []}}},
+                                        'T': {'category': {'mu1': {'syn_mutations': []},
+                                                           'mu2': {'syn_mutations': []},
+                                                           'mu3': {'syn_mutations': []}}}}},
+                           'C':
+                           {'from_nt': {'A': {'category': {'mu1': {'omega2_omega3': [a6, a8],
+                                                                   'syn_mutations': []},
+                                                           'mu2': {'syn_mutations': []},
+                                                           'mu3': {'omega1_omega5': [a7],
+                                                                   'syn_mutations': []}}},
+                                        'C': None,
+                                        'G': {'category': {'mu1': {'syn_mutations': []},
+                                                           'mu2': {'syn_mutations': []},
+                                                           'mu3': {'syn_mutations': []}}},
+                                        'T': {'category': {'mu1': {'syn_mutations': []},
+                                                           'mu2': {'syn_mutations': []},
+                                                           'mu3': {'syn_mutations': []}}}}},
+                           'G': {'from_nt': {'A': {'category': {'mu1': {'omega5_omega3': [a7],
+                                                                        'syn_mutations': []},
+                                                                'mu2': {'omega1': [a6],
+                                                                        'omega3': [a8],
+                                                                        'syn_mutations': []},
+                                                                'mu3': {'syn_mutations': []}}},
+                                             'C': {'category': {'mu1': {'omega2_omega4': [c10],
+                                                                        'omega3': [c11],
+                                                                        'syn_mutations': []},
+                                                                'mu2': {'syn_mutations': []},
+                                                                'mu3': {'omega2': [c9],
+                                                                        'syn_mutations': []}}},
+                                             'G': None,
+                                             'T': {'category': {'mu1': {'syn_mutations': []},
+                                                                'mu2': {'syn_mutations': []},
+                                                                'mu3': {'syn_mutations': []}}}}},
+                           'T': {'from_nt': {'A': {'category': {'mu1': {'omega2_omega5': [a7],
+                                                                        'syn_mutations': []},
+                                                                'mu2': {'omega1_omega1': [a8],
+                                                                        'syn_mutations': []},
+                                                                'mu3': {'syn_mutations': []}}},
+                                             'C': {'category': {'mu1': {'syn_mutations': []},
+                                                                'mu2': {'omega5': [c9],
+                                                                        'syn_mutations': []},
+                                                                'mu3': {'omega1': [c11],
+                                                                        'omega4_omega1': [c10],
+                                                                        'syn_mutations': []}}},
+                                             'G': {'category': {'mu1': {'syn_mutations': []},
+                                                                'mu2': {'syn_mutations': []},
+                                                                'mu3': {'syn_mutations': []}}},
+                                             'T': None}}}}
+
+        res_omega_key = self.sequence2.nt_in_event_tree(c11)
+        self.assertEqual(exp_event_tree, self.sequence2.event_tree)
+
+        # No new omega keys are created initially
+        self.assertEqual({}, res_omega_key)
+
+        exp_total_omegas = {'omega1': 0.25496553479835254,
+                            'omega1_omega1': 0.06500742393500993,
+                            'omega1_omega5': 0.5411215876209263,
+                            'omega2': 0.5492012532921686,
+                            'omega2_omega3': 0.4627831063813346,
+                            'omega2_omega4': 0.6759861980279724,
+                            'omega2_omega5': 1.1655875541762872,
+                            'omega3': 0.842647578837806,
+                            'omega4_omega1': 0.31382518059334646,
+                            'omega5': 2.1223322911031457,
+                            'omega5_omega3': 1.7883781665873595}
+        self.assertEqual(exp_total_omegas, self.sequence2.total_omegas)
+
+    def testCountNtsOnEventTree(self):
+        exp_count = 17
+        res_count = self.sequence2.count_nts_on_event_tree()
+        self.assertEqual(exp_count, res_count)
 
 
 class TestSequence3(unittest.TestCase):
@@ -732,11 +1126,197 @@ class TestSequence3(unittest.TestCase):
         result = self.sequence3.is_start_stop_codon(nt, 'A')
         self.assertEqual(expected, result)
 
-    def testNtInEventTree(self):
-        pass
+    def testCreateProbabilityTree(self):
+        expected = {'to_nt':
+                    {'A': {'from_nt':
+                           {'A': None,
+                            'T': {'prob': 0.18749999999999997,
+                                  'cat': {'mu1': {'prob': 0.07625419304108505,
+                                                  'omega': {'syn_mutations': 0.1999999999999997}},
+                                          'mu2': {'prob': 0.20833135198746808,
+                                                  'omega': {'syn_mutations': 0.1999999999999997,
+                                                            'omega1': 0.058654943224702785}},
+                                          'mu3': {'prob': 0.7154144549714468,
+                                                  'omega': {'syn_mutations': 0.1999999999999997}}}},
+                            'C': {'prob': 0.18749999999999997,
+                                  'cat': {'mu1': {'prob': 0.07625419304108505,
+                                                  'omega': {'syn_mutations': 0.1999999999999997}},
+                                          'mu2': {'prob': 0.20833135198746808,
+                                                  'omega': {'syn_mutations': 0.1999999999999997}},
+                                          'mu3': {'prob': 0.7154144549714468,
+                                                  'omega': {'syn_mutations': 0.1999999999999997,
+                                                            'omega2': 0.1310027352316301}}}},
+                            'G': {'prob': 0.625,
+                                  'cat': {'mu1': {'prob': 0.07625419304108505,
+                                                  'omega': {'syn_mutations': 0.1999999999999997}},
+                                          'mu2': {'prob': 0.20833135198746808,
+                                                  'omega': {'syn_mutations': 0.1999999999999997}},
+                                          'mu3': {'prob': 0.7154144549714468,
+                                                  'omega': {'syn_mutations': 0.1999999999999997}}}}}},
+                     'T': {'from_nt':
+                           {'A': {'prob': 0.18749999999999997,
+                                  'cat': {'mu1': {'prob': 0.07625419304108505,
+                                                  'omega': {'syn_mutations': 0.1999999999999997,
+                                                            'omega4': 0.39634438906547004}},
+                                          'mu2': {'prob': 0.20833135198746808,
+                                                  'omega': {'syn_mutations': 0.1999999999999997}},
+                                          'mu3': {'prob': 0.7154144549714468,
+                                                  'omega': {'syn_mutations': 0.1999999999999997}}}},
+                            'T': None,
+                            'C': {'prob': 0.625,
+                                  'cat': {'mu1': {'prob': 0.07625419304108505,
+                                                  'omega': {'syn_mutations': 0.1999999999999997,
+                                                            'omega4': 0.39634438906547004}},
+                                          'mu2': {'prob': 0.20833135198746808,
+                                                  'omega': {'syn_mutations': 0.1999999999999997}},
+                                          'mu3': {'prob': 0.7154144549714468,
+                                                  'omega': {'syn_mutations': 0.1999999999999997}}}},
+                            'G': {'prob': 0.18749999999999997,
+                                  'cat': {'mu1': {'prob': 0.07625419304108505,
+                                                  'omega': {'syn_mutations': 0.1999999999999997}},
+                                          'mu2': {'prob': 0.20833135198746808,
+                                                  'omega': {'syn_mutations': 0.1999999999999997,
+                                                            'omega3': 0.2139979324781974}},
+                                          'mu3': {'prob': 0.7154144549714468,
+                                                  'omega': {'syn_mutations': 0.1999999999999997,
+                                                            'omega1': 0.058654943224702785}}}}}},
+                     'C': {'from_nt':
+                           {'A': {'prob': 0.18749999999999997,
+                                  'cat': {'mu1': {'prob': 0.07625419304108505,
+                                                  'omega': {'syn_mutations': 0.1999999999999997,
+                                                            'omega4': 0.39634438906547004}},
+                                          'mu2': {'prob': 0.20833135198746808,
+                                                  'omega': {'syn_mutations': 0.1999999999999997}},
+                                          'mu3': {'prob': 0.7154144549714468,
+                                                  'omega': {'syn_mutations': 0.1999999999999997}}}},
+                            'T': {'prob': 0.625,
+                                  'cat': {'mu1': {'prob': 0.07625419304108505,
+                                                  'omega': {'syn_mutations': 0.1999999999999997}},
+                                          'mu2': {'prob': 0.20833135198746808,
+                                                  'omega': {'syn_mutations': 0.1999999999999997}},
+                                          'mu3': {'prob': 0.7154144549714468,
+                                                  'omega': {'syn_mutations': 0.1999999999999997,
+                                                            'omega4': 0.39634438906547004}}}},
+                            'C': None,
+                            'G': {'prob': 0.18749999999999997,
+                                  'cat': {'mu1': {'prob': 0.07625419304108505,
+                                                  'omega': {'syn_mutations': 0.1999999999999997}},
+                                          'mu2': {'prob': 0.20833135198746808,
+                                                  'omega': {'syn_mutations': 0.1999999999999997,
+                                                            'omega2': 0.1310027352316301}},
+                                          'mu3': {'prob': 0.7154144549714468,
+                                                  'omega': {'syn_mutations': 0.1999999999999997,
+                                                            'omega1': 0.058654943224702785}}}}}},
+                     'G': {'from_nt':
+                           {'A': {'prob': 0.625,
+                                  'cat': {'mu1': {'prob': 0.07625419304108505,
+                                                  'omega': {'syn_mutations': 0.1999999999999997}},
+                                          'mu2': {'prob': 0.20833135198746808,
+                                                  'omega': {'syn_mutations': 0.1999999999999997}},
+                                          'mu3': {'prob': 0.7154144549714468,
+                                                  'omega': {'syn_mutations': 0.1999999999999997,
+                                                            'omega3': 0.2139979324781974}}}},
+                            'T': {'prob': 0.18749999999999997,
+                                  'cat': {'mu1': {'prob': 0.07625419304108505,
+                                                  'omega': {'syn_mutations': 0.1999999999999997}},
+                                          'mu2': {'prob': 0.20833135198746808,
+                                                  'omega': {'syn_mutations': 0.1999999999999997,
+                                                            'omega3': 0.2139979324781974}},
+                                          'mu3': {'prob': 0.7154144549714468,
+                                                  'omega': {'syn_mutations': 0.1999999999999997}}}},
+                            'C': {'prob': 0.18749999999999997,
+                                  'cat': {'mu1': {'prob': 0.07625419304108505,
+                                                  'omega': {'syn_mutations': 0.1999999999999997}},
+                                          'mu2': {'prob': 0.20833135198746808,
+                                                  'omega': {'syn_mutations': 0.1999999999999997,
+                                                            'omega1': 0.058654943224702785}},
+                                          'mu3': {'prob': 0.7154144549714468,
+                                                  'omega': {'syn_mutations': 0.1999999999999997}}}},
+                            'G': None}}}}
 
-    def testMutationRate(self):
-        pass
+        result = self.sequence3.create_probability_tree()
+        self.assertEqual(expected, result)
+
+    def testNtInEventTree(self):
+        random.seed(555)
+
+        a3 = self.sequence3.nt_sequence[3]
+        c4 = self.sequence3.nt_sequence[4]
+        g5 = self.sequence3.nt_sequence[5]
+        t6 = self.sequence3.nt_sequence[6]
+        g7 = self.sequence3.nt_sequence[7]
+        g8 = self.sequence3.nt_sequence[8]
+
+        exp_event_tree = {'to_nt':
+                          {'A':
+                           {'from_nt': {'A': None,
+                                        'C': {'category': {'mu1': {'syn_mutations': []},
+                                                           'mu2': {'syn_mutations': []},
+                                                           'mu3': {'omega2': [c4],
+                                                                   'syn_mutations': []}}},
+                                        'G': {'category': {'mu1': {'syn_mutations': [g5]},
+                                                           'mu2': {'syn_mutations': []},
+                                                           'mu3': {'syn_mutations': []}}},
+                                        'T': {'category': {'mu1': {'syn_mutations': []},
+                                                           'mu2': {'omega1': [t6],
+                                                                   'syn_mutations': []},
+                                                           'mu3': {'syn_mutations': []}}}}},
+                           'C':
+                           {'from_nt': {'A': {'category': {'mu1': {'omega4': [a3],
+                                                                   'syn_mutations': []},
+                                                           'mu2': {'syn_mutations': []},
+                                                           'mu3': {'syn_mutations': []}}},
+                                        'C': None,
+                                        'G': {'category': {'mu1': {'syn_mutations': []},
+                                                           'mu2': {'omega2': [g8],
+                                                                   'syn_mutations': []},
+                                                           'mu3': {'omega1': [g7],
+                                                                   'syn_mutations': [g5]}}},
+                                        'T': {'category': {'mu1': {'syn_mutations': []},
+                                                           'mu2': {'syn_mutations': []},
+                                                           'mu3': {'omega4': [t6],
+                                                                   'syn_mutations': []}}}}},
+                           'G': {'from_nt': {'A': {'category': {'mu1': {'syn_mutations': []},
+                                                                'mu2': {'syn_mutations': []},
+                                                                'mu3': {'omega3': [a3],
+                                                                        'syn_mutations': []}}},
+                                             'C': {'category': {'mu1': {'syn_mutations': []},
+                                                                'mu2': {'omega1': [c4],
+                                                                        'syn_mutations': []},
+                                                                'mu3': {'syn_mutations': []}}},
+                                             'G': None,
+                                             'T': {'category': {'mu1': {'syn_mutations': []},
+                                                                'mu2': {'omega3': [t6],
+                                                                        'syn_mutations': []},
+                                                                'mu3': {'syn_mutations': []}}}}},
+                           'T': {'from_nt': {'A': {'category': {'mu1': {'omega4': [a3],
+                                                                        'syn_mutations': []},
+                                                                'mu2': {'syn_mutations': []},
+                                                                'mu3': {'syn_mutations': []}}},
+                                             'C': {'category': {'mu1': {'omega4': [c4],
+                                                                        'syn_mutations': []},
+                                                                'mu2': {'syn_mutations': []},
+                                                                'mu3': {'syn_mutations': []}}},
+                                             'G': {'category': {'mu1': {'syn_mutations': [g5]},
+                                                                'mu2': {'omega3': [g8],
+                                                                        'syn_mutations': []},
+                                                                'mu3': {'omega1': [g7],
+                                                                        'syn_mutations': []}}},
+                                             'T': None}}}}
+
+        res_omega_key = self.sequence3.nt_in_event_tree(a3)
+        self.assertEqual(exp_event_tree, self.sequence3.event_tree)
+
+        # No new omega keys are created initially
+        self.assertEqual({}, res_omega_key)
+
+        # Only 4 possible omegas because there is only 1 ORF
+        self.assertEqual(OMEGA_VALUES_4, self.sequence3.total_omegas)
+
+    def testCountNtsOnEventTree(self):
+        exp_count = 16
+        res_count = self.sequence3.count_nts_on_event_tree()
+        self.assertEqual(exp_count, res_count)
 
 
 class TestSequence4(unittest.TestCase):
@@ -881,11 +1461,236 @@ class TestSequence4(unittest.TestCase):
         result = self.sequence4.is_start_stop_codon(nt, 'C')
         self.assertEqual(expected, result)
 
-    def testNtInEventTree(self):
-        pass
+    def testCreateProbabilityTree(self):
+        expected = {'to_nt':
+                    {'A': {'from_nt':
+                           {'A': None,
+                            'T': {'prob': 0.18749999999999997,
+                                  'cat': {'mu1': {'prob': 0.04701719357592987,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}},
+                                          'mu2': {'prob': 0.11163806035536104,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}},
+                                          'mu3': {'prob': 0.21374220928782836,
+                                                  'omega': {'syn_mutations': 0.16666666666666652,
+                                                            'omega4': 0.20514222366142196}},
+                                          'mu4': {'prob': 0.6276025367808807,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}}}},
+                            'C': {'prob': 0.18749999999999997,
+                                  'cat': {'mu1': {'prob': 0.04701719357592987,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}},
+                                          'mu2': {'prob': 0.11163806035536104,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}},
+                                          'mu3': {'prob': 0.21374220928782836,
+                                                  'omega': {'syn_mutations': 0.16666666666666652,
+                                                            'omega3': 0.14044126313963423}},
+                                          'mu4': {'prob': 0.6276025367808807,
+                                                  'omega': {'syn_mutations': 0.16666666666666652,
+                                                            'omega3': 0.14044126313963423}}}},
+                            'G': {'prob': 0.625,
+                                  'cat': {'mu1': {'prob': 0.04701719357592987,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}},
+                                          'mu2': {'prob': 0.11163806035536104,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}},
+                                          'mu3': {'prob': 0.21374220928782836,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}},
+                                          'mu4': {'prob': 0.6276025367808807,
+                                                  'omega': {'syn_mutations': 0.16666666666666652,
+                                                            'omega3': 0.14044126313963423}}}}}},
+                     'T': {'from_nt':
+                           {'A': {'prob': 0.18749999999999997,
+                                  'cat': {'mu1': {'prob': 0.04701719357592987,
+                                                  'omega': {'syn_mutations': 0.16666666666666652,
+                                                            'omega1': 0.042494255799725385}},
+                                          'mu2': {'prob': 0.11163806035536104,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}},
+                                          'mu3': {'prob': 0.21374220928782836,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}},
+                                          'mu4': {'prob': 0.6276025367808807,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}}}},
+                            'T': None,
+                            'C': {'prob': 0.625,
+                                  'cat': {'mu1': {'prob': 0.04701719357592987,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}},
+                                          'mu2': {'prob': 0.11163806035536104,
+                                                  'omega': {'syn_mutations': 0.16666666666666652,
+                                                            'omega2': 0.09153354221536135}},
+                                          'mu3': {'prob': 0.21374220928782836,
+                                                  'omega': {'syn_mutations': 0.16666666666666652,
+                                                            'omega3': 0.14044126313963423}},
+                                          'mu4': {'prob': 0.6276025367808807,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}}}},
+                            'G': {'prob': 0.18749999999999997,
+                                  'cat': {'mu1': {'prob': 0.04701719357592987,
+                                                  'omega': {'syn_mutations': 0.16666666666666652,
+                                                            'omega3': 0.14044126313963423}},
+                                          'mu2': {'prob': 0.11163806035536104,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}},
+                                          'mu3': {'prob': 0.21374220928782836,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}},
+                                          'mu4': {'prob': 0.6276025367808807,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}}}}}},
+                     'C': {'from_nt':
+                           {'A': {'prob': 0.18749999999999997,
+                                  'cat': {'mu1': {'prob': 0.04701719357592987,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}},
+                                          'mu2': {'prob': 0.11163806035536104,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}},
+                                          'mu3': {'prob': 0.21374220928782836,
+                                                  'omega': {'syn_mutations': 0.16666666666666652,
+                                                            'omega3': 0.14044126313963423}},
+                                          'mu4': {'prob': 0.6276025367808807,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}}}},
+                            'T': {'prob': 0.625,
+                                  'cat': {'mu1': {'prob': 0.04701719357592987,
+                                                  'omega': {'syn_mutations': 0.16666666666666652,
+                                                            'omega2': 0.09153354221536135}},
+                                          'mu2': {'prob': 0.11163806035536104,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}},
+                                          'mu3': {'prob': 0.21374220928782836,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}},
+                                          'mu4': {'prob': 0.6276025367808807,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}}}},
+                            'C': None,
+                            'G': {'prob': 0.18749999999999997,
+                                  'cat': {'mu1': {'prob': 0.04701719357592987,
+                                                  'omega': {'syn_mutations': 0.16666666666666652,
+                                                            'omega3': 0.14044126313963423}},
+                                          'mu2': {'prob': 0.11163806035536104,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}},
+                                          'mu3': {'prob': 0.21374220928782836,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}},
+                                          'mu4': {'prob': 0.6276025367808807,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}}}}}},
+                     'G': {'from_nt':
+                           {'A': {'prob': 0.625,
+                                  'cat': {'mu1': {'prob': 0.04701719357592987,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}},
+                                          'mu2': {'prob': 0.11163806035536104,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}},
+                                          'mu3': {'prob': 0.21374220928782836,
+                                                  'omega': {'syn_mutations': 0.16666666666666652,
+                                                            'omega1': 0.042494255799725385}},
+                                          'mu4': {'prob': 0.6276025367808807,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}}}},
+                            'T': {'prob': 0.18749999999999997,
+                                  'cat': {'mu1': {'prob': 0.04701719357592987,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}},
+                                          'mu2': {'prob': 0.11163806035536104,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}},
+                                          'mu3': {'prob': 0.21374220928782836,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}},
+                                          'mu4': {'prob': 0.6276025367808807,
+                                                  'omega': {'syn_mutations': 0.16666666666666652,
+                                                            'omega2': 0.09153354221536135}}}},
+                            'C': {'prob': 0.18749999999999997,
+                                  'cat': {'mu1': {'prob': 0.04701719357592987,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}},
+                                          'mu2': {'prob': 0.11163806035536104,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}},
+                                          'mu3': {'prob': 0.21374220928782836,
+                                                  'omega': {'syn_mutations': 0.16666666666666652,
+                                                            'omega5': 0.35372204851719063}},
+                                          'mu4': {'prob': 0.6276025367808807,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}}}},
+                            'G': None}}}}
+        result = self.sequence4.create_probability_tree()
+        self.assertEqual(expected, result)
 
-    def testMutationRate(self):
-        pass
+    def testNtInEventTree(self):
+        random.seed(5001)
+
+        a3 = self.sequence4.nt_sequence[3]
+        t4 = self.sequence4.nt_sequence[4]
+        g5 = self.sequence4.nt_sequence[5]
+        c6 = self.sequence4.nt_sequence[6]
+        c7 = self.sequence4.nt_sequence[7]
+        c8 = self.sequence4.nt_sequence[8]
+
+        exp_event_tree = {'to_nt':
+                          {'A':
+                           {'from_nt': {'A': None,
+                                        'C': {'category': {'mu1': {'syn_mutations': []},
+                                                           'mu2': {'syn_mutations': []},
+                                                           'mu3': {'omega3': [c6],
+                                                                   'syn_mutations': []},
+                                                           'mu4': {'omega3': [c7],
+                                                                   'syn_mutations': [c8]}}},
+                                        'G': {'category': {'mu1': {'syn_mutations': []},
+                                                           'mu2': {'syn_mutations': []},
+                                                           'mu3': {'syn_mutations': []},
+                                                           'mu4': {'omega3': [g5],
+                                                                   'syn_mutations': []}}},
+                                        'T': {'category': {'mu1': {'syn_mutations': []},
+                                                           'mu2': {'syn_mutations': []},
+                                                           'mu3': {'omega4': [t4],
+                                                                   'syn_mutations': []},
+                                                           'mu4': {'syn_mutations': []}}}}},
+                           'C':
+                           {'from_nt': {'A': {'category': {'mu1': {'syn_mutations': []},
+                                                           'mu2': {'syn_mutations': []},
+                                                           'mu3': {'omega3': [a3],
+                                                                   'syn_mutations': []},
+                                                           'mu4': {'syn_mutations': []}}},
+                                        'C': None,
+                                        'G': {'category': {'mu1': {'omega3': [g5],
+                                                                   'syn_mutations': []},
+                                                           'mu2': {'syn_mutations': []},
+                                                           'mu3': {'syn_mutations': []},
+                                                           'mu4': {'syn_mutations': []}}},
+                                        'T': {'category': {'mu1': {'omega2': [t4],
+                                                                   'syn_mutations': []},
+                                                           'mu2': {'syn_mutations': []},
+                                                           'mu3': {'syn_mutations': []},
+                                                           'mu4': {'syn_mutations': []}}}}},
+                           'G':
+                           {'from_nt': {'A': {'category': {'mu1': {'syn_mutations': []},
+                                                           'mu2': {'syn_mutations': []},
+                                                           'mu3': {'omega1': [a3],
+                                                                   'syn_mutations': []},
+                                                           'mu4': {'syn_mutations': []}}},
+                                        'C': {'category': {'mu1': {'syn_mutations': []},
+                                                           'mu2': {'syn_mutations': []},
+                                                           'mu3': {'omega5': [c6, c7],
+                                                                   'syn_mutations': [c8]},
+                                                           'mu4': {'syn_mutations': []}}},
+                                        'G': None,
+                                        'T': {'category': {'mu1': {'syn_mutations': []},
+                                                           'mu2': {'syn_mutations': []},
+                                                           'mu3': {'syn_mutations': []},
+                                                           'mu4': {'omega2': [t4],
+                                                                   'syn_mutations': []}}}}},
+                           'T':
+                           {'from_nt': {'A': {'category': {'mu1': {'omega1': [a3],
+                                                                   'syn_mutations': []},
+                                                           'mu2': {'syn_mutations': []},
+                                                           'mu3': {'syn_mutations': []},
+                                                           'mu4': {'syn_mutations': []}}},
+                                        'C': {'category': {'mu1': {'syn_mutations': []},
+                                                           'mu2': {'omega2': [c6],
+                                                                   'syn_mutations': []},
+                                                           'mu3': {'omega3': [c7],
+                                                                   'syn_mutations': []},
+                                                           'mu4': {'syn_mutations': [c8]}}},
+                                        'G': {'category': {'mu1': {'omega3': [g5],
+                                                                   'syn_mutations': []},
+                                                           'mu2': {'syn_mutations': []},
+                                                           'mu3': {'syn_mutations': []},
+                                                           'mu4': {'syn_mutations': []}}},
+                                        'T': None}}}}
+
+        res_omega_key = self.sequence4.nt_in_event_tree(a3)
+        self.assertEqual(exp_event_tree, self.sequence4.event_tree)
+
+        # No new omega keys are created initially
+        self.assertEqual({}, res_omega_key)
+
+        # Only 5 possible omegas because there is only 1 ORF
+        self.assertEqual(OMEGA_VALUES_5, self.sequence4.total_omegas)
+
+    def testCountNtsOnEventTree(self):
+        exp_count = 18
+        res_count = self.sequence4.count_nts_on_event_tree()
+        self.assertEqual(exp_count, res_count)
 
 
 class TestSequence5(unittest.TestCase):
@@ -1044,11 +1849,233 @@ class TestSequence5(unittest.TestCase):
         result = self.sequence5.is_start_stop_codon(nt, 'T')
         self.assertEqual(expected, result)
 
-    def testNtInEventTree(self):
-        pass
+    def testCreateProbabilityTree(self):
+        expected = {'to_nt':
+                    {'A': {'from_nt':
+                           {'A': None,
+                            'T': {'prob': 0.18749999999999997,
+                                  'cat': {'mu1': {'prob': 0.04701719357592987,
+                                                  'omega': {'syn_mutations': 0.21597647319236044}},
+                                          'mu2': {'prob': 0.11163806035536104,
+                                                  'omega': {'syn_mutations': 0.21597647319236044}},
+                                          'mu3': {'prob': 0.21374220928782836,
+                                                  'omega': {'syn_mutations': 0.21597647319236044}},
+                                          'mu4': {'prob': 0.6276025367808807,
+                                                  'omega': {'syn_mutations': 0.21597647319236044}}}},
+                            'C': {'prob': 0.18749999999999997,
+                                  'cat': {'mu1': {'prob': 0.04701719357592987,
+                                                  'omega': {'syn_mutations': 0.21597647319236044,
+                                                            'omega3': 0.23109259363549015,
+                                                            'omega2': 0.14146754366940048}},
+                                          'mu2': {'prob': 0.11163806035536104,
+                                                  'omega': {'syn_mutations': 0.21597647319236044,
+                                                            'omega2_omega4': 0.2803493358412066}},
+                                          'mu3': {'prob': 0.21374220928782836,
+                                                  'omega': {'syn_mutations': 0.21597647319236044}},
+                                          'mu4': {'prob': 0.6276025367808807,
+                                                  'omega': {'syn_mutations': 0.21597647319236044}}}},
+                            'G': {'prob': 0.625,
+                                  'cat': {'mu1': {'prob': 0.04701719357592987,
+                                                  'omega': {'syn_mutations': 0.21597647319236044}},
+                                          'mu2': {'prob': 0.11163806035536104,
+                                                  'omega': {'syn_mutations': 0.21597647319236044}},
+                                          'mu3': {'prob': 0.21374220928782836,
+                                                  'omega': {'syn_mutations': 0.21597647319236044}},
+                                          'mu4': {'prob': 0.6276025367808807,
+                                                  'omega': {'syn_mutations': 0.21597647319236044}}}}}},
+                     'T': {'from_nt':
+                           {'A': {'prob': 0.18749999999999997,
+                                  'cat': {'mu1': {'prob': 0.04701719357592987,
+                                                  'omega': {'syn_mutations': 0.21597647319236044}},
+                                          'mu2': {'prob': 0.11163806035536104,
+                                                  'omega': {'syn_mutations': 0.21597647319236044}},
+                                          'mu3': {'prob': 0.21374220928782836,
+                                                  'omega': {'syn_mutations': 0.21597647319236044,
+                                                            'omega2': 0.14146754366940048}},
+                                          'mu4': {'prob': 0.6276025367808807,
+                                                  'omega': {'syn_mutations': 0.21597647319236044}}}},
+                            'T': None,
+                            'C': {'prob': 0.625,
+                                  'cat': {'mu1': {'prob': 0.04701719357592987,
+                                                  'omega': {'syn_mutations': 0.21597647319236044,
+                                                            'omega1_omega3': 0.06777361479669504}},
+                                          'mu2': {'prob': 0.11163806035536104,
+                                                  'omega': {'syn_mutations': 0.21597647319236044,
+                                                            'omega3': 0.23109259363549015}},
+                                          'mu3': {'prob': 0.21374220928782836,
+                                                  'omega': {'syn_mutations': 0.21597647319236044}},
+                                          'mu4': {'prob': 0.6276025367808807,
+                                                  'omega': {'syn_mutations': 0.21597647319236044}}}},
+                            'G': {'prob': 0.18749999999999997,
+                                  'cat': {'mu1': {'prob': 0.04701719357592987,
+                                                  'omega': {'syn_mutations': 0.21597647319236044}},
+                                          'mu2': {'prob': 0.11163806035536104,
+                                                  'omega': {'syn_mutations': 0.21597647319236044}},
+                                          'mu3': {'prob': 0.21374220928782836,
+                                                  'omega': {'syn_mutations': 0.21597647319236044}},
+                                          'mu4': {'prob': 0.6276025367808807,
+                                                  'omega': {'syn_mutations': 0.21597647319236044}}}}}},
+                     'C': {'from_nt':
+                           {'A': {'prob': 0.18749999999999997,
+                                  'cat': {'mu1': {'prob': 0.04701719357592987,
+                                                  'omega': {'syn_mutations': 0.21597647319236044}},
+                                          'mu2': {'prob': 0.11163806035536104,
+                                                  'omega': {'syn_mutations': 0.21597647319236044}},
+                                          'mu3': {'prob': 0.21374220928782836,
+                                                  'omega': {'syn_mutations': 0.21597647319236044,
+                                                            'omega1': 0.06334043886484732}},
+                                          'mu4': {'prob': 0.6276025367808807,
+                                                  'omega': {'syn_mutations': 0.21597647319236044}}}},
+                            'T': {'prob': 0.625,
+                                  'cat': {'mu1': {'prob': 0.04701719357592987,
+                                                  'omega': {'syn_mutations': 0.21597647319236044}},
+                                          'mu2': {'prob': 0.11163806035536104,
+                                                  'omega': {'syn_mutations': 0.21597647319236044}},
+                                          'mu3': {'prob': 0.21374220928782836,
+                                                  'omega': {'syn_mutations': 0.21597647319236044}},
+                                          'mu4': {'prob': 0.6276025367808807,
+                                                  'omega': {'syn_mutations': 0.21597647319236044}}}},
+                            'C': None,
+                            'G': {'prob': 0.18749999999999997,
+                                  'cat': {'mu1': {'prob': 0.04701719357592987,
+                                                  'omega': {'syn_mutations': 0.21597647319236044}},
+                                          'mu2': {'prob': 0.11163806035536104,
+                                                  'omega': {'syn_mutations': 0.21597647319236044}},
+                                          'mu3': {'prob': 0.21374220928782836,
+                                                  'omega': {'syn_mutations': 0.21597647319236044}},
+                                          'mu4': {'prob': 0.6276025367808807,
+                                                  'omega': {'syn_mutations': 0.21597647319236044}}}}}},
+                     'G': {'from_nt':
+                           {'A': {'prob': 0.625,
+                                  'cat': {'mu1': {'prob': 0.04701719357592987,
+                                                  'omega': {'syn_mutations': 0.21597647319236044}},
+                                          'mu2': {'prob': 0.11163806035536104,
+                                                  'omega': {'syn_mutations': 0.21597647319236044}},
+                                          'mu3': {'prob': 0.21374220928782836,
+                                                  'omega': {'syn_mutations': 0.21597647319236044,
+                                                            'omega2': 0.14146754366940048}},
+                                          'mu4': {'prob': 0.6276025367808807,
+                                                  'omega': {'syn_mutations': 0.21597647319236044}}}},
+                            'T': {'prob': 0.18749999999999997,
+                                  'cat': {'mu1': {'prob': 0.04701719357592987,
+                                                  'omega': {'syn_mutations': 0.21597647319236044}},
+                                          'mu2': {'prob': 0.11163806035536104,
+                                                  'omega': {'syn_mutations': 0.21597647319236044}},
+                                          'mu3': {'prob': 0.21374220928782836,
+                                                  'omega': {'syn_mutations': 0.21597647319236044}},
+                                          'mu4': {'prob': 0.6276025367808807,
+                                                  'omega': {'syn_mutations': 0.21597647319236044}}}},
+                            'C': {'prob': 0.18749999999999997,
+                                  'cat': {'mu1': {'prob': 0.04701719357592987,
+                                                  'omega': {'syn_mutations': 0.21597647319236044}},
+                                          'mu2': {'prob': 0.11163806035536104,
+                                                  'omega': {'syn_mutations': 0.21597647319236044,
+                                                            'omega1': 0.06334043886484732,
+                                                            'omega3': 0.23109259363549015}},
+                                          'mu3': {'prob': 0.21374220928782836,
+                                                  'omega': {'syn_mutations': 0.21597647319236044,
+                                                            'omega1_omega3': 0.06777361479669504}},
+                                          'mu4': {'prob': 0.6276025367808807,
+                                                  'omega': {'syn_mutations': 0.21597647319236044}}}},
+                            'G': None}}}}
+        result = self.sequence5.create_probability_tree()
+        self.assertEqual(expected, result)
 
-    def testMutationRate(self):
-        pass
+    def testNtInEventTree(self):
+        random.seed(9991)
+
+        # Only 4 possible substitution sites because the
+        a3 = self.sequence5.nt_sequence[3]
+        c7 = self.sequence5.nt_sequence[7]
+        c8 = self.sequence5.nt_sequence[8]
+        c12 = self.sequence5.nt_sequence[12]
+
+        exp_event_tree = {'to_nt':
+                          {'A':
+                           {'from_nt': {'A': None,
+                                        'C': {'category': {'mu1': {'omega2': [c12],
+                                                                   'omega3': [c8],
+                                                                   'syn_mutations': []},
+                                                           'mu2': {'omega4_omega2': [c7],
+                                                                   'syn_mutations': []},
+                                                           'mu3': {'syn_mutations': []},
+                                                           'mu4': {'syn_mutations': []}}},
+                                        'G': {'category': {'mu1': {'syn_mutations': []},
+                                                           'mu2': {'syn_mutations': []},
+                                                           'mu3': {'syn_mutations': []},
+                                                           'mu4': {'syn_mutations': []}}},
+                                        'T': {'category': {'mu1': {'syn_mutations': []},
+                                                           'mu2': {'syn_mutations': []},
+                                                           'mu3': {'syn_mutations': []},
+                                                           'mu4': {'syn_mutations': []}}}}},
+                           'C':
+                           {'from_nt': {'A': {'category': {'mu1': {'syn_mutations': []},
+                                                           'mu2': {'syn_mutations': []},
+                                                           'mu3': {'omega1': [a3],
+                                                                   'syn_mutations': []},
+                                                           'mu4': {'syn_mutations': []}}},
+                                        'C': None,
+                                        'G': {'category': {'mu1': {'syn_mutations': []},
+                                                           'mu2': {'syn_mutations': []},
+                                                           'mu3': {'syn_mutations': []},
+                                                           'mu4': {'syn_mutations': []}}},
+                                        'T': {'category': {'mu1': {'syn_mutations': []},
+                                                           'mu2': {'syn_mutations': []},
+                                                           'mu3': {'syn_mutations': []},
+                                                           'mu4': {'syn_mutations': []}}}}},
+                           'G':
+                           {'from_nt': {'A': {'category': {'mu1': {'syn_mutations': []},
+                                                           'mu2': {'syn_mutations': []},
+                                                           'mu3': {'omega2': [a3],
+                                                                   'syn_mutations': []},
+                                                           'mu4': {'syn_mutations': []}}},
+                                        'C': {'category': {'mu1': {'syn_mutations': []},
+                                                           'mu2': {'omega1': [c8],
+                                                                   'omega3': [c12],
+                                                                   'syn_mutations': []},
+                                                           'mu3': {'omega3_omega1': [c7],
+                                                                   'syn_mutations': []},
+                                                           'mu4': {'syn_mutations': []}}},
+                                        'G': None,
+                                        'T': {'category': {'mu1': {'syn_mutations': []},
+                                                           'mu2': {'syn_mutations': []},
+                                                           'mu3': {'syn_mutations': []},
+                                                           'mu4': {'syn_mutations': []}}}}},
+                           'T':
+                           {'from_nt': {'A': {'category': {'mu1': {'syn_mutations': []},
+                                                           'mu2': {'syn_mutations': []},
+                                                           'mu3': {'omega2': [a3],
+                                                                   'syn_mutations': []},
+                                                           'mu4': {'syn_mutations': []}}},
+                                        'C': {'category': {'mu1': {'omega3_omega1': [c7],
+                                                                   'syn_mutations': []},
+                                                           'mu2': {'omega3': [c8],
+                                                                   'syn_mutations': []},
+                                                           'mu3': {'syn_mutations': [c12]},
+                                                           'mu4': {'syn_mutations': []}}},
+                                        'G': {'category': {'mu1': {'syn_mutations': []},
+                                                           'mu2': {'syn_mutations': []},
+                                                           'mu3': {'syn_mutations': []},
+                                                           'mu4': {'syn_mutations': []}}},
+                                        'T': None}}}}
+
+        res_omega_key = self.sequence5.nt_in_event_tree(a3)
+        self.assertEqual(exp_event_tree, self.sequence5.event_tree)
+
+        # No new omega keys are created initially
+        self.assertEqual({}, res_omega_key)
+
+        exp_all_omegas = {'omega1': 0.29327471612351436,
+                          'omega2': 0.6550136761581515,
+                          'omega3': 1.0699896623909886,
+                          'omega3_omega1': 0.31380091449281217,
+                          'omega4_omega2': 1.298054976532153}
+        self.assertEqual(exp_all_omegas, self.sequence5.total_omegas)
+
+    def testCountNtsOnEventTree(self):
+        exp_count = 12
+        res_count = self.sequence5.count_nts_on_event_tree()
+        self.assertEqual(exp_count, res_count)
 
 
 class TestSequence6(unittest.TestCase):
@@ -1191,11 +2218,199 @@ class TestSequence6(unittest.TestCase):
         result = self.sequence6.is_start_stop_codon(nt, 'C')
         self.assertEqual(expected, result)
 
-    def testNtInEventTree(self):
-        pass
+    def testCreateProbabilityTree(self):
+        expected = {'to_nt':
+                    {'A': {'from_nt':
+                           {'A': None,
+                            'T': {'prob': 0.18749999999999997,
+                                  'cat': {'mu1': {'prob': 0.07625419304108505,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}},
+                                          'mu2': {'prob': 0.20833135198746808,
+                                                  'omega': {'syn_mutations': 0.16666666666666652,
+                                                            'omega1': 0.042494255799725385}},
+                                          'mu3': {'prob': 0.7154144549714468,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}}}},
+                            'C': {'prob': 0.18749999999999997,
+                                  'cat': {'mu1': {'prob': 0.07625419304108505,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}},
+                                          'mu2': {'prob': 0.20833135198746808,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}},
+                                          'mu3': {'prob': 0.7154144549714468,
+                                                  'omega': {'syn_mutations': 0.16666666666666652,
+                                                            'omega3': 0.14044126313963423}}}},
+                            'G': {'prob': 0.625,
+                                  'cat': {'mu1': {'prob': 0.07625419304108505,
+                                                  'omega': {'syn_mutations': 0.16666666666666652,
+                                                            'omega2': 0.09153354221536135}},
+                                          'mu2': {'prob': 0.20833135198746808,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}},
+                                          'mu3': {'prob': 0.7154144549714468,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}}}}}},
+                     'T': {'from_nt':
+                           {'A': {'prob': 0.18749999999999997,
+                                  'cat': {'mu1': {'prob': 0.07625419304108505,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}},
+                                          'mu2': {'prob': 0.20833135198746808,
+                                                  'omega': {'syn_mutations': 0.16666666666666652,
+                                                            'omega3': 0.14044126313963423}},
+                                          'mu3': {'prob': 0.7154144549714468,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}}}},
+                            'T': None,
+                            'C': {'prob': 0.625,
+                                  'cat': {'mu1': {'prob': 0.07625419304108505,
+                                                  'omega': {'syn_mutations': 0.16666666666666652,
+                                                            'omega3': 0.14044126313963423}},
+                                          'mu2': {'prob': 0.20833135198746808,
+                                                  'omega': {'syn_mutations': 0.16666666666666652,
+                                                            'omega1': 0.042494255799725385}},
+                                          'mu3': {'prob': 0.7154144549714468,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}}}},
+                            'G': {'prob': 0.18749999999999997,
+                                  'cat': {'mu1': {'prob': 0.07625419304108505,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}},
+                                          'mu2': {'prob': 0.20833135198746808,
+                                                  'omega': {'syn_mutations': 0.16666666666666652,
+                                                            'omega3': 0.14044126313963423}},
+                                          'mu3': {'prob': 0.7154144549714468,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}}}}}},
+                     'C': {'from_nt':
+                           {'A': {'prob': 0.18749999999999997,
+                                  'cat': {'mu1': {'prob': 0.07625419304108505,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}},
+                                          'mu2': {'prob': 0.20833135198746808,
+                                                  'omega': {'syn_mutations': 0.16666666666666652,
+                                                            'omega3': 0.14044126313963423}},
+                                          'mu3': {'prob': 0.7154144549714468,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}}}},
+                            'T': {'prob': 0.625,
+                                  'cat': {'mu1': {'prob': 0.07625419304108505,
+                                                  'omega': {'syn_mutations': 0.16666666666666652,
+                                                            'omega1': 0.042494255799725385}},
+                                          'mu2': {'prob': 0.20833135198746808,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}},
+                                          'mu3': {'prob': 0.7154144549714468,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}}}},
+                            'C': None,
+                            'G': {'prob': 0.18749999999999997,
+                                  'cat': {'mu1': {'prob': 0.07625419304108505,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}},
+                                          'mu2': {'prob': 0.20833135198746808,
+                                                  'omega': {'syn_mutations': 0.16666666666666652,
+                                                            'omega2': 0.09153354221536135}},
+                                          'mu3': {'prob': 0.7154144549714468,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}}}}}},
+                     'G': {'from_nt':
+                           {'A': {'prob': 0.625,
+                                  'cat': {'mu1': {'prob': 0.07625419304108505,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}},
+                                          'mu2': {'prob': 0.20833135198746808,
+                                                  'omega': {'syn_mutations': 0.16666666666666652,
+                                                            'omega1': 0.042494255799725385}},
+                                          'mu3': {'prob': 0.7154144549714468,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}}}},
+                            'T': {'prob': 0.18749999999999997,
+                                  'cat': {'mu1': {'prob': 0.07625419304108505,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}},
+                                          'mu2': {'prob': 0.20833135198746808,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}},
+                                          'mu3': {'prob': 0.7154144549714468,
+                                                  'omega': {'syn_mutations': 0.16666666666666652,
+                                                            'omega4': 0.20514222366142196}}}},
+                            'C': {'prob': 0.18749999999999997,
+                                  'cat': {'mu1': {'prob': 0.07625419304108505,
+                                                  'omega': {'syn_mutations': 0.16666666666666652}},
+                                          'mu2': {'prob': 0.20833135198746808,
+                                                  'omega': {'syn_mutations': 0.16666666666666652,
+                                                            'omega1': 0.042494255799725385}},
+                                          'mu3': {'prob': 0.7154144549714468,
+                                                  'omega': {'syn_mutations': 0.16666666666666652,
+                                                            'omega5': 0.35372204851719063}}}},
+                            'G': None}}}}
+        result = self.sequence6.create_probability_tree()
+        self.assertEqual(expected, result)
 
-    def testMutationRate(self):
-        pass
+    def testNtInEventTree(self):
+        random.seed(4000)
+
+        a3 = self.sequence6.nt_sequence[3]
+        t4 = self.sequence6.nt_sequence[4]
+        g5 = self.sequence6.nt_sequence[5]
+        g6 = self.sequence6.nt_sequence[6]
+        c7 = self.sequence6.nt_sequence[7]
+        c8 = self.sequence6.nt_sequence[8]
+        c9 = self.sequence6.nt_sequence[9]
+
+        exp_event_tree = {'to_nt':
+                          {'A':
+                           {'from_nt': {'A': None,
+                                        'C': {'category': {'mu1': {'syn_mutations': []},
+                                                           'mu2': {'syn_mutations': []},
+                                                           'mu3': {'omega3': [c7, c8],
+                                                                   'syn_mutations': [c9]}}},
+                                        'G': {'category': {'mu1': {'omega2': [g6],
+                                                                   'syn_mutations': []},
+                                                           'mu2': {'syn_mutations': []},
+                                                           'mu3': {'syn_mutations': [g5]}}},
+                                        'T': {'category': {'mu1': {'syn_mutations': []},
+                                                           'mu2': {'omega1': [t4],
+                                                                   'syn_mutations': []},
+                                                           'mu3': {'syn_mutations': []}}}}},
+                           'C':
+                           {'from_nt': {'A': {'category': {'mu1': {'syn_mutations': []},
+                                                           'mu2': {'omega3': [a3],
+                                                                   'syn_mutations': []},
+                                                           'mu3': {'syn_mutations': []}}},
+                                        'C': None,
+                                        'G': {'category': {'mu1': {'syn_mutations': []},
+                                                           'mu2': {'omega2': [g6],
+                                                                   'syn_mutations': []},
+                                                           'mu3': {'syn_mutations': [g5]}}},
+                                        'T': {'category': {'mu1': {'omega1': [t4],
+                                                                   'syn_mutations': []},
+                                                           'mu2': {'syn_mutations': []},
+                                                           'mu3': {'syn_mutations': []}}}}},
+                           'G': {'from_nt': {'A': {'category': {'mu1': {'syn_mutations': []},
+                                                                'mu2': {'omega1': [a3],
+                                                                        'syn_mutations': []},
+                                                                'mu3': {'syn_mutations': []}}},
+                                             'C': {'category': {'mu1': {'syn_mutations': [c9]},
+                                                                'mu2': {'omega1': [c7],
+                                                                        'syn_mutations': []},
+                                                                'mu3': {'omega5': [c8],
+                                                                        'syn_mutations': []}}},
+                                             'G': None,
+                                             'T': {'category': {'mu1': {'syn_mutations': []},
+                                                                'mu2': {'syn_mutations': []},
+                                                                'mu3': {'omega4': [t4],
+                                                                        'syn_mutations': []}}}}},
+                           'T': {'from_nt': {'A': {'category': {'mu1': {'syn_mutations': []},
+                                                                'mu2': {'omega3': [a3],
+                                                                        'syn_mutations': []},
+                                                                'mu3': {'syn_mutations': []}}},
+                                             'C': {'category': {'mu1': {'omega3': [c8],
+                                                                        'syn_mutations': []},
+                                                                'mu2': {'omega1': [c7],
+                                                                        'syn_mutations': [c9]},
+                                                                'mu3': {'syn_mutations': []}}},
+                                             'G': {'category': {'mu1': {'syn_mutations': []},
+                                                                'mu2': {'omega3': [g6],
+                                                                        'syn_mutations': [g5]},
+                                                                'mu3': {'syn_mutations': []}}},
+                                             'T': None}}}}
+
+        res_omega_key = self.sequence6.nt_in_event_tree(a3)
+        self.assertEqual(exp_event_tree, self.sequence6.event_tree)
+
+        # No new omega keys are created initially
+        self.assertEqual({}, res_omega_key)
+
+        # Only 5 possible omegas because there is only 1 ORF
+        self.assertEqual(OMEGA_VALUES_5, self.sequence6.total_omegas)
+
+    def testCountNtsOnEventTree(self):
+        exp_count = 21
+        res_count = self.sequence6.count_nts_on_event_tree()
+        self.assertEqual(exp_count, res_count)
 
 
 # ==========================================
