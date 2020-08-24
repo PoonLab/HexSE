@@ -2,6 +2,7 @@ import random
 import unittest
 
 from src.sequence_info import Sequence
+from src.sequence_info import Nucleotide
 
 MAX_DIFF = None
 KAPPA = 0.3
@@ -138,6 +139,8 @@ class TestSequence1(unittest.TestCase):
         s1 = 'GTACGATCGATCGATGCTAGC'
         pi1 = Sequence.get_frequency_rates(s1)
         self.sequence1 = Sequence(s1, {'+0': [[(0, 21)]]}, KAPPA, GLOBAL_RATE, pi1, OMEGA_VALUES_4, MU_VALUES_4)
+
+        self.seq1_codons = self.sequence1.find_codons('+0', [(0, 21)])
 
     def testReverseComplement(self):
         s = str(self.sequence1)
@@ -556,6 +559,126 @@ class TestSequence1(unittest.TestCase):
         res_count = self.sequence1.count_nts_on_event_tree()
         self.assertEqual(exp_count, res_count)
 
+    def testGetMutationRate(self):
+        nt = Nucleotide('A', 10)
+        nt.rates = {'A': None, 'C': 0.3132846693781597, 'G': 1.0442822312605322, 'T': 0.05572713744568437}
+        nt.get_mutation_rate()
+        exp_mutation_rate = 1.4132940380843764
+        self.assertEqual(exp_mutation_rate, nt.mutation_rate)
+
+    def testCheckMutationRates(self):
+        exp_sub_rates = [
+            {'A': 0.12603317336204048, 'C': 0.030344325868823886, 'G': None,                'T': 0.030344325868823886},
+            {'A': 0.11416272554221871, 'C': 0.08370848515537624,  'G': 0.11043569122638641, 'T': None},
+            {'A': None,                'C': 0.3132846693781597,   'G': 1.0442822312605322,  'T': 0.05572713744568437},
+            {'A': 0.05572713744568437, 'C': None,                 'G': 0.11043569122638641, 'T': 0.0},
+            {'A': 0.14702209411694175, 'C': 0.7501854178665989,   'G': None,                'T': 0.07204984868600821},
+            {'A': None,                'C': 0.10669516683657652,  'G': 1.0442822312605322,  'T': 0.02346989548524854},
+            {'A': 0.0465108069376564,  'C': 0.0512436750694675,   'G': 0.2114401535804069,  'T': None},
+            {'A': 0.0,                 'C': None,                 'G': 0.2114401535804069,  'T': 0.054477868049197166},
+            {'A': 0.42974442198065543, 'C': 0.1289233265941966,   'G': None,                'T': 0.1289233265941966},
+            {'A': None,                'C': 0.025112545546612873, 'G': 1.1173711920673652,  'T': 0.03129099476574798},
+            {'A': 0.6208431044413233,  'C': 0.054477868049197166, 'G': 0.0465108069376564,  'T': None},
+            {'A': 0.02346989548524854, 'C': None,                 'G': 0.01634336041475915, 'T': 0.35565055612192176},
+            {'A': 1.3501568570813995,  'C': 0.08444654209500271,  'G': None,                'T': 0.08444654209500271},
+            {'A': None,                'C': 0.09187847247772883,  'G': 2.069477014804411,   'T': 0.0365020371600683},
+            {'A': 0.11043569122638641, 'C': 0.1857571248189479,   'G': 0.0365020371600683,  'T': None},
+            {'A': 0.0619194407089399,  'C': 0.40504705712441985,  'G': None,                'T': 0.08444654209500271},
+            {'A': 0.0365020371600683,  'C': None,                 'G': 0.01634336041475915, 'T': 0.02294375645294939},
+            {'A': 0.05572713744568437, 'C': 1.0442822312605322,   'G': 0.10669516683657652, 'T': None},
+            {'A': None,                'C': 0.06988679345793328,  'G': 0.6840191432445981,  'T': 0.6208431044413233},
+            {'A': 0.14702209411694175, 'C': 0.7501854178665989,   'G': None,                'T': 0.03780995200861215},
+            {'A': 0.01634336041475915, 'C': None,                 'G': 0.01537310252084025, 'T': 0.1857571248189479}
+        ]
+
+        exp_total_rates = [0.18672182509968824,
+                           0.30830690192398136,
+                           1.4132940380843764,
+                           0.16616282867207077,
+                           0.9692573606695488,
+                           1.1744472935823573,
+                           0.3091946355875308,
+                           0.2659180216296041,
+                           0.6875910751690486,
+                           1.173774732379726,
+                           0.7218317794281769,
+                           0.39546381202192943,
+                           1.519049941271405,
+                           2.1978575244422083,
+                           0.3326948532054026,
+                           0.5514130399283624,
+                           0.07578915402777683,
+                           1.2067045355427932,
+                           1.3747490411438545,
+                           0.9350174639921528,
+                           0.2174735877545473]
+
+        for pos, nt in enumerate(self.sequence1.nt_sequence):
+            self.assertEqual(exp_sub_rates[pos], nt.rates)
+            self.assertEqual(exp_total_rates[pos], nt.mutation_rate)
+
+    def testNtInPos(self):
+        codon = self.seq1_codons[0]     # GTA
+        nt = self.sequence1.nt_sequence[1]  # T
+        expected = 1
+        result = codon.nt_in_pos(nt)
+        self.assertEqual(expected, result)
+
+    def testMutateCodon(self):
+        exp_codon = ['G', 'T', 'A']
+        exp_mutated = ['G', 'T', 'C']
+        res_codon, res_mutated = self.seq1_codons[0].mutate_codon(2, 'C')
+        self.assertEqual(exp_codon, res_codon)
+        self.assertEqual(exp_mutated, res_mutated)
+
+        exp_codon = ['G', 'A', 'T']
+        exp_mutated = ['T', 'A', 'T']
+        res_codon, res_mutated = self.seq1_codons[4].mutate_codon(0, 'T')
+        self.assertEqual(exp_codon, res_codon)
+        self.assertEqual(exp_mutated, res_mutated)
+
+    def testIsNonSyn(self):
+        codon = self.seq1_codons[0]          # GTA = Valine
+
+        # Mutation at wobble position
+        expected = False                     # Synonymous
+        result = codon.is_nonsyn(2, 'C')     # GTC = Valine
+        self.assertEqual(expected, result)
+
+        # Mutation at first position
+        expected = True                     # Non-synonymous
+        result = codon.is_nonsyn(0, 'C')    # CTA = Leucine
+        self.assertEqual(expected, result)
+
+    def testIsStop(self):
+        codon = self.seq1_codons[2]   # TCG = Serine
+
+        # T to G mutation at first position (GCG = Alanine)
+        expected = False
+        result = codon.creates_stop(0, 'G')
+        self.assertEqual(expected, result)
+
+        # C to A mutation in middle position (TAG = STOP)
+        expected = True
+        result = codon.creates_stop(1, 'A')
+        self.assertEqual(expected, result)
+
+    def testIsStart(self):
+        codon = self.seq1_codons[0]               # GTA = Valine
+        expected = False
+        result = codon.is_start()
+        self.assertEqual(expected, result)
+
+    def testCreatesStop(self):
+        codon = self.seq1_codons[2]     # TCG
+        expected = True
+        result = codon.creates_stop(1, 'A')     # TCG --> TAG
+        self.assertEqual(expected, result)
+
+        result = codon.creates_stop(1, 'G')     # TCG -> TGG
+        expected = False
+        self.assertEqual(expected, result)
+
 
 class TestSequence2(unittest.TestCase):
     """
@@ -574,6 +697,9 @@ class TestSequence2(unittest.TestCase):
         sorted_orfs = {'+0': [[(0, 18)]], '+1': [], '+2': [], '-0': [], '-1': [], '-2': [[(3, 15)]]}
         pi2 = Sequence.get_frequency_rates(s2)
         self.sequence2 = Sequence(s2, sorted_orfs, KAPPA, GLOBAL_RATE, pi2, OMEGA_VALUES_5, MU_VALUES_3)
+
+        self.plus_0_codons = self.sequence2.find_codons('+0', [(0, 18)])
+        self.minus_2_codons = self.sequence2.find_codons('-2', [(3, 15)])
 
     def testReverseComplement(self):
         s = str(self.sequence2)
@@ -944,6 +1070,113 @@ class TestSequence2(unittest.TestCase):
         res_count = self.sequence2.count_nts_on_event_tree()
         self.assertEqual(exp_count, res_count)
 
+    def testGetMutationRate(self):
+        nt = Nucleotide('T', 2)
+        nt.rates = {'A': 0.0, 'C': 0.0, 'G': 0.0, 'T': None}
+        nt.get_mutation_rate()
+        exp_mutation_rate = 0
+        self.assertEqual(exp_mutation_rate, nt.mutation_rate)
+
+    def testCheckMutationRates(self):
+        exp_sub_rates = [
+            {'A': None,                 'C': 0.0,                  'G': 0.0,                 'T': 0.0},
+            {'A': 0.0,                  'C': 0.0,                  'G': 0.0,                 'T': None},
+            {'A': 0.0,                  'C': 0.0,                  'G': None,                'T': 0.0},
+            {'A': None,                 'C': 0.0,                  'G': 0.0,                 'T': 0.0},
+            {'A': None,                 'C': 0.0,                  'G': 0.0,                 'T': 0.0},
+            {'A': 0.0,                  'C': 0.0,                  'G': 0.0,                 'T': None},
+            {'A': None,                 'C': 0.024221351790530223, 'G': 0.12152678443944394, 'T': 0.0},
+            {'A': None,                 'C': 0.2657111150590803,   'G': 0.31200315446636473, 'T': 0.06100504924028973},
+            {'A': None,                 'C': 0.02422135179053022,  'G': 0.4016395814157039,  'T': 0.009295542476078078},
+            {'A': 0.014086059105481004, 'C': None,                 'G': 0.10419397971572163, 'T': 0.39084103553569116},
+            {'A': 0.22113424768922216,  'C': None,                 'G': 0.01366957317573483, 'T': 0.19846212601187987},
+            {'A': 0.10419397971572163,  'C': None,                 'G': 0.01703974544729171, 'T': 0.161239458223735},
+            {'A': 0.0,                  'C': 0.0,                  'G': None,                'T': 0.0},
+            {'A': 0.0,                  'C': 0.0,                  'G': 0.0,                 'T': None},
+            {'A': None,                 'C': 0.0,                  'G': 0.0,                 'T': 0.0},
+            {'A': 0.0,                  'C': 0.0,                  'G': 0.0,                 'T': None},
+            {'A': 0.0,                  'C': 0.0,                  'G': None,                'T': 0.0},
+            {'A': None,                 'C': 0.0,                  'G': 0.0,                 'T': 0.0}
+        ]
+
+        exp_total_rates = [0,
+                           0,
+                           0,
+                           0,
+                           0,
+                           0,
+                           0.14574813622997415,
+                           0.6387193187657347,
+                           0.43515647568231214,
+                           0.5091210743568938,
+                           0.43326594687683684,
+                           0.2824731833867483,
+                           0,
+                           0,
+                           0,
+                           0,
+                           0,
+                           0]
+
+        for pos, nt in enumerate(self.sequence2.nt_sequence):
+            self.assertEqual(exp_sub_rates[pos], nt.rates)
+            self.assertEqual(exp_total_rates[pos], nt.mutation_rate)
+
+    def testNtInPos(self):
+        plus_0_codon = self.plus_0_codons[4]    # GTA
+        nt = self.sequence2.nt_sequence[12]     # G
+        expected = 0
+        result = plus_0_codon.nt_in_pos(nt)
+        self.assertEqual(expected, result)
+
+        minus_2_codon = self.minus_2_codons[0]  # ATG
+        expected = 2
+        result = minus_2_codon.nt_in_pos(nt)
+        self.assertEqual(expected, result)
+
+    def testMutateCodon(self):
+        exp_codon = ['C', 'C', 'C']
+        exp_mutated = ['C', 'C', 'G']
+        res_codon, res_mutated = self.plus_0_codons[3].mutate_codon(2, 'G')
+        self.assertEqual(exp_codon, res_codon)
+        self.assertEqual(exp_mutated, res_mutated)
+
+        res_codon, res_mutated = self.minus_2_codons[1].mutate_codon(2, 'G')
+        self.assertEqual(exp_codon, res_codon)
+        self.assertEqual(exp_mutated, res_mutated)
+
+    def testIsNonSyn(self):
+        plus_0_codon = self.plus_0_codons[2]     # AAA
+        expected = False                         # Synonymous
+        result = plus_0_codon.is_nonsyn(2, 'G')
+        self.assertEqual(expected, result)
+
+        expected = True
+        result = plus_0_codon.is_nonsyn(2, 'C')  # Lys --> Asn
+        self.assertEqual(expected, result)
+
+    def testIsStop(self):
+        pass
+
+    def testIsStart(self):
+        plus_0_codon = self.plus_0_codons[0]    # ATG
+        expected = True
+        result = plus_0_codon.is_start()
+        self.assertEqual(expected, result)
+
+        plus_0_codon = self.plus_0_codons[4]    # GTA
+        expected = False
+        result = plus_0_codon.is_start()
+        self.assertEqual(expected, result)
+
+        minus_2_codon = self.minus_2_codons[0]  # ATG
+        expected = True
+        result = minus_2_codon.is_start()
+        self.assertEqual(expected, result)
+
+    def testCreatesStop(self):
+        pass
+
 
 class TestSequence3(unittest.TestCase):
     """
@@ -962,6 +1195,8 @@ class TestSequence3(unittest.TestCase):
         sorted_orfs = {'+0': [[(0, 12)]], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
         pi3 = Sequence.get_frequency_rates(s3)
         self.sequence3 = Sequence(s3, sorted_orfs, KAPPA, GLOBAL_RATE, pi3, OMEGA_VALUES_4, MU_VALUES_3)
+
+        self.seq3_codons = self.sequence3.find_codons('+0', [(0, 12)])
 
     def testReverseComplement(self):
         s = str(self.sequence3)
@@ -1318,6 +1553,83 @@ class TestSequence3(unittest.TestCase):
         res_count = self.sequence3.count_nts_on_event_tree()
         self.assertEqual(exp_count, res_count)
 
+    def testGetMutationRate(self):
+        nt = Nucleotide('C', 4)
+        nt.rates = {'A': 0.0584793504496421, 'C': None, 'G': 0.0076247167865047885, 'T': 0.06286076399166855}
+        nt.get_mutation_rate()
+        exp_mutation_rate = 0.12896483122781544
+        self.assertEqual(exp_mutation_rate, nt.mutation_rate)
+
+    def testCheckMutationRates(self):
+        exp_sub_rates = [
+            {'A': None,                 'C': 0.0,                 'G': 0.0,                   'T': 0.0},
+            {'A': 0.0,                  'C': 0.0,                 'G': 0.0,                   'T': None},
+            {'A': 0.0,                  'C': 0.0,                 'G': None,                  'T': 0.0},
+            {'A': None,                 'C': 0.05893196624218927, 'G': 0.9950857822074713,    'T': 0.05893196624218927},
+            {'A': 0.0584793504496421,   'C': None,                'G': 0.0076247167865047885, 'T': 0.06286076399166855},
+            {'A': 0.1665314408685853,   'C': 0.4687178314525643,  'G': None,                  'T': 0.04995943226057559},
+            {'A': 0.023827239957827467, 'C': 1.8429928824519723,  'G': 0.08693180501604358,   'T': None},
+            {'A': 0.0,                  'C': 0.13746308896128004, 'G': None,                  'T': 0.13746308896128004},
+            {'A': 0.0,                  'C': 0.08940437365191053, 'G': None,                  'T': 0.14604543242695323},
+            {'A': 0.0,                  'C': 0.0,                 'G': 0.0,                   'T': None},
+            {'A': 0.0,                  'C': 0.0,                 'G': None,                  'T': 0.0},
+            {'A': None,                 'C': 0.0,                 'G': 0.0,                   'T': 0.0}
+        ]
+
+        exp_total_rates = [0,
+                           0,
+                           0,
+                           1.11294971469185,
+                           0.12896483122781544,
+                           0.6852087045817252,
+                           1.9537519274258432,
+                           0.2749261779225601,
+                           0.23544980607886376,
+                           0,
+                           0,
+                           0]
+
+        for pos, nt in enumerate(self.sequence3.nt_sequence):
+            self.assertEqual(exp_sub_rates[pos], nt.rates)
+            self.assertEqual(exp_total_rates[pos], nt.mutation_rate)
+
+    def testNtInPos(self):
+        codon = self.seq3_codons[2]         # TGG
+        nt = self.sequence3.nt_sequence[6]  # T
+        expected = 0
+        result = codon.nt_in_pos(nt)
+        self.assertEqual(expected, result)
+
+    def testMutateCodon(self):
+        exp_codon = ['T', 'G', 'A']
+        exp_mutated = ['T', 'C', 'A']
+        res_codon, res_mutated = self.seq3_codons[3].mutate_codon(1, 'C')
+        self.assertEqual(exp_codon, res_codon)
+        self.assertEqual(exp_mutated, res_mutated)
+
+    def testIsNonSyn(self):
+        codon = self.seq3_codons[0]         # ATG
+        expected = True
+        result = codon.is_nonsyn(2, 'T')    # ATT
+        self.assertEqual(expected, result)
+
+        codon = self.seq3_codons[3]     # TGA
+        expected = False
+        result = codon.is_nonsyn(1, 'A')
+        self.assertEqual(expected, result)
+
+    def testIsStop(self):
+        pass
+
+    def testIsStart(self):
+        codon = self.seq3_codons[2]     # TGG
+        expected = False
+        result = codon.is_start()
+        self.assertEqual(expected, result)
+
+    def testCreatesStop(self):
+        pass
+
 
 class TestSequence4(unittest.TestCase):
     """
@@ -1337,6 +1649,8 @@ class TestSequence4(unittest.TestCase):
         pi4 = Sequence.get_frequency_rates(s4)
         random.seed(4000)
         self.sequence4 = Sequence(s4, sorted_orfs, KAPPA, GLOBAL_RATE, pi4, OMEGA_VALUES_5, MU_VALUES_4)
+
+        self.seq4_codons = self.sequence4.find_codons('+0', [(0, 12)])
 
     def testReverseComplement(self):
         s = str(self.sequence4)
@@ -1692,6 +2006,88 @@ class TestSequence4(unittest.TestCase):
         res_count = self.sequence4.count_nts_on_event_tree()
         self.assertEqual(exp_count, res_count)
 
+    def testGetMutationRate(self):
+        nt = Nucleotide('A', 10)
+        nt.rates = {'A': None, 'C': 0.0, 'G': 0.0, 'T': 0.0}
+        nt.get_mutation_rate()
+        exp_mutation_rate = 0
+        self.assertEqual(exp_mutation_rate, nt.mutation_rate)
+
+    def testCheckMutationRates(self):
+        exp_sub_rates = [
+            {'A': None,                'C': 0.0,                  'G': 0.0,                 'T': 0.0},
+            {'A': 0.0,                 'C': 0.0,                  'G': 0.0,                 'T': None},
+            {'A': 0.0,                 'C': 0.0,                  'G': None,                'T': 0.0},
+            {'A': None,                'C': 0.12362133301173836,  'G': 0.12468312208406625, 'T': 0.008228019874329523},
+            {'A': 0.13679802361738583, 'C': 0.04475588894143996,  'G': 0.17922534693719583, 'T': None},
+            {'A': 0.6233063414381459,  'C': 0.014008602512739905, 'G': None,                'T': 0.014008602512739905},
+            {'A': 0.0936525250088927,  'C': None,                 'G': 0.23587770612698317, 'T': 0.10626879766512083},
+            {'A': 0.2749880918109467,  'C': None,                 'G': 0.23587770612698317, 'T': 0.31217508336297567},
+            {'A': 0.32633819726891633, 'C': None,                 'G': 0.11114079878810054, 'T': 1.0877939908963878},
+            {'A': 0.0,                 'C': 0.0,                  'G': 0.0,                 'T': None},
+            {'A': None,                'C': 0.0,                  'G': 0.0,                 'T': 0.0},
+            {'A': None,                'C': 0.0,                  'G': 0.0,                 'T': 0.0}
+        ]
+
+        exp_total_rates = [0,
+                           0,
+                           0,
+                           0.25653247497013415,
+                           0.36077925949602163,
+                           0.6513235464636258,
+                           0.4357990288009967,
+                           0.8230408813009056,
+                           1.5252729869534047,
+                           0,
+                           0,
+                           0]
+
+        for pos, nt in enumerate(self.sequence4.nt_sequence):
+            self.assertEqual(exp_sub_rates[pos], nt.rates)
+            self.assertEqual(exp_total_rates[pos], nt.mutation_rate)
+
+    def testNtInPos(self):
+        codon = self.seq4_codons[3]         # TAA
+        nt = self.sequence4.nt_sequence[9]  # T
+        expected = 0
+        result = codon.nt_in_pos(nt)
+        self.assertEqual(expected, result)
+
+    def testMutateCodon(self):
+        exp_codon = ['A', 'T', 'G']
+        exp_mutated = ['T', 'T', 'G']
+        res_codon, res_mutated = self.seq4_codons[1].mutate_codon(0, 'T')
+        self.assertEqual(exp_codon, res_codon)
+        self.assertEqual(exp_mutated, res_mutated)
+
+    def testIsNonSyn(self):
+        codon = self.seq4_codons[1]         # ATG (Met)
+        expected = True
+        result = codon.is_nonsyn(2, 'A')    # ATA (Ile)
+        self.assertEqual(expected, result)
+
+        codon = self.seq4_codons[2]         # CCC (Pro)
+        expected = False
+        result = codon.is_nonsyn(2, 'A')    # CCA (Pro)
+        self.assertEqual(expected, result)
+
+    def testIsStop(self):
+        pass
+
+    def testIsStart(self):
+        codon = self.seq4_codons[1]     # internal methionine
+        expected = False
+        result = codon.is_start()
+        self.assertEqual(expected, result)
+
+        codon = self.seq4_codons[0]     # First methionine in ORF
+        expected = True
+        result = codon.is_start()
+        self.assertEqual(expected, result)
+
+    def testCreatesStop(self):
+        pass
+
 
 class TestSequence5(unittest.TestCase):
     """
@@ -1711,6 +2107,9 @@ class TestSequence5(unittest.TestCase):
         sorted_orfs = {'+0': [[(0, 12)]], '+1': [[(4, 16)]], '+2': [], '-0': [], '-1': [], '-2': []}
         pi5 = Sequence.get_frequency_rates(s5)
         self.sequence5 = Sequence(s5, sorted_orfs, KAPPA, GLOBAL_RATE, pi5, OMEGA_VALUES_4, MU_VALUES_4)
+
+        self.plus_0_codons = self.sequence5.find_codons('+0', [(0, 12)])
+        self.plus_1_codons = self.sequence5.find_codons('+1', [(4, 16)])
 
     def testReverseComplement(self):
         s = str(self.sequence5)
@@ -2077,6 +2476,107 @@ class TestSequence5(unittest.TestCase):
         res_count = self.sequence5.count_nts_on_event_tree()
         self.assertEqual(exp_count, res_count)
 
+    def testGetMutationRate(self):
+        nt = Nucleotide('A', 3)
+        nt.rates = {'A': None, 'C': 0.04954407504576764, 'G': 0.3688469654724257, 'T': 0.1106540896417277}
+        nt.get_mutation_rate()
+        exp_mutation_rate = 0.529045130159921
+        self.assertEqual(exp_mutation_rate, nt.mutation_rate)
+
+    def testCheckMutationRates(self):
+        exp_sub_rates = [
+            {'A': None,                 'C': 0.0,                 'G': 0.0,                  'T': 0.0},
+            {'A': 0.0,                  'C': 0.0,                 'G': 0.0,                  'T': None},
+            {'A': 0.0,                  'C': 0.0,                 'G': None,                 'T': 0.0},
+            {'A': None,                 'C': 0.04954407504576764, 'G': 0.3688469654724257,   'T': 0.1106540896417277},
+            {'A': None,                 'C': 0.0,                 'G': 0.0,                  'T': 0.0},
+            {'A': 0.0,                  'C': 0.0,                 'G': 0.0,                  'T': None},
+            {'A': 0.0,                  'C': 0.0,                 'G': None,                 'T': 0.0},
+            {'A': 0.05726670307066566,  'C': None,                'G': 0.026505824065847356, 'T': 0.019435085925015638},
+            {'A': 0.01988076522440186,  'C': None,                'G': 0.012938493661684328, 'T': 0.15735024425679955},
+            {'A': 0.0,                  'C': 0.0,                 'G': 0.0,                  'T': None},
+            {'A': 0.0,                  'C': 0.0,                 'G': None,                 'T': 0.0},
+            {'A': None,                 'C': 0.0,                 'G': 0.0,                  'T': 0.0},
+            {'A': 0.012170372828998532, 'C': None,                'G': 0.04720507327703986,  'T': 0.2815566902631881},
+            {'A': 0.0,                  'C': 0.0,                 'G': 0.0,                  'T': None},
+            {'A': None,                 'C': 0.0,                 'G': 0.0,                  'T': 0.0},
+            {'A': None,                 'C': 0.0,                 'G': 0.0,                  'T': 0.0}
+        ]
+
+        exp_total_rates = [0,
+                           0,
+                           0,
+                           0.529045130159921,
+                           0,
+                           0,
+                           0,
+                           0.10320761306152866,
+                           0.19016950314288575,
+                           0,
+                           0,
+                           0,
+                           0.3409321363692265,
+                           0,
+                           0,
+                           0]
+
+        for pos, nt in enumerate(self.sequence5.nt_sequence):
+            self.assertEqual(exp_sub_rates[pos], nt.rates)
+            self.assertEqual(exp_total_rates[pos], nt.mutation_rate)
+
+    def testNtInPos(self):
+        plus_0_codon = self.plus_0_codons[2]    # GCC
+        nt = self.sequence5.nt_sequence[7]      # First C
+        expected = 1
+        result = plus_0_codon.nt_in_pos(nt)
+        self.assertEqual(expected, result)
+
+        plus_1_codon = self.plus_1_codons[1]    # CCT
+        expected = 0
+        result = plus_1_codon.nt_in_pos(nt)
+        self.assertEqual(expected, result)
+
+    def testMutateCodon(self):
+        exp_codon = ['G', 'C', 'C']
+        exp_mutated = ['G', 'C', 'G']
+        res_codon, res_mutated = self.plus_0_codons[2].mutate_codon(2, 'G')
+        self.assertEqual(exp_codon, res_codon)
+        self.assertEqual(exp_mutated, res_mutated)
+
+        exp_codon = ['G', 'A', 'C']
+        exp_mutated = ['G', 'A', 'G']
+        res_codon, res_mutated = self.plus_1_codons[2].mutate_codon(2, 'G')
+        self.assertEqual(exp_codon, res_codon)
+        self.assertEqual(exp_mutated, res_mutated)
+
+    def testIsNonSyn(self):
+        plus_0_codon = self.plus_0_codons[1]     # AAT (Asn)
+        expected = True
+        result = plus_0_codon.is_nonsyn(0, 'C')  # CAT (His)
+        self.assertEqual(expected, result)
+
+        plus_1_codon = self.plus_1_codons[1]     # CCT (Pro)
+        expected = False
+        result = plus_1_codon.is_nonsyn(2, 'C')  # CCT (Pro)
+        self.assertEqual(expected, result)
+
+    def testIsStop(self):
+        pass
+
+    def testIsStart(self):
+        plus_1_codon = self.plus_1_codons[0]    # ATG
+        expected = True
+        result = plus_1_codon.is_start()
+        self.assertEqual(expected, result)
+
+        plus_0_codon = self.plus_0_codons[3]    # TGA
+        expected = False
+        result = plus_0_codon.is_start()
+        self.assertEqual(expected, result)
+
+    def testCreatesStop(self):
+        pass
+
 
 class TestSequence6(unittest.TestCase):
     """
@@ -2095,6 +2595,7 @@ class TestSequence6(unittest.TestCase):
         sorted_orfs = {'+0': [[(0, 5), (6, 13)]], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
         pi6 = Sequence.get_frequency_rates(s6)
         self.sequence6 = Sequence(s6, sorted_orfs, KAPPA, GLOBAL_RATE, pi6, OMEGA_VALUES_5, MU_VALUES_3)
+        self.seq6_codons = self.sequence6.find_codons('+0', [(0, 5), (6, 13)])
 
     def testReverseComplement(self):
         s = str(self.sequence6)
@@ -2412,6 +2913,95 @@ class TestSequence6(unittest.TestCase):
         res_count = self.sequence6.count_nts_on_event_tree()
         self.assertEqual(exp_count, res_count)
 
+    def testGetMutationRate(self):
+        nt = Nucleotide('C', 10)
+        nt.rates = {'A': 0.25667881246211854, 'C': None, 'G': 0.02735873671412473, 'T': 0.2491527517379426}
+        nt.get_mutation_rate()
+        exp_mutation_rate = 0.5331903009141858
+        self.assertEqual(exp_mutation_rate, nt.mutation_rate)
+
+    def testCheckMutationRates(self):
+        exp_sub_rates = [
+            {'A': None,                 'C': 0.0,                  'G': 0.0,                  'T': 0.0},
+            {'A': 0.0,                  'C': 0.0,                  'G': 0.0,                  'T': None},
+            {'A': 0.0,                  'C': 0.0,                  'G': None,                 'T': 0.0},
+            {'A': None,                 'C': 0.08489200243559196,  'G': 0.08562114358233551,  'T': 0.08489200243559196},
+            {'A': 0.019057609378003708, 'C': 0.023251783125747112, 'G': 0.3159339741315129,   'T': None},
+            {'A': 0.8555960415403951,   'C': 0.25667881246211854,  'G': None,                 'T': 0.07474582552138279},
+            {'A': 0.05008484163962589,  'C': 0.04105050105470119,  'G': None,                 'T': 0.0629843889038263},
+            {'A': 0.21628977986016748,  'C': None,                 'G': 0.019057609378003708, 'T': 0.06352536459334569},
+            {'A': 0.21628977986016748,  'C': None,                 'G': 0.5447577321303627,   'T': 0.07684591084072731},
+            {'A': 0.25667881246211854,  'C': None,                 'G': 0.02735873671412473,  'T': 0.2491527517379426},
+            {'A': 0.0,                  'C': 0.0,                  'G': 0.0,                  'T': None},
+            {'A': None,                 'C': 0.0,                  'G': 0.0,                  'T': 0.0},
+            {'A': None,                 'C': 0.0,                  'G': 0.0,                  'T': 0.0}
+        ]
+
+        exp_total_rates = [0,
+                           0,
+                           0,
+                           0.2554051484535194,
+                           0.35824336663526374,
+                           1.1870206795238967,
+                           0.15411973159815337,
+                           0.2988727538315169,
+                           0.8378934228312576,
+                           0.5331903009141858,
+                           0,
+                           0,
+                           0]
+
+        for pos, nt in enumerate(self.sequence6.nt_sequence):
+            self.assertEqual(exp_sub_rates[pos], nt.rates)
+            self.assertEqual(exp_total_rates[pos], nt.mutation_rate)
+
+    def testNtInPos(self):
+        codon = self.seq6_codons[0]         # ATG
+        nt = self.sequence6.nt_sequence[0]  # A
+        expected = 0
+        result = codon.nt_in_pos(nt)
+        self.assertEqual(expected, result)
+
+        codon = self.seq6_codons[3]          # TAA
+        nt = self.sequence6.nt_sequence[12]  # A
+        expected = 2
+        result = codon.nt_in_pos(nt)
+        self.assertEqual(expected, result)
+
+    def testMutateCodon(self):
+        exp_codon = ['A', 'T', 'G']
+        exp_mutated = ['C', 'T', 'G']
+        res_codon, res_mutated = self.seq6_codons[1].mutate_codon(0, 'C')
+        self.assertEqual(exp_codon, res_codon)
+        self.assertEqual(exp_mutated, res_mutated)
+
+    def testIsNonSyn(self):
+        codon = self.seq6_codons[3]             # TAA (STOP)
+        expected = True
+        result = codon.is_nonsyn(1, 'C')        # TAC (Tyr)
+        self.assertEqual(expected, result)
+
+        expected = False
+        result = codon.is_nonsyn(1, 'G')        # TGA (STOP)
+        self.assertEqual(expected, result)
+
+    def testIsStop(self):
+        pass
+
+    def testIsStart(self):
+        codon = self.seq6_codons[0]     # First methionine
+        expected = True
+        result = codon.is_start()
+        self.assertEqual(expected, result)
+
+        codon = self.seq6_codons[1]     # Internal methionine
+        expected = False
+        result = codon.is_start()
+        self.assertEqual(expected, result)
+
+    def testCreatesStop(self):
+        pass
+
 
 # ==========================================
 # Tests for Codon
@@ -2445,136 +3035,12 @@ class TestCodon(unittest.TestCase):
         random.seed(4000)
         self.nt_seq6 = Sequence(s6, sorted_orfs, kappa, mu, pi6, dN_values, dS_values)
 
-    def testNtInPos(self):
-        codons = self.nt_seq1.find_codons('+0', [(0, 12)])
-        codon = codons[0]
-        nt = self.nt_seq1.nt_sequence[0]
-        expected = 0
-        result = codon.nt_in_pos(nt)
-        self.assertEqual(expected, result)
-
-        codons = self.nt_seq1.find_codons('+0', [(0, 12)])
-        codon = codons[1]
-        nt = self.nt_seq1.nt_sequence[3]
-        expected = 0
-        result = codon.nt_in_pos(nt)
-        self.assertEqual(expected, result)
-
-        nt = self.nt_seq1.nt_sequence[4]
-        expected = 1
-        result = codon.nt_in_pos(nt)
-        self.assertEqual(expected, result)
-
-        nt = self.nt_seq1.nt_sequence[5]
-        expected = 2
-        result = codon.nt_in_pos(nt)
-        self.assertEqual(expected, result)
-
-    def testMutateCodon(self):
-        # Test Sequence 1
-        # GTA CGA TCG ATC GAT GCT AGC
-        # CAT GCT AGC TAG CTA CGA TCG
-        codons = self.nt_seq1.find_codons('+0', [(0, 12)])
-        exp_codon = ['G', 'T', 'A']
-        exp_mutated = ['G', 'T', 'C']
-        res_codon, res_mutated = codons[0].mutate_codon(2, 'C')
-        self.assertEqual(exp_codon, res_codon)
-        self.assertEqual(exp_mutated, res_mutated)
-
-        codons = self.nt_seq1.find_codons('-0', [(0, 12)])
-        exp_codon = ['G', 'A', 'T']
-        exp_mutated = ['T', 'A', 'T']
-        res_codon, res_mutated = codons[0].mutate_codon(0, 'A')
-        self.assertEqual(exp_codon, res_codon)
-        self.assertEqual(exp_mutated, res_mutated)
-
-    def testIsNonSyn(self):
-        # Test Sequence 1
-        # GTA CGA TCG ATC GAT GCT AGC
-        codons = self.nt_seq1.find_codons('+0', [(0, 12)])
-        codon = codons[0]                    # GTA = Valine
-
-        # Mutation at wobble position
-        expected = False                     # Synonymous
-        result = codon.is_nonsyn(2, 'C')     # GTC = Valine
-        self.assertEqual(expected, result)
-
-        # Mutation at first position
-        expected = True                     # Non-synonymous
-        result = codon.is_nonsyn(0, 'C')    # CTA = Leucine
-        self.assertEqual(expected, result)
-
-        # Testing sequence 4
-        # ATG ACG TGG TGA
-        codons = self.nt_seq4.find_codons('+0', [(0, 12)])
-        codon = codons[2]                   # TGG = Tryptophan
-
-        # Mutation at second position
-        expected = True                     # Non-synonymous
-        result = codon.is_nonsyn(1, 'A')    # TAG = STOP
-        self.assertEqual(expected, result)
-
-        # Mutation at wobble position
-        expected = True                     # Non-synonymous
-        result = codon.is_nonsyn(2, 'A')    # TGA = STOP
-        self.assertEqual(expected, result)
-
-        # Testing mutation at position 2 in ACG
-        codon = codons[1]                   # ACG = Threonine
-        expected = False                    # Synonymous
-        result = codon.is_nonsyn(2, 'T')    # ACT = Threonine
-        self.assertEqual(expected, result)
-
-        # Testing mutation at position 1 in TGA
-        expected = False                    # Synonymous
-        codon = codons[3]                   # TGA = STOP
-        result = codon.is_nonsyn(1, 'A')    # TAA = STOP
-        self.assertEqual(expected, result)
-
     def testIsStop(self):
-        codons = self.nt_seq1.find_codons('+0', [(0, 12)])
-        codon = codons[2]   # TCG = Serine
-
-        # T to G mutation at first position (GCG = Alanine)
-        expected = False
-        result = codon.introduces_stop(0, 'G')
-        self.assertEqual(expected, result)
-
-        # C to A mutation in middle position (TAG = STOP)
-        expected = True
-        result = codon.introduces_stop(1, 'A')
-        self.assertEqual(expected, result)
-
         # G to A mutation in middle position (TAA = STOP)
         codons = self.nt_seq4.find_codons('+0', [(0, 12)])
         codon = codons[3]
         expected = True
         result = codon.introduces_stop(1, 'A')
-        self.assertEqual(expected, result)
-
-    def testIsStart(self):
-        # Testing sequence 1
-        # GTA CGA TCG ATC GAT GCT AGC
-        codons = self.nt_seq1.find_codons('+0', [(0, 12)])
-        codon = codons[0]               # GTA = Valine
-        expected = False
-        result = codon.is_start()
-        self.assertEqual(expected, result)
-
-        # Testing sequence 4
-        # ATG ACG TGG TGA
-        codons = self.nt_seq4.find_codons('+0', [(0, 12)])
-        codon = codons[0]               # first Methionine
-        expected = True
-        result = codon.is_start()
-        self.assertEqual(expected, result)
-
-        # Testing sequence 5
-        # ATG ATG CCC TAA
-        codons = self.nt_seq5.find_codons('+0', [(0, 12)])
-        codon = codons[1]               # second Methionine
-        expected = False
-        result = codon.is_start()
         self.assertEqual(expected, result)
 
 

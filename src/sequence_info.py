@@ -609,13 +609,7 @@ class Codon:
         :param to_nt: the new state of the Nucleotide
         :return codon, mutated_codon: the codon and mutated codon represented as lists of strings
         """
-        # Positive strand
-        if self.frame.startswith('+'):
-            codon = [str(nt) for nt in self.nts_in_codon]  # Cast all Nucleotides in the Codon to strings
-        else:
-            codon = [nt.complement_state for nt in self.nts_in_codon]
-            to_nt = COMPLEMENT_DICT[to_nt]
-
+        codon = [str(nt) for nt in self.nts_in_codon]  # Cast all Nucleotides in the Codon to strings
         mutated_codon = codon.copy()
         mutated_codon[pos_in_codon] = to_nt
 
