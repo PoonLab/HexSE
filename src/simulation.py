@@ -43,7 +43,7 @@ class SimulateOnBranch:
         from_tree = self.sequence.probability_tree['to_nt'][to_mutation]['from_nt']
         from_mutation = self.select_key(from_tree)
 
-        # Select: mu clategory
+        # Select: mu category
         def possible_cats():
             cat_tree = copy.copy(self.sequence.probability_tree['to_nt'][to_mutation]['from_nt'][from_mutation]['cat'])
             for i in list(cat_tree.keys()):
@@ -87,12 +87,12 @@ class SimulateOnBranch:
         """
         Select a random key using weighted_random_choice
         """
-        temp_dict = {}  # Dictionary contaning keys to 'from nucleotides' or 'categories' and their probability (weigth)
+        temp_dict = {}  # Dictionary containing keys to 'from nucleotides' or 'categories' and their probability (weight)
         for key, value in dictionary.items():
             if value:
                 temp_dict[key] = value['prob']
         selected_key = self.weighted_random_choice(temp_dict, sum(temp_dict.values()))
-        return(selected_key)
+        return (selected_key)
 
     @staticmethod
     def weighted_random_choice(dictionary, sum_values):
@@ -193,7 +193,6 @@ class SimulateOnBranch:
                     omega_key = nt.omega_in_event_tree[to_nt]
                     my_branch = self.sequence.event_tree['to_nt'][to_nt]['from_nt'][nt.state]['category'][cat_key][omega_key]
                     my_branch.remove(nt)
-
 
     def update_nucleotide(self, nt, to_state):
         """
