@@ -560,7 +560,7 @@ def main():
         exit(0)
 
     # Draw omega values and create classes to classify nucleotides on the Event Tree
-    omega_values = discretize(args.omega_shape, args.omega_classes, args.omega_dist)
+    omega_values = list(discretize(args.omega_shape, args.omega_classes, args.omega_dist))
     mu_values = create_values_dict(args.mu_shape, args.mu_classes, "mu", args.mu_dist)
     print(f"Omega values: {omega_values}")
     print(f"Categories: {mu_values}")
