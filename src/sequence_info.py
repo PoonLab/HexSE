@@ -116,7 +116,7 @@ class Sequence:
                         current_branch = prob_tree['to_nt'][to_nt]['from_nt'][from_nt]
 
                         # Update transition-transversion probability value
-                        if self.is_transv(from_nt, to_nt):  # Substitution is tranversion
+                        if self.is_transv(from_nt, to_nt):  # Substitution is transversion
                             current_branch['prob'] += (self.kappa / (1 + 2 * self.kappa))
                         else:  # Substitution is transition
                             current_branch['prob'] += (1 / (1 + 2 * self.kappa))
@@ -132,9 +132,10 @@ class Sequence:
                             # Calculate omega probability for omegas on the tree
                             for omega in omegas:
                                 denominator = 1 + sum(self.total_omegas.values())
-                                if omega != 'syn_mutations':
+
+                                if any(omega):  # Non-synonymous
                                     omega_p = (self.total_omegas[omega] / denominator)
-                                else:
+                                else:           # Synonymous (no omega values used, so key contains all 0s)
                                     omega_p = (1 / denominator)
 
                                 current_branch['cat'][mu_cat]['omega'][omega] = omega_p
@@ -264,7 +265,7 @@ class Sequence:
         :return event tree: a nested dictionary containing information about the mutation event
         """
         event_tree = {'to_nt': {'A': {}, 'T': {}, 'C': {}, 'G': {}}}
-        cat_dict = {cat: {'syn_mutations': []} for cat in self.cat_values.keys()}
+        cat_dict = {cat: {} for cat in self.cat_values.keys()}
 
         for to_nt in NUCLEOTIDES:
             if to_nt in event_tree['to_nt'].keys():
@@ -310,32 +311,58 @@ class Sequence:
 
                     # If mutation does not introduce a STOP and nucleotide is not part of a START codon
                     if not self.is_start_stop_codon(nt, to_nt):
+
+                        chosen_omegas = [0 for _ in range(len(self.omega_values))]
                         for codon in nt.codons:
                             pos_in_codon = codon.nt_in_pos(nt)
 
                             # Apply omega when mutation is non-synonymous
                             if codon.is_nonsyn(pos_in_codon, to_nt):
-                                # Randomly select a key in the omega values dictionary
-                                selected_omega = random.choice(list(self.omega_values))
-                                sub_rates[to_nt] *= self.omega_values[selected_omega]
-                                chosen_omegas.append(selected_omega)
 
-                    else:  # Mutation introduce a STOP or nt is part of a START
+                                # Randomly select a key in the omega values dictionary
+                                omega_index = random.randrange(len(self.omega_values))
+                                sub_rates[to_nt] *= self.omega_values[omega_index]
+                                chosen_omegas[omega_index] += 1
+
+                    else:  # Mutation introduces or destroys a STOP or nt is part of a START
                         sub_rates[to_nt] *= 0
 
                 # Randomly select one of the mu Values
                 selected_cat = random.choice(list(self.cat_values))
                 sub_rates[to_nt] *= self.cat_values[selected_cat]
-
+                chosen_omegas = tuple(chosen_omegas)
                 my_omega_keys[to_nt] = chosen_omegas  # Store omega keys used in the substitution
+
                 # If mutation is synonymous, omega_keys list will be empty
                 my_cat_keys[to_nt] = selected_cat
+
+                # If key is not in total omegas dict, create it
+                self.set_total_omegas(chosen_omegas)
 
         # Set substitution rates and key values for the nucleotide object
         nt.set_rates(sub_rates)
         nt.set_categories(my_cat_keys)
         nt.set_omega(my_omega_keys)
         nt.get_mutation_rate()
+
+    def set_total_omegas(self, chosen_omegas):
+        """
+        Adds unique combinations of omega values to total_omegas
+        Synonymous mutations are represented as tuples containing all zeroes
+        :param chosen_omegas: tuple of values representing the indices of the selected omega values
+            For synonymous mutations, tuples contain all zeroes
+            For non-synonymous mutations, tuples contain non-zero elements
+        """
+        # If non-synonymous mutation (omega values are applied)
+        if any(chosen_omegas):
+            # If key is not in total omegas dict, create it
+            if chosen_omegas not in self.total_omegas:
+                value = 1
+                for pos, omega_index in enumerate(chosen_omegas):
+                    if omega_index == 1:
+                        value *= self.omega_values[pos]
+                # Store key of combined omegas, and their multiplied value
+                self.total_omegas[chosen_omegas] = value
 
     @staticmethod
     def is_start_stop_codon(nt, to_nt):
@@ -366,7 +393,7 @@ class Sequence:
 
                 if not self.is_start_stop_codon(nt, to_nt):
                     # Create one nucleotide key with all the omegas for that substitution
-                    omega_cat = "_".join(nt.omega_keys[to_nt])
+                    omega_cat = nt.omega_keys[to_nt]
                     category = nt.cat_keys[to_nt]
                     cat_branch = self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['category'][category]
 
@@ -382,13 +409,6 @@ class Sequence:
                         else:  # Create the new omega class
                             cat_branch[omega_cat] = [nt]
                             new_omega_key[to_nt] = {'cat': category, 'new_omega': omega_cat}
-                            # If key is not in total omegas dict, create it
-                            if omega_cat not in self.total_omegas:
-                                value = 1
-                                for cat in nt.omega_keys[to_nt]:
-                                    value *= self.omega_values[cat]
-                                # Store key of combined omegas, and their multiplied value
-                                self.total_omegas[omega_cat] = value
 
                     else:  # Mutation is syn in all Codons
                         cat_branch['syn_mutations'].append(nt)

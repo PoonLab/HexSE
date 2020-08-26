@@ -258,7 +258,8 @@ def create_values_dict(alpha, ncat, string, dist):
     """
     Creates dictionary with values (as rates) drawn from a discretized gamma distribution
     :param alpha: shape parameter
-    :param ncat: Number of catefories
+    :param ncat: Number of categories
+    :param dist: the distribution (gamma or log normal)
     :param string: strings like "omega" or "mu" to name the keys of the dictionary
     """
 
@@ -266,7 +267,7 @@ def create_values_dict(alpha, ncat, string, dist):
     nt_categories_dict = {}
     for i, item in enumerate(nt_categories):
         cat = f"{string}{i+1}"
-        nt_categories_dict[cat]=item
+        nt_categories_dict[cat] = item
 
     return nt_categories_dict
 
@@ -284,14 +285,16 @@ def discretize(alpha, ncat, dist):
     if dist == ss.gamma:
         dist = dist(alpha, scale=0.4)
     elif dist == ss.lognorm:
-        dist = dist(s=alpha, scale=0.5 )  # scale=np.exp(0.05 * alpha**2)
+        dist = dist(s=alpha, scale=0.5)  # scale=np.exp(0.05 * alpha**2)
+
     quantiles = dist.ppf(np.arange(0, ncat) / ncat)
     rates = np.zeros(ncat, dtype=np.double)
+
     for i in range(ncat-1):
-        rates[i] = (ncat * scipy.integrate.quad(lambda x: x * dist.pdf(x),
-                                               quantiles[i], quantiles[i+1])[0])
-    rates[ncat-1] = ncat * scipy.integrate.quad(lambda x: x * dist.pdf(x),
-                                                quantiles[ncat-1], np.inf)[0]
+        rates[i] = (ncat * scipy.integrate.quad(lambda x: x * dist.pdf(x), quantiles[i], quantiles[i+1])[0])
+
+    rates[ncat-1] = ncat * scipy.integrate.quad(lambda x: x * dist.pdf(x), quantiles[ncat-1], np.inf)[0]
+
     return rates
 
 
@@ -419,7 +422,7 @@ def stop_in_seq(seq, start, end):
     Look for stop codons inside the CDS
     """
     cds = seq[start:end]
-    stop =  ["TGA", "TAG", "TAA"]
+    stop = ["TGA", "TAG", "TAA"]
     stop_count = 0
     for codon, nt in codon_iterator(cds, start, end):
         if codon in stop:
@@ -440,7 +443,7 @@ def codon_iterator(my_orf, start_pos, end_pos):
         my_orf.reverse()
     i = 0
     while i < len(my_orf):
-        yield (my_orf[i:i + 3], i)
+        yield my_orf[i:i + 3], i
         i += 3
 
 
@@ -556,28 +559,31 @@ def main():
         print("Invalid input: {}".format(args.pi))
         exit(0)
 
-    # Draw omeg values and create classes to classify nucleotides on the Event Tree
-    omega_values = create_values_dict(args.omega_shape, args.omega_classes, "omega", args.omega_dist)
+    # Draw omega values and create classes to classify nucleotides on the Event Tree
+    omega_values = discretize(args.omega_shape, args.omega_classes, args.omega_dist)
     mu_values = create_values_dict(args.mu_shape, args.mu_classes, "mu", args.mu_dist)
     print(f"Omega values: {omega_values}")
     print(f"Categories: {mu_values}")
 
-
-    logging.info(f"Parameters for the run: \nPi: {pi}\nGlobal rate: {args.global_rate}\nKappa: {args.kappa}\nNumber of omega classes: {args.omega_classes}\n\
-    Omega shape parameter: {args.omega_shape}\nRates classification values: {mu_values}\n\
-    Number of nucleotide classification classes: {args.mu_classes}\nNucleotide clasification shape parameter: {args.mu_shape}")
-
+    logging.info(f"Parameters for the run: \n"
+                 f"Pi: {pi}\n"
+                 f"Global rate: {args.global_rate}\n"
+                 f"Kappa: {args.kappa}\n"
+                 f"Number of omega classes: {args.omega_classes}\n"
+                 f"Omega shape parameter: {args.omega_shape}\n"
+                 f"Rates classification values: {mu_values}\n"
+                 f"Number of nucleotide classification classes: {args.mu_classes}\n"
+                 f"Nucleotide classification shape parameter: {args.mu_shape}")
 
     # Read in the tree
     phylo_tree = Phylo.read(args.tree, 'newick', rooted=True)
     # logging.info("Phylogenetic tree: {}".format(args.tree))
-    #
+
     # # Make Sequence object
     print("\nCreating root sequence")
     root_sequence = Sequence(s, orfs, args.kappa, args.global_rate, pi, omega_values, mu_values, args.circular)
 
-
-    # # Run simulation
+    # Run simulation
     # print("\nRunning simulation")
     simulation = SimulateOnTree(root_sequence, phylo_tree, args.outfile)
     simulation.get_alignment(args.outfile)
