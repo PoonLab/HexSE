@@ -132,14 +132,22 @@ class Sequence:
                             # Calculate omega probability for omegas on the tree
                             for omega in omegas:
                                 denominator = 1 + sum(self.total_omegas.values())
+                                nonsyn_values = omega[:-1]
 
-                                # If the synonymous flag is set or if the nucleotide is not part of a codon
-                                if omega[-1] >= 1 or not any(omega):
+                                # If the nucleotide is not part of a codon, treat it as synonymous
+                                if not any(omega):
                                     omega_p = (1 / denominator)
 
                                 # Non-synonymous
-                                else:
+                                elif any(nonsyn_values):
                                     omega_p = (self.total_omegas[omega] / denominator)
+                                    # Multiply probabilities if nucleotide is part of synonymous and non-synonymous
+                                    if omega[-1] >= 1:
+                                        omega_p *= (1 / denominator)
+
+                                # Synonymous
+                                else:
+                                    omega_p = (1 / denominator)
 
                                 current_branch['cat'][mu_cat]['omega'][omega] = omega_p
 
