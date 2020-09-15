@@ -90,23 +90,30 @@ class Sequence:
             self.set_substitution_rates(nt)  # Get substitution rates for the nucleotide
             self.nt_in_event_tree(nt)  # Locate nucleotide in the event tree
 
-        # print(self.total_omegas)
+        #print(self.total_omegas)
+
+        # print(self.event_tree)
         # Create probability tree with the probabilities for each branch
         self.probability_tree = self.create_probability_tree()
+        self.populate_prob_tree_with_events()
+        #print(self.probability_tree)
 
     def create_probability_tree(self):
         """
         Get the probabilities of transition and transversion for latter selection of the branch on the tree
         """
-        prob_tree = {'to_nt': {'A': {}, 'T': {}, 'C': {}, 'G': {}}}
+        prob_tree = {'to_nt': {'A': {'number_of_events': 0},
+                               'T': {'number_of_events': 0},
+                               'C': {'number_of_events': 0},
+                               'G': {'number_of_events': 0}}}
 
         for to_nt in NUCLEOTIDES:
             if to_nt in prob_tree['to_nt'].keys():
                 # Update Probability tree
-                prob_tree['to_nt'][to_nt].update([('from_nt', {'A': {'prob': 0, 'cat': {}},
-                                                               'T': {'prob': 0, 'cat': {}},
-                                                               'C': {'prob': 0, 'cat': {}},
-                                                               'G': {'prob': 0, 'cat': {}}})])
+                prob_tree['to_nt'][to_nt].update([('from_nt', {'A': {'prob': 0, 'cat': {}, 'number_of_events': 0},
+                                                               'T': {'prob': 0, 'cat': {}, 'number_of_events': 0},
+                                                               'C': {'prob': 0, 'cat': {}, 'number_of_events': 0},
+                                                               'G': {'prob': 0, 'cat': {}, 'number_of_events': 0}})])
 
                 # Nucleotide cannot change to itself
                 for from_nt in prob_tree['to_nt'][to_nt]['from_nt'].keys():
@@ -125,7 +132,7 @@ class Sequence:
                         for mu_cat in self.cat_values.keys():
                             prob = (self.cat_values[mu_cat] / sum(self.cat_values.values()))
                             # print(prob)
-                            current_branch['cat'].update([(mu_cat, {'prob': prob, 'omega': {}})])
+                            current_branch['cat'].update([(mu_cat, {'prob': prob, 'omega': {}, 'number_of_events': 0})])
                             # Bring Omega keys on the Event Tree
                             omegas = self.event_tree['to_nt'][to_nt]['from_nt'][from_nt]['category'][mu_cat].keys()
 
@@ -149,10 +156,42 @@ class Sequence:
                                 else:
                                     omega_p = (1 / denominator)
 
-                                current_branch['cat'][mu_cat]['omega'][omega] = omega_p
+                                current_branch['cat'][mu_cat]['omega'][omega] = {'prob': omega_p, 'number_of_events': 0}
 
         return prob_tree
 
+    def populate_prob_tree_with_events(self):
+        """
+        Traverse the Probability tree and find the number of events in each branch according to the Event Tree
+        """
+
+        for to_nt in NUCLEOTIDES:
+            to_events = 0
+
+            for from_nt in NUCLEOTIDES:
+                if to_nt != from_nt:
+                    from_events = 0
+                    branch = self.event_tree['to_nt'][to_nt]['from_nt'][from_nt]['category']
+
+                    for cat in branch.keys():
+                        cat_events = 0
+                        branch_cat = branch[cat]
+
+                        for omega_tuple in branch_cat.keys():
+                            nt_list = branch_cat[omega_tuple]
+                            events = len(nt_list)
+                            self.probability_tree['to_nt'][to_nt]['from_nt'][from_nt]['cat'][cat]['omega'][omega_tuple]['number_of_events'] = events
+
+                            cat_events += events
+
+                        self.probability_tree['to_nt'][to_nt]['from_nt'][from_nt]['cat'][cat]['number_of_events'] = cat_events
+                        from_events += cat_events
+
+                    self.probability_tree['to_nt'][to_nt]['from_nt'][from_nt]['number_of_events'] = from_events
+                    to_events += from_events
+
+            self.probability_tree['to_nt'][to_nt]['number_of_events'] = to_events
+        
     def count_nts_on_event_tree(self):
         """
         Traverse event tree and count total number of nucleotides on the tips

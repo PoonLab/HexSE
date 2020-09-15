@@ -55,6 +55,8 @@ class SimulateOnBranch:
         # Select omega branch
         def possible_nts(selected_cat):
             omega_dict = copy.copy(self.sequence.probability_tree['to_nt'][to_mutation]['from_nt'][from_mutation]['cat'][selected_cat]['omega'])
+            # Create a dictionary contaning only omega tuples and probability value
+            omega_weights = {omega: omega_dict[omega]['prob'] for omega in omega_dict.keys()}
             nt_dict = self.sequence.event_tree['to_nt'][to_mutation]['from_nt'][from_mutation]['category'][selected_cat]
 
             # Check if all tips of the tree for this class are empty
@@ -67,10 +69,10 @@ class SimulateOnBranch:
 
             else:
                 for i in range(1, len(omega_dict.keys())):
-                    selected_omega = self.weighted_random_choice(omega_dict, sum(omega_dict.values()))
+                    selected_omega = self.weighted_random_choice(omega_weights, sum(omega_weights.values()))
                     # Select nucleotide
                     nt_list = self.sequence.event_tree['to_nt'][to_mutation]['from_nt'][from_mutation]['category'][selected_cat][selected_omega]
-                    omega_dict.pop(selected_omega)  # Remove empty key
+                    omega_weights.pop(selected_omega)  # Remove empty key
 
                     yield nt_list
 
