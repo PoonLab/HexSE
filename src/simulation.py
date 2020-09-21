@@ -178,6 +178,10 @@ class SimulateOnBranch:
                                 # Update instant rate for adjacent nucleotide
                                 instant_rate = instant_rate + adj_nt.mutation_rate
                                 break
+
+            # Update number of events in probability Tree
+            self.sequence.populate_prob_tree_with_events()
+
         return self.sequence
 
     def remove_nt(self, nt):
@@ -224,7 +228,6 @@ class SimulateOnBranch:
 
         if new_omega: # If new omeka key is created in the event tree, update the probability tree
             self.sequence.probability_tree = self.sequence.create_probability_tree()
-            self.sequence.populate_prob_tree_with_events()
 
 class SimulateOnTree:
     """

@@ -488,18 +488,19 @@ def main():
 
     # Create log file
     file_name = input.split("/")[-1]
-    LOG_FILENAME = "{}_evol_simulation.log".format(file_name.split(".")[0])
+    LOG_FILENAME = f'{file_name.split(".")[0]}_evol_simulation.log'
     logging.basicConfig(filename=LOG_FILENAME, level=logging.INFO)
+    logging.info(f"\nSimulation started at: {start_time}")
 
     # Check input format for the nucleotide sequence
     if input.endswith(".gb") or input.endswith("genbank"):  # If genbank file
         s, orf_locations = parse_genbank(args.seq, args.orfs)
-        logging.info("Input sequence is: {} in genbank format".format(input))
+        logging.info(f"Input sequence is: {input} in genbank format")
 
     elif input.endswith(".fasta") or input.endswith(".fa"):   # If fasta file
         s = parse_fasta(args.seq)
         orf_locations = check_orfs(args.orfs, s)
-        logging.info("Input sequence is: {} in fasta format".format(input))
+        logging.info(f"Input sequence is: {input} in fasta format")
 
     else:
         print("Sequence files must end in '.fa', '.fasta', '.gb', 'genbank'")
@@ -515,12 +516,12 @@ def main():
         for strand in invalid_orfs:
             orfs = invalid_orfs[strand]
             for orf in orfs:
-                invalid_orf_msg += " {} ".format(orf)
+                invalid_orf_msg += f" {orf} "
                 orf_locations[strand].remove(orf)
 
         if invalid_orf_msg:
-            print("\nOmitted orfs: {}\n".format(invalid_orf_msg))
-            logging.warning("Omitted orfs: {}".format(invalid_orf_msg))
+            print(f"\nOmitted orfs: {invalid_orf_msg}\n")
+            logging.warning(f"Omitted orfs: {invalid_orf_msg}")
 
     # Check if the CDSs have stop codons inside them
     for strand in orf_locations:
@@ -571,9 +572,10 @@ def main():
                  f"Kappa: {args.kappa}\n"
                  f"Number of omega classes: {args.omega_classes}\n"
                  f"Omega shape parameter: {args.omega_shape}\n"
-                 f"Rates classification values: {mu_values}\n"
+                 f"Omega values: {omega_values}\n"
                  f"Number of nucleotide classification classes: {args.mu_classes}\n"
-                 f"Nucleotide classification shape parameter: {args.mu_shape}")
+                 f"Nucleotide classification shape parameter: {args.mu_shape}\n"
+                 f"Rates classification values: {mu_values}\n")
 
     # Read in the tree
     phylo_tree = Phylo.read(args.tree, 'newick', rooted=True)
@@ -588,7 +590,11 @@ def main():
     simulation = SimulateOnTree(root_sequence, phylo_tree, args.outfile)
     simulation.get_alignment(args.outfile)
 
-    # print("Simulation duration: {} seconds".format(datetime.now() - start_time))
+    end_time = datetime.now()
+    print(f"Simulation duration: {end_time - start_time} seconds")
+    logging.info(f"Simulation Ended at: {end_time}\n"
+                 f"Simulation lasted: {end_time - start_time}" seconds)
+
 
 
 if __name__ == '__main__':
