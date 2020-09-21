@@ -95,7 +95,7 @@ class Sequence:
         # print(self.event_tree)
         # Create probability tree with the probabilities for each branch
         self.probability_tree = self.create_probability_tree()
-        self.populate_prob_tree_with_events()
+        self.populate_prob_tree_with_events()        
         #print(self.probability_tree)
 
     def create_probability_tree(self):
@@ -191,7 +191,7 @@ class Sequence:
                     to_events += from_events
 
             self.probability_tree['to_nt'][to_nt]['number_of_events'] = to_events
-        
+
     def count_nts_on_event_tree(self):
         """
         Traverse event tree and count total number of nucleotides on the tips

@@ -37,7 +37,12 @@ class SimulateOnBranch:
         Select a substitution by moving over the event_tree according to the generation of random numbers
         """
         # Select: to nucleotide
-        to_mutation = self.weighted_random_choice(self.sequence.pi, sum(self.sequence.pi.values()))
+
+        to_dict = {
+                    to_nt: self.sequence.pi[to_nt]*self.sequence.probability_tree['to_nt'][to_nt]['number_of_events']
+                    for to_nt in self.sequence.pi.keys()
+                    }
+        to_mutation = self.weighted_random_choice(to_dict, sum(to_dict.values()))
 
         # Select: from nt
         from_tree = self.sequence.probability_tree['to_nt'][to_mutation]['from_nt']
@@ -56,15 +61,11 @@ class SimulateOnBranch:
         def possible_nts(selected_cat):
             omega_dict = copy.copy(self.sequence.probability_tree['to_nt'][to_mutation]['from_nt'][from_mutation]['cat'][selected_cat]['omega'])
             # Create a dictionary contaning only omega tuples and probability value
-            omega_weights = {omega: omega_dict[omega]['prob'] for omega in omega_dict.keys()}
+            omega_weights = {omega: omega_dict[omega]['prob']*omega_dict[omega]['number_of_events'] for omega in omega_dict.keys()}
             nt_dict = self.sequence.event_tree['to_nt'][to_mutation]['from_nt'][from_mutation]['category'][selected_cat]
 
             # Check if all tips of the tree for this class are empty
             if all(not value for value in nt_dict.values()):
-                # print("all empty")
-                # print(nt_dict)
-                # print(to_mutation, from_mutation, selected_cat)
-                # print(self.sequence.event_tree['to_nt'][to_mutation]['from_nt'][from_mutation])
                 pass
 
             else:
@@ -92,7 +93,7 @@ class SimulateOnBranch:
         temp_dict = {}  # Dictionary containing keys to 'from nucleotides' or 'categories' and their probability (weight)
         for key, value in dictionary.items():
             if value:
-                temp_dict[key] = value['prob']
+                temp_dict[key] = value['prob'] * value['number_of_events']
         selected_key = self.weighted_random_choice(temp_dict, sum(temp_dict.values()))
         return (selected_key)
 
@@ -223,7 +224,7 @@ class SimulateOnBranch:
 
         if new_omega: # If new omeka key is created in the event tree, update the probability tree
             self.sequence.probability_tree = self.sequence.create_probability_tree()
-
+            self.sequence.populate_prob_tree_with_events()
 
 class SimulateOnTree:
     """
