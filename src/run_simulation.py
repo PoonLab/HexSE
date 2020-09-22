@@ -593,7 +593,7 @@ def main():
     end_time = datetime.now()
     print(f"Simulation duration: {end_time - start_time} seconds")
     logging.info(f"Simulation Ended at: {end_time}\n"
-                 f"Simulation lasted: {end_time - start_time}" seconds)
+                 f"Simulation lasted: {end_time - start_time} secondss")
 
 
 
