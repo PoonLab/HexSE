@@ -575,7 +575,7 @@ def main():
                  f"Omega values: {omega_values}\n"
                  f"Number of nucleotide classification classes: {args.mu_classes}\n"
                  f"Nucleotide classification shape parameter: {args.mu_shape}\n"
-                 f"Rates classification values: {mu_values}\n")
+                 f"Rates classification values: {mu_values}")
 
     # Read in the tree
     phylo_tree = Phylo.read(args.tree, 'newick', rooted=True)
@@ -592,8 +592,8 @@ def main():
 
     end_time = datetime.now()
     print(f"Simulation duration: {end_time - start_time} seconds")
-    logging.info(f"Simulation Ended at: {end_time}\n"
-                 f"Simulation lasted: {end_time - start_time} secondss")
+    logging.info(f"\nSimulation Ended at: {end_time}\n"
+                 f"Simulation lasted: {end_time - start_time} seconds\n")
 
 
 
