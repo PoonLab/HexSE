@@ -1,0 +1,45 @@
+---
+mu: 0.0005
+
+kappa: 0.3
+
+pi: 
+  pi_A: 0.25
+  pi_T: 0.25
+  pi_G: 0.25
+  pi_C: 0.25
+
+circular: true 
+
+orfs: 
+  2849,3182:
+    classes: 3
+    shape: 1.5
+  
+  0,837:
+    classes: 4
+    shape: 1.7
+  
+  3173,3182:
+    classes: 5
+    shape: 1.9
+  
+  156,837:
+    classes: 6
+    shape: 1.2
+  
+  1375,1840:
+    classes: 7
+    shape: 1.3
+  
+  1815,2454:
+    classes: 3
+    shape: 1.25
+  
+  1853,1922:
+    classes: 4
+    shape: 1.87
+  
+  1902,2454:
+    classes: 5
+    shape: 2.5
