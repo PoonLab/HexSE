@@ -9,8 +9,9 @@ import scipy.stats as ss
 from Bio import Phylo
 from Bio import SeqIO
 from datetime import datetime
+import yaml
 
-from src.sequence_info import NUCLEOTIDES, COMPLEMENT_DICT
+from src.sequence_info import NUCLEOTIDES
 from src.sequence_info import Sequence
 from src.simulation import SimulateOnTree
 
@@ -32,6 +33,12 @@ def get_args(parser):
         help='Path to a csv file containing the start and end coordinates of the open reading frames. '
              'Format: start,end'
              'If no ORFS are specified, the program will find ORFs automatically'
+    )
+    parser.add_argument(
+        '--config', default=None,
+        help='Path to a YAML file that specifies parameters for the simulation. '
+             'Parameters include: mu, kappa, pi, ORF coordinates, and the shape(s) and number(s) '
+             'of gamma classes for each ORF as well as the dN and dS values'
     )
     parser.add_argument(
         '--mu', type=float, default=0.0005,
@@ -277,34 +284,36 @@ def discretize_gamma(alpha, ncat):
     return rates
 
 
-def parse_genbank(in_seq, in_orfs=None):
+def parse_genbank(in_seq, in_orfs=None, settings=None):
     """
     When input is in <genbank> format, extract nucleotide sequence and orfs (in case user does not specify).
     :param in_seq: sequence in genbank Format
-    :param in_orfs: file handle containing the orfs
+    :param in_orfs: path to the input ORFs (for CSV file)
+    :param settings: dictionary of settings (from YAML file)
     :return tuple: (sequence, orfs)
     """
     orf_locations = {'+': [], '-': []}  # ORF locations sorted by strand
+
     # Loop through records
     for rec in SeqIO.parse(in_seq, format="genbank"):
         seq = rec.seq
 
-        if in_orfs is None:  # User did not specify ORFs
+        # Read ORFs from GenBank if not specified by the user
+        if in_orfs is not None or settings is not None:
+            # Read ORFs from GenBank file
             cds = [feat for feat in rec.features if feat.type == "CDS"]
             # Record the first occurrence of the ORFs
             for cd in cds:
-                coords = []
+                orf = {}
                 strand = ''
                 for loc in cd.location.parts:
                     if loc.strand > 0:
                         strand = '+'
                     else:
                         strand = '-'
-                    coords.append((int(loc.start), int(loc.end)))
-                orf_locations[strand].append(coords)
+                    orf['coords'] = (int(loc.start), int(loc.end))
 
-        else:
-            orf_locations = check_orfs(in_orfs)
+                orf_locations[strand].append(orf)
 
     return seq, orf_locations
 
@@ -325,61 +334,107 @@ def parse_fasta(in_seq):
     return s
 
 
-def check_orfs(in_orfs=None, s=None):
+def set_global_dNdS_values(orf_locations, dN_values, dS_values):
     """
+    Sets the dN and dS values for each the reading frames
+    :param orf_locations: dictionary of ORFs sorted by the strand
+    :param dN_values: list of dN values
+    :param dS_values: list of dS values
+    return: orf_locations updated to contains dN and dS values for each ORF
+    """
+    for strand in orf_locations:
+        orf_list = orf_locations[strand]
+        for orf in orf_list:
+            orf['dN_values'] = dN_values
+            orf['dS_values'] = dS_values
+
+    return orf_locations
+
+
+def read_orfs_from_csv(in_orfs, dN_values, dS_values):
+    """
+    Reads ORFs from a csv file
     :param in_orfs: orfs specified by the user, default (None)
-    :param s: the original sequence
     :return: ORFs as a list of tuples
     """
-    # Check if the user specified orfs
-    if in_orfs is None:
-        orf_locations = get_open_reading_frames(s)
 
-    # Read ORFs as a list of tuples
-    else:
-        orf_locations = {'+': [], '-': []}  # ORF locations sorted by strand
-        with open(in_orfs) as orf_handle:
-            for line in orf_handle:
-                line = line.strip()
+    orf_locations = {'+': [], '-': []}  # ORF locations sorted by strand
 
-                # Spliced ORF
-                if ':' in line:
-                    orf_coords = []
-                    line = line.split(':')
+    # Read ORFs from csv file
+    with open(in_orfs) as orf_handle:
+        for line in orf_handle:
+            line = line.strip()
 
-                    # Read in partial ORFs
-                    strand = ''
-                    for coords in line:
-                        coords = coords.split(',')
-                        if len(coords) == 3:
-                            if int(coords[2]) > 0:
-                                strand = '+'
-                            else:
-                                strand = '-'
-                        orf = (int(coords[0]), int(coords[1]))
-                        orf_coords.append(orf)
+            # Spliced ORF
+            if ':' in line:
+                orf = {}
+                line = line.split(':')
 
-                    # Check if the strand is valid
-                    if strand != '+' and strand != '-':
-                        print("Invalid strand: {}".format(strand))
-                        sys.exit(1)
+                # Read in partial ORFs
+                strand = ''
+                for coords in line:
+                    coords = coords.split(',')
+                    if len(coords) == 3:
+                        if int(coords[2]) > 0:
+                            strand = '+'
+                        else:
+                            strand = '-'
+                    orf['coords'] = (int(coords[0]), int(coords[1]))
+                    orf['dN_values'] = dN_values
+                    orf['dS_values'] = dS_values
 
-                    orf_locations[strand].append(orf_coords)
+                # Check if the strand is valid
+                if strand != '+' and strand != '-':
+                    print("Invalid strand: {}".format(strand))
+                    sys.exit(1)
 
+                orf_locations[strand].append(orf)
+
+            else:
+                line = line.split(',')
+                if int(line[2]) > 0:
+                    strand = '+'
                 else:
-                    line = line.split(',')
-                    if int(line[2]) > 0:
-                        strand = '+'
-                    else:
-                        strand = '-'
+                    strand = '-'
 
-                    # Check if the strand is valid
-                    if strand != '+' and strand != '-':
-                        print("Invalid strand: {}".format(strand))
-                        sys.exit(1)
+                # Check if the strand is valid
+                if strand != '+' and strand != '-':
+                    print("Invalid strand: {}".format(strand))
+                    sys.exit(1)
 
-                    orf = (int(line[0]), int(line[1]))
-                    orf_locations[strand].append([orf])
+                orf['coords'] = (int(line[0]), int(line[1]))
+                orf['dN_values'] = dN_values
+                orf['dS_values'] = dS_values
+
+                orf_locations[strand].append(orf)
+
+    return orf_locations
+
+
+def read_orfs_from_yaml(settings):
+    """
+    Reads ORFs from a YAML file containing the ORF coordinates and the parameters of the dN/dS distribution for each ORF
+    :param settings: a dictionary of settings
+    :return: orf_locations, a dictionary of ORFs sorted by strand (+ or -)
+    """
+    orf_locations = {'+': [], '-': []}
+
+    raw_coords = list(settings['orfs'].keys())
+
+    for raw_coord in raw_coords:
+        orf = {}
+        coords = raw_coord.split(',')
+
+        orf['coords'] = coords
+        if coords[0] < coords[1]:
+            strand = '+'
+        else:
+            strand = '-'
+
+        orf['dN_values'] = get_rate_values(settings[raw_coord]['dN']['shape'], settings[raw_coord]['dN']['classes'])
+        orf['dS_values'] = get_rate_values(settings[raw_coord]['dS']['shape'], settings[raw_coord]['dS']['classes'])
+
+        orf_locations[strand].append(orf)
 
     return orf_locations
 
@@ -455,6 +510,37 @@ def count_internal_stop_codons(seq, strand, orf_coords):
     return stop_count
 
 
+def get_pi(pi, settings, s):
+    if settings is not None:
+        pi = list(settings['pi'].values())
+
+    # If the user did not specify stationary frequencies
+    if all(freq is None for freq in pi):
+        pi = Sequence.get_frequency_rates(s)
+
+    # If the user specified stationary frequencies
+    elif all(freq is type(float) for freq in pi):
+        keys = ['A', 'T', 'G', 'C']
+        pi = dict(zip(keys, pi))
+
+    else:
+        print("Invalid input: {}".format(pi))
+
+    return pi
+
+
+def get_kappa(kappa, settings):
+    if settings:
+        kappa = settings['kappa']
+    return kappa
+
+
+def get_mu(mu, settings):
+    if settings:
+        mu = settings['mu']
+    return mu
+
+
 def main():
     start_time = datetime.now()
     print("\nStarted at: ", datetime.now())
@@ -470,20 +556,70 @@ def main():
     LOG_FILENAME = "{}_evol_simulation.log".format(file_name.split(".")[0])
     logging.basicConfig(filename=LOG_FILENAME, level=logging.INFO)
 
-    # Check input format for the nucleotide sequence
-    if input.endswith(".gb") or input.endswith("genbank"):  # If genbank file
-        s, orf_locations = parse_genbank(args.seq, args.orfs)
-        logging.info("Input sequence is: {} in genbank format".format(input))
+    # Parse the config file
+    settings = None
+    if args.config:
+        with open(args.config, 'r') as stream:
+            try:
+                settings = yaml.safe_load(stream)
+            except yaml.YAMLError as e:
+                print(e)
 
-    elif input.endswith(".fasta") or input.endswith(".fa"):   # If fasta file
-        s = parse_fasta(args.seq)
-        orf_locations = check_orfs(args.orfs, s)
-        logging.info("Input sequence is: {} in fasta format".format(input))
+    # Use a different dN/dS distribution for each ORF
+    if settings:
+        orf_locations = read_orfs_from_yaml(settings)
 
+        # Check input format for the nucleotide sequence
+        if input.endswith(".gb") or input.endswith("genbank"):  # If genbank file
+            s, _ = parse_genbank(args.seq, settings=settings)
+            format = 'genbank'
+        elif input.endswith(".fasta") or input.endswith(".fa"):
+            s = parse_fasta(args.seq)
+            format = 'fasta'
+        else:
+            print("Sequence files must end in '.fa', '.fasta', '.gb', 'genbank'")
+            logging.error("Invalid file type: files must end in '.fa', '.fasta', '.gb', 'genbank'")
+            sys.exit()
+
+    # Use the the same dN/dS distribution for each ORF
     else:
-        print("Sequence files must end in '.fa', '.fasta', '.gb', 'genbank'")
-        logging.error("Invalid sequence: files must end in '.fa', '.fasta', '.gb', 'genbank'")
-        sys.exit()
+        dN_values = get_rate_values(args.dNshape, args.dNclasses)
+        dS_values = get_rate_values(args.dSshape, args.dSclasses)
+
+        if args.orfs:
+            orf_locations = read_orfs_from_csv(args.orfs, dN_values, dS_values)
+
+        # Check input format for the nucleotide sequence
+        if input.endswith(".gb") or input.endswith("genbank"):  # If genbank file
+            if args.orfs:
+                orf_locations = read_orfs_from_csv(args.orfs, dN_values, dS_values)
+                s, _ = parse_genbank(args.seq, in_orfs=args.orfs)
+            else:
+                s, orf_locations = parse_genbank(args.seq, in_orfs=args.orfs)
+                orf_locations = set_global_dNdS_values(orf_locations, dN_values, dS_values)
+            format = 'genbank'
+
+        elif input.endswith(".fasta") or input.endswith(".fa"):
+            s = parse_fasta(args.seq)
+            orf_locations = read_orfs_from_csv(args.orfs, dN_values, dS_values)
+            format = 'fasta'
+
+        else:
+            print("Sequence files must end in '.fa', '.fasta', '.gb', 'genbank'")
+            logging.error("Invalid file type: files must end in '.fa', '.fasta', '.gb', 'genbank'")
+            sys.exit()
+
+    # Log information about sequence input type
+    logging.info("Input sequence is: {} in {}} format".format(input, format))
+
+    pi = get_pi(args.pi, settings, s)
+    print(pi)
+
+    kappa = get_kappa(args.kappa, settings)
+    print(kappa)
+
+    mu = get_mu(args.mu, settings)
+    print(mu)
 
     # Check if the ORFs are valid
     invalid_orfs = valid_orfs(orf_locations, len(s))
@@ -523,29 +659,19 @@ def main():
         logging.error("Invalid sequence: {}".format(s))
         sys.exit(0)
 
-    # If the user did not specify stationary frequencies
-    if all(freq is None for freq in args.pi):
-        pi = Sequence.get_frequency_rates(s)
+    # Record global parameters for the run
+    logging.info("Parameters for the run: \nPi: {}\nMu: {}\nKappa: {}\n".format(pi, mu, kappa))
 
-    # If the user specified stationary frequencies
-    elif all(freq is type(float) for freq in args.pi):
-        keys = ['A', 'T', 'G', 'C']
-        pi = dict(zip(keys, args.pi))
-
-    else:
-        print("Invalid input: {}".format(args.pi))
-        exit(0)
-
-    # Draw dN and dS values from a gamma distribution
-    dN_values = get_rate_values(args.dNshape, args.dNclasses)
-    dS_values = get_rate_values(args.dSshape, args.dSclasses)
-
-    logging.info("Parameters for the run: \nPi: {}\nMu: {}\nKappa: {}\n"
-                 "Number of dN classes: {}\ndN shape parameter: {}\ndN values: {}\n"
-                 "Number of dS classes: {}\ndS shape parameter: {}\ndS values: {}\n"
-                 .format(pi, args.mu, args.kappa,
-                         args.dNclasses, args.dNshape, dN_values,
-                         args.dSclasses, args.dSshape, dS_values))
+    # Record the parameters for each ORF
+    for frame in orfs:
+        orf_list = orfs[frame]
+        for orf in orf_list:
+            logging.info("Orf: {} "
+                         "\nNumber of dN classes: {} \ndN shape parameter: {} \ndN values: {} "
+                         "\nNumber of dS classes: {} \ndS shape parameter: {} \ndS values: {}\n"
+                         .format(orf, orf['coords'],
+                                 settings[orf]['dN']['classes'], settings[orf]['dN']['shape'], orf['dN_values'],
+                                 settings[orf]['dS']['classes'], settings[orf]['dS']['shape'], orf['dS_values']))
 
     # Read in the tree
     phylo_tree = Phylo.read(args.tree, 'newick', rooted=True)
@@ -553,7 +679,7 @@ def main():
 
     # Make Sequence object
     print("\nCreating root sequence")
-    root_sequence = Sequence(s, orfs, args.kappa, args.mu, pi, dN_values, dS_values, args.circular)
+    root_sequence = Sequence(s, orfs, kappa, mu, pi, args.circular)
 
     # Run simulation
     print("\nRunning simulation")

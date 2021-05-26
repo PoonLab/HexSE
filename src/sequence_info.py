@@ -38,7 +38,7 @@ class Sequence:
     Store inputs and create sequence objects
     """
 
-    def __init__(self, str_sequence, orfs, kappa, mu, pi, dN_values, dS_values, circular=False):
+    def __init__(self, str_sequence, orfs, kappa, mu, pi, circular=False):
         """
         Creates a list of nucleotides, locates open reading frames, and creates a list of codons.
         :param orfs: A dictionary of ORFs, sorted by reading frame where:
