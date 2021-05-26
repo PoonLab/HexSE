@@ -56,8 +56,6 @@ class Sequence:
         self.kappa = kappa  # Transition/ transversion rate ratio
         self.mu = mu  # The global rate (substitutions/site/unit time)
         self.pi = pi  # Frequency of nucleotides, with nucleotide as keys
-        self.dN_values = dN_values  # Numeric values for dN (drawn from a gamma distribution by default)
-        self.dS_values = dS_values  # Numeric values for dS (drawn from a gamma distribution by default)
         self.__codons = []      # Store references to all codons
         self.nt_sequence = []   # List of Nucleotide objects
         self.is_circular = circular  # True if the genome is circular, False otherwise
@@ -408,7 +406,7 @@ class Sequence:
             yield my_orf[i:i + 3]
             i += 3
 
-    def find_codons(self, frame, orf_coords):
+    def find_codons(self, frame, orf):
         """
         Gets the Codon sequence
         :param frame: the frame of the ORF
@@ -417,7 +415,7 @@ class Sequence:
         """
         codons = []
         cds = []
-        for coord in orf_coords:
+        for coord in orf['coords']:
             cds.extend(self.nt_sequence[coord[0]: coord[1]])
 
         # Reverse strand orf
@@ -427,7 +425,7 @@ class Sequence:
         # Iterate over list by threes and create Codons
         for i in range(3, len(cds) + 1, 3):
             cdn = cds[i - 3: i]
-            codon = Codon(frame, orf_coords, cdn)
+            codon = Codon(frame, orfs, cdn)
             codons.append(codon)
 
         return codons

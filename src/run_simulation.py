@@ -99,36 +99,35 @@ def valid_orfs(orf_locations, seq_length):
     invalid_orfs = {'+': [], '-': []}   # ORF locations sorted by strand
 
     for strand in orf_locations:
-        orf_coords = orf_locations[strand]
+        orf_list = orf_locations[strand]
 
-        for orf_coord in orf_coords:
+        for orf in orf_list:
             orf_length = 0
-            orf_start = orf_coord[0][0]
-            orf_end = orf_coord[-1][1]
+            orf_start = orf['coords'][0]
+            orf_end = orf['coords'][-1]  # handle spliced ORFs
 
-            for coord in orf_coord:
-                orf_length += abs(coord[1] - coord[0])
+            orf_length += abs(orf['coords'][1] - orf['coords'][0])
 
-                # Check that the start and end positions are integers
-                if type(coord[0]) is not int or type(coord[1]) is not int and orf_coord not in invalid_orfs:
-                    print("Invalid orf: {}; Start and end positions must be integers.".format(orf_coord))
-                    invalid_orfs[strand].append(orf_coord)
+            # Check that the start and end positions are integers
+            if type(orf['coords'][0]) is not int or type(orf['coords'][1]) is not int and orf not in invalid_orfs:
+                print("Invalid orf: {}; Start and end positions must be integers.".format(orf))
+                invalid_orfs[strand].append(orf)
 
             # Check that the start and stop positions are in the range of the sequence
             if 0 > orf_start or seq_length < orf_start or \
-                    0 > orf_end or seq_length < orf_end and orf_coord not in invalid_orfs[strand]:
-                print("Invalid orf: {}; Positions must be between 0 and {}".format(orf_coord, seq_length))
-                invalid_orfs[strand].append(orf_coord)
+                    0 > orf_end or seq_length < orf_end and orf not in invalid_orfs[strand]:
+                print("Invalid orf: {}; Positions must be between 0 and {}".format(orf, seq_length))
+                invalid_orfs[strand].append(orf)
 
             # Check that the ORF range is valid
-            if orf_length < 8 and orf_coord not in invalid_orfs[strand]:
-                invalid_orfs[strand].append(orf_coord)
+            if orf_length < 8 and orf not in invalid_orfs[strand]:
+                invalid_orfs[strand].append(orf)
 
             # Check that the ORF is composed of codons
             # Inclusive range (start and end coordinates included)
-            if orf_length % 3 != 0 and orf_coord not in invalid_orfs[strand]:
-                print("Invalid orf: {}; Not multiple of three".format(orf_coord))
-                invalid_orfs[strand].append(orf_coord)
+            if orf_length % 3 != 0 and orf not in invalid_orfs[strand]:
+                print("Invalid orf: {}; Not multiple of three".format(orf))
+                invalid_orfs[strand].append(orf)
 
     return invalid_orfs
 
@@ -233,7 +232,7 @@ def sort_orfs(orf_locations):
         first_orf = forward_orfs[0]
 
         for fwd_orf in forward_orfs:
-            difference = abs(fwd_orf[0][0] - first_orf[0][0]) % 3
+            difference = abs(fwd_orf['coords'][0] - first_orf['coords'][0]) % 3
             if difference == 0:
                 sorted_orfs['+0'].append(fwd_orf)
             elif difference == 1:
@@ -242,7 +241,7 @@ def sort_orfs(orf_locations):
                 sorted_orfs['+2'].append(fwd_orf)
 
         for rev_orf in reverse_orfs:
-            difference = abs(rev_orf[0][0] - first_orf[0][0])
+            difference = abs(rev_orf['coords'][0] - first_orf['coords'][0])
             if difference == 0:
                 sorted_orfs['-0'].append(rev_orf)
             elif difference == 1:
@@ -424,6 +423,7 @@ def read_orfs_from_yaml(settings):
     for raw_coord in raw_coords:
         orf = {}
         coords = raw_coord.split(',')
+        coords = list(map(int, coords))  # Convert string to integer
 
         orf['coords'] = coords
         if coords[0] < coords[1]:
@@ -431,8 +431,10 @@ def read_orfs_from_yaml(settings):
         else:
             strand = '-'
 
-        orf['dN_values'] = get_rate_values(settings[raw_coord]['dN']['shape'], settings[raw_coord]['dN']['classes'])
-        orf['dS_values'] = get_rate_values(settings[raw_coord]['dS']['shape'], settings[raw_coord]['dS']['classes'])
+        orf['dN_values'] = get_rate_values(settings['orfs'][raw_coord]['dN_shape'],
+                                           settings['orfs'][raw_coord]['dN_classes'])
+        orf['dS_values'] = get_rate_values(settings['orfs'][raw_coord]['dS_shape'],
+                                           settings['orfs'][raw_coord]['dS_classes'])
 
         orf_locations[strand].append(orf)
 
@@ -481,12 +483,12 @@ def codon_iterator(my_orf, start_pos, end_pos):
         i += 3
 
 
-def count_internal_stop_codons(seq, strand, orf_coords):
+def count_internal_stop_codons(seq, strand, orf):
     """
     Look for stop codons inside the CDS
     :param seq: the input sequence
     :param strand: the strand (1 or -1)
-    :param orf_coords: list containing the coordinates of the ORF and the frame
+    :param orf: dictionary containing the coordinates of the ORF and the dN and dS values
     :return: the number of stop codons in the coding sequence
     """
     pat = '(TAA|TGA|TAG)'
@@ -494,8 +496,7 @@ def count_internal_stop_codons(seq, strand, orf_coords):
     stop_count, cds = 0, ""
 
     # Get CDS
-    for coord in orf_coords:
-        cds += seq[coord[0]:coord[1]]
+    cds += seq[orf['coords'][0]: orf['coords'][1]]
 
     if strand == '-':    # Reverse strand
         cds = cds[::-1]
@@ -504,7 +505,7 @@ def count_internal_stop_codons(seq, strand, orf_coords):
     # Check if the STOP codon is in the same frame the start codon and is not the last STOP codon in the ORF
     for match in stop_matches:
         stop_end = match.span()[1]
-        if (stop_end - 1) % 3 == orf_coords[0][0] % 3 and stop_end > orf_coords[-1][1]:
+        if (stop_end - 1) % 3 == orf['coords'][0] % 3 and stop_end > orf['coords'][-1]:
             stop_count += 1
 
     return stop_count
@@ -610,7 +611,7 @@ def main():
             sys.exit()
 
     # Log information about sequence input type
-    logging.info("Input sequence is: {} in {}} format".format(input, format))
+    logging.info("Input sequence is: {} in {} format".format(input, format))
 
     pi = get_pi(args.pi, settings, s)
     print(pi)
@@ -625,7 +626,7 @@ def main():
     invalid_orfs = valid_orfs(orf_locations, len(s))
 
     # Omit the invalid ORFs
-    if invalid_orfs:
+    if invalid_orfs['+'] or invalid_orfs['+']:
         invalid_orf_msg = ""
         for strand in invalid_orfs:
             orfs = invalid_orfs[strand]
@@ -666,12 +667,15 @@ def main():
     for frame in orfs:
         orf_list = orfs[frame]
         for orf in orf_list:
+            coords = ','.join(map(str, orf['coords']))
             logging.info("Orf: {} "
                          "\nNumber of dN classes: {} \ndN shape parameter: {} \ndN values: {} "
                          "\nNumber of dS classes: {} \ndS shape parameter: {} \ndS values: {}\n"
-                         .format(orf, orf['coords'],
-                                 settings[orf]['dN']['classes'], settings[orf]['dN']['shape'], orf['dN_values'],
-                                 settings[orf]['dS']['classes'], settings[orf]['dS']['shape'], orf['dS_values']))
+                         .format(coords,
+                                 settings['orfs'][coords]['dN_classes'], settings['orfs'][coords]['dN_shape'],
+                                 orf['dN_values'],
+                                 settings['orfs'][coords]['dS_classes'], settings['orfs'][coords]['dS_shape'],
+                                 orf['dS_values']))
 
     # Read in the tree
     phylo_tree = Phylo.read(args.tree, 'newick', rooted=True)
