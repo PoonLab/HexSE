@@ -103,13 +103,13 @@ def valid_orfs(orf_locations, seq_length):
 
         for orf in orf_list:
             orf_length = 0
-            orf_start = orf['coords'][0]
-            orf_end = orf['coords'][-1]  # handle spliced ORFs
+            orf_start = orf['coords'][0][0]
+            orf_end = orf['coords'][-1][1]  # handle spliced ORFs
 
-            orf_length += abs(orf['coords'][1] - orf['coords'][0])
+            orf_length += abs(orf['coords'][-1][1] - orf['coords'][0][0])
 
             # Check that the start and end positions are integers
-            if type(orf['coords'][0]) is not int or type(orf['coords'][1]) is not int and orf not in invalid_orfs:
+            if type(orf['coords'][0][0]) is not int or type(orf['coords'][0][1]) is not int and orf not in invalid_orfs:
                 print("Invalid orf: {}; Start and end positions must be integers.".format(orf))
                 invalid_orfs[strand].append(orf)
 
@@ -232,7 +232,7 @@ def sort_orfs(orf_locations):
         first_orf = forward_orfs[0]
 
         for fwd_orf in forward_orfs:
-            difference = abs(fwd_orf['coords'][0] - first_orf['coords'][0]) % 3
+            difference = abs(fwd_orf['coords'][0][0] - first_orf['coords'][0][0]) % 3
             if difference == 0:
                 sorted_orfs['+0'].append(fwd_orf)
             elif difference == 1:
@@ -241,7 +241,7 @@ def sort_orfs(orf_locations):
                 sorted_orfs['+2'].append(fwd_orf)
 
         for rev_orf in reverse_orfs:
-            difference = abs(rev_orf['coords'][0] - first_orf['coords'][0])
+            difference = abs(rev_orf['coords'][0][0] - first_orf['coords'][0][0])
             if difference == 0:
                 sorted_orfs['-0'].append(rev_orf)
             elif difference == 1:
@@ -421,22 +421,46 @@ def read_orfs_from_yaml(settings):
     raw_coords = list(settings['orfs'].keys())
 
     for raw_coord in raw_coords:
-        orf = {}
-        coords = raw_coord.split(',')
-        coords = list(map(int, coords))  # Convert string to integer
+        # Spliced ORF
+        if ':' in raw_coord:
+            orf = {}
+            raw_coord = raw_coord.split(':')
 
-        orf['coords'] = coords
-        if coords[0] < coords[1]:
-            strand = '+'
+            # Read in partial ORFs
+            strand = ''
+            for coords in raw_coord:
+                coords = coords.split(',')
+                if len(coords) == 3:
+                    if int(coords[2]) > 0:
+                        strand = '+'
+                    else:
+                        strand = '-'
+                orf['coords'] = [(int(coords[0]), int(coords[1]))]
+                # Get dN and dS parameters based on the full ORF
+                orf['dN_values'] = get_rate_values(settings['orfs'][raw_coord]['dN_shape'],
+                                                   settings['orfs'][raw_coord]['dN_classes'])
+                orf['dS_values'] = get_rate_values(settings['orfs'][raw_coord]['dS_shape'],
+                                                   settings['orfs'][raw_coord]['dS_classes'])
+
+                orf_locations[strand].append(orf)
+
         else:
-            strand = '-'
+            orf = {}
+            coords = raw_coord.split(',')
+            coords = list(map(int, coords))  # Convert string to integer
 
-        orf['dN_values'] = get_rate_values(settings['orfs'][raw_coord]['dN_shape'],
-                                           settings['orfs'][raw_coord]['dN_classes'])
-        orf['dS_values'] = get_rate_values(settings['orfs'][raw_coord]['dS_shape'],
-                                           settings['orfs'][raw_coord]['dS_classes'])
+            orf['coords'] = [coords]
+            if coords[0] < coords[1]:
+                strand = '+'
+            else:
+                strand = '-'
 
-        orf_locations[strand].append(orf)
+            orf['dN_values'] = get_rate_values(settings['orfs'][raw_coord]['dN_shape'],
+                                               settings['orfs'][raw_coord]['dN_classes'])
+            orf['dS_values'] = get_rate_values(settings['orfs'][raw_coord]['dS_shape'],
+                                               settings['orfs'][raw_coord]['dS_classes'])
+
+            orf_locations[strand].append(orf)
 
     return orf_locations
 
@@ -496,7 +520,7 @@ def count_internal_stop_codons(seq, strand, orf):
     stop_count, cds = 0, ""
 
     # Get CDS
-    cds += seq[orf['coords'][0]: orf['coords'][1]]
+    cds += seq[orf['coords'][0][0]: orf['coords'][-1][1]]
 
     if strand == '-':    # Reverse strand
         cds = cds[::-1]
@@ -505,15 +529,18 @@ def count_internal_stop_codons(seq, strand, orf):
     # Check if the STOP codon is in the same frame the start codon and is not the last STOP codon in the ORF
     for match in stop_matches:
         stop_end = match.span()[1]
-        if (stop_end - 1) % 3 == orf['coords'][0] % 3 and stop_end > orf['coords'][-1]:
+        if (stop_end - 1) % 3 == orf['coords'][0][0] % 3 and stop_end > orf['coords'][-1][1]:
             stop_count += 1
 
     return stop_count
 
 
 def get_pi(pi, settings, s):
+    keys = ['A', 'T', 'G', 'C']
+
     if settings is not None:
         pi = list(settings['pi'].values())
+        pi = dict(zip(keys, pi))
 
     # If the user did not specify stationary frequencies
     if all(freq is None for freq in pi):
@@ -521,7 +548,6 @@ def get_pi(pi, settings, s):
 
     # If the user specified stationary frequencies
     elif all(freq is type(float) for freq in pi):
-        keys = ['A', 'T', 'G', 'C']
         pi = dict(zip(keys, pi))
 
     else:
@@ -667,7 +693,9 @@ def main():
     for frame in orfs:
         orf_list = orfs[frame]
         for orf in orf_list:
-            coords = ','.join(map(str, orf['coords']))
+            for c in orf['coords']:
+                coords = ','.join(map(str, c))
+
             logging.info("Orf: {} "
                          "\nNumber of dN classes: {} \ndN shape parameter: {} \ndN values: {} "
                          "\nNumber of dS classes: {} \ndS shape parameter: {} \ndS values: {}\n"

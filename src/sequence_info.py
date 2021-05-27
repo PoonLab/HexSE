@@ -425,7 +425,7 @@ class Sequence:
         # Iterate over list by threes and create Codons
         for i in range(3, len(cds) + 1, 3):
             cdn = cds[i - 3: i]
-            codon = Codon(frame, orfs, cdn)
+            codon = Codon(frame, orf, cdn)
             codons.append(codon)
 
         return codons
