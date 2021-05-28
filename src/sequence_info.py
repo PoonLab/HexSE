@@ -283,32 +283,40 @@ class Sequence:
 
                 # If nucleotide belongs to a codon
                 if nt.codons:
-                    # If mutation introduce a STOP or is a START
+                    # If mutation introduces a STOP or is a START
                     if self.is_start_stop_codon(nt, to_nt):
                         sub_rates[to_nt] *= 0
                         my_dN_keys[to_nt] = None
                         my_dS_keys[to_nt] = None
 
                     else:
-                        chosen_dN = [0 for _ in range(len(self.dN_values))]
-                        chosen_dS = [0 for _ in range(len(self.dS_values))]
+                        # chosen_dN = [0 for _ in range(len(self.dN_values))]
+                        # chosen_dS = [0 for _ in range(len(self.dS_values))]
 
                         for codon in nt.codons:
                             pos_in_codon = codon.nt_in_pos(nt)
 
+                            # Get the dN and dS values associated with the ORF
+                            dN_values = codon.orf['dN_values']
+                            dS_values = codon.orf['dS_values']
+                            num_dN = len(dN_values)
+                            num_dS = len(dS_values)
+
+                            # Initialize the lists to store dN and dS values
+                            chosen_dN = [0 for _ in range(num_dN)]
+                            chosen_dS = [0 for _ in range(num_dS)]
+
                             # Apply omega when mutation is non-synonymous
                             if codon.is_nonsyn(pos_in_codon, to_nt):
-                                dN_index = random.randrange(len(self.dN_values))
-                                dS_index = random.randrange(len(self.dS_values))
-                                sub_rates[to_nt] *= (self.dN_values[dN_index] / self.dS_values[dS_index])
+                                dN_index = random.randrange(num_dN)
+                                dS_index = random.randrange(num_dS)
+                                sub_rates[to_nt] *= (dN_values[dN_index] / dS_values[dS_index])
                                 chosen_dN[dN_index] += 1
                                 chosen_dS[dS_index] += 1
 
                                 # Store keys to dN and dS values
-                                dN_in_sub = tuple(chosen_dN)
-                                dS_in_sub = tuple(chosen_dS)
-                                my_dN_keys[to_nt] = dN_in_sub
-                                my_dS_keys[to_nt] = dS_in_sub
+                                my_dN_keys[to_nt] = tuple(chosen_dN)
+                                my_dS_keys[to_nt] = tuple(chosen_dS)
 
                             else:  # Mutation in synonymous. No dN or dS keys for this mutation
                                 my_dN_keys[to_nt] = None
@@ -612,10 +620,10 @@ class Codon:
         Checks if the codon is a start codon
         :return True of the codon is a start codon, False otherwise
         """
-        # Postive strand
+        # Positive strand
         if self.frame.startswith('+'):
             codon = ''.join(str(nt) for nt in self.nts_in_codon)  # Cast all Nucleotides in the Codon to strings
         else:
             codon = ''.join(nt.complement_state for nt in self.nts_in_codon)
 
-        return codon == 'ATG' and self.nts_in_codon[0].pos_in_seq == self.orf[0][0]
+        return codon == 'ATG' and self.nts_in_codon[0].pos_in_seq == self.orf['coords'][0][0]
