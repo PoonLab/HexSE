@@ -10,6 +10,7 @@ class TestValidSequence(unittest.TestCase):
     """
     Tests valid_sequence
     """
+
     def testBadInput(self):
         seq = "SGDKLJFAHHH"
         expected = False
@@ -39,38 +40,78 @@ class TestValidORFs(unittest.TestCase):
     """
     Tests valid_orfs
     """
+
     def testCorrectInput(self):
         s = "ATGCGTAAACGGGCTAGAGCTAGCA"
-        orf_locations = {1: [[(0, 9)]], -1: []}   # 0-based exclusive indexing
-        expected = {1: [], -1: []}
+        orf_locations = {'+': [{'coords': [(0, 9)],
+                                'dN_values': [1.42, 0.67, 1.22, 0.74],
+                                'dS_values': [1.42, 0.67, 1.22, 0.74]}],
+                         '-': []}  # 0-based exclusive indexing
+        expected = {'+': [], '-': []}
         result = valid_orfs(orf_locations, len(s))
         self.assertEqual(expected, result)
 
     def testNotOrf(self):
         s = "ATGCGCGCATGACGA"
-        orfs = {1: [[(1, 1)]], -1: []}
-        expected = {1: [[(1, 1)]], -1: []}
+        orfs = {'+': [{'coords': [(1, 1)],
+                       'dN_values': [1.42, 0.67, 1.22, 0.74],
+                       'dS_values': [1.42, 0.67, 1.22, 0.74]}],
+                '-': []}
+        expected = {'+': [{'coords': [(1, 1)],
+                           'dN_values': [1.42, 0.67, 1.22, 0.74],
+                           'dS_values': [1.42, 0.67, 1.22, 0.74]}],
+                    '-': []}
         result = valid_orfs(orfs, len(s))
         self.assertEqual(expected, result)
 
     def testMultipleNotOrfs(self):
         s = "ATGCGCGCATGACGA"
-        orfs = {1: [[(1, 1)], [(2, 4)]], -1: [[(0, 1), (2, 3)]]}
-        expected = {1: [[(1, 1)], [(2, 4)]], -1: [[(0, 1), (2, 3)]]}
+        orfs = {'+': [{'coords': [(1, 1)],
+                       'dN_values': [[1.42, 0.67, 1.22, 0.74]],
+                       'dS_values': [[1.42, 0.67, 1.22, 0.74]]},
+                      {'coords': [(2, 4)],
+                       'dN_values': [0.56, 0.89, 1.13],
+                       'dS_values': [0.56, 0.89, 1.13]}],
+                '-': [{'coords': [(0, 1), (2, 3)],
+                       'dN_values': [0.35, 0.78, 1.03, 1.43, 1.80],
+                       'dS_values': [0.35, 0.78, 1.03, 1.43, 1.80]}]}
+        expected = {'+': [{'coords': [(1, 1)],
+                           'dN_values': [[1.42, 0.67, 1.22, 0.74]],
+                           'dS_values': [[1.42, 0.67, 1.22, 0.74]]},
+                          {'coords': [(2, 4)],
+                           'dN_values': [0.56, 0.89, 1.13],
+                           'dS_values': [0.56, 0.89, 1.13]}],
+                    '-': [{'coords': [(0, 1), (2, 3)],
+                           'dN_values': [0.35, 0.78, 1.03, 1.43, 1.80],
+                           'dS_values': [0.35, 0.78, 1.03, 1.43, 1.80]}]}
         result = valid_orfs(orfs, len(s))
         self.assertEqual(expected, result)
 
     def testNotMultipleOfThree(self):
         s = "ATGTCGATGCATGC"
-        orfs = {1: [[(1, 11)]], -1: []}
-        expected = {1: [[(1, 11)]], -1: []}
+        orfs = {'+': [{'coords': [(1, 11)],
+                       'dN_values': [0.12, 0.54, 0.98, 1.26],
+                       'dS_values': [0.12, 0.54, 0.98, 1.26]}],
+                '-': []}
+        expected = {'+': [{'coords': [(1, 11)],
+                           'dN_values': [0.12, 0.54, 0.98, 1.26],
+                           'dS_values': [0.12, 0.54, 0.98, 1.26]}],
+                    '-': []}
         result = valid_orfs(orfs, len(s))
         self.assertEqual(expected, result)
 
     def testOutsideRangeOfSequence(self):
         s = "ATGTCGATGCATGC"
-        orfs = {1: [[(0, 12)]], -1: [[(1, 20)]]}
-        expected = {1: [], -1: [[(1, 20)]]}
+        orfs = {'+': [{'coords': [(0, 12)],
+                       'dN_values': [1.42, 0.67, 1.22, 0.74],
+                       'dS_values': [1.42, 0.67, 1.22, 0.74]}],
+                '-': [{'coords': [(1, 20)],
+                       'dN_values': [0.35, 0.78, 1.03, 1.43, 1.80],
+                       'dS_values': [0.35, 0.78, 1.03, 1.43, 1.80]}]}
+        expected = {'+': [],
+                    '-': [{'coords': [(1, 20)],
+                           'dN_values': [0.35, 0.78, 1.03, 1.43, 1.80],
+                           'dS_values': [0.35, 0.78, 1.03, 1.43, 1.80]}]}
         result = valid_orfs(orfs, len(s))
         self.assertEqual(expected, result)
 
@@ -79,6 +120,7 @@ class TestGetOpenReadingFrames(unittest.TestCase):
     """
     Tests get_reading_frames
     """
+
     def testOneORF(self):
         # Tests one ORF (ATG AAA TAG)
         s = "ATGAAATAG"
@@ -201,42 +243,159 @@ class TestSortOrfs(unittest.TestCase):
     """
     Tests sort_orfs
     """
+
     def testSimpleUse(self):
-        expected = {'+0': [[(0, 11)]], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
-        orfs = {1: [[(0, 11)]], -1: []}
+        expected = {'+0': [{'coords': [(0, 11)],
+                            'dN_values': [1.42, 0.67, 1.22, 0.74],
+                            'dS_values': [1.42, 0.67, 1.22, 0.74]}],
+                    '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
+        orfs = {'+': [{'coords': [(0, 11)],
+                       'dN_values': [1.42, 0.67, 1.22, 0.74],
+                       'dS_values': [1.42, 0.67, 1.22, 0.74]}],
+                '-': []}
         result = sort_orfs(orfs)
         self.assertEqual(expected, result)
 
     def testMultipleOrfs(self):
-        expected = {'+0': [[(0, 23)]], '+1': [], '+2': [[(5, 19)]], '-0': [], '-1': [], '-2': []}
-        orfs = {1: [[(0, 23)], [(5, 19)]], -1: []}
+        expected = {'+0': [{'coords': [(0, 23)],
+                            'dN_values': [0.56, 0.89, 1.13],
+                            'dS_values': [0.56, 0.89, 1.13]}],
+                    '+1': [],
+                    '+2': [{'coords': [(5, 19)],
+                            'dN_values': [0.35, 0.78, 1.03, 1.43, 1.80],
+                            'dS_values': [0.35, 0.78, 1.03, 1.43, 1.80]}],
+                    '-0': [],
+                    '-1': [],
+                    '-2': []}
+        orfs = {'+': [{'coords': [(0, 23)],
+                       'dN_values': [0.56, 0.89, 1.13],
+                       'dS_values': [0.56, 0.89, 1.13]},
+                      {'coords': [(5, 19)],
+                       'dN_values': [0.35, 0.78, 1.03, 1.43, 1.80],
+                       'dS_values': [0.35, 0.78, 1.03, 1.43, 1.80]}],
+                '-': []}
         result = sort_orfs(orfs)
         self.assertEqual(expected, result)
 
     def testSplicedOrf(self):
-        expected = {'+0': [[(0, 23), (5, 19)]], '+1': [], '+2': [[(8, 21)]], '-0': [], '-1': [], '-2': []}
-        orfs = {1: [[(0, 23), (5, 19)], [(8, 21)]], -1: []}
+        expected = {'+0': [{'coords': [(0, 23), (5, 19)],
+                            'dN_values': [0.56, 0.89, 1.13],
+                            'dS_values': [0.56, 0.89, 1.13]}],
+                    '+1': [],
+                    '+2': [{'coords': [(8, 21)],
+                            'dN_values': [0.35, 0.78, 1.03, 1.43, 1.80],
+                            'dS_values': [0.35, 0.78, 1.03, 1.43, 1.80]}],
+                    '-0': [],
+                    '-1': [],
+                    '-2': []}
+        orfs = {'+': [{'coords': [(0, 23), (5, 19)],
+                       'dN_values': [0.56, 0.89, 1.13],
+                       'dS_values': [0.56, 0.89, 1.13]},
+                      {'coords': [(8, 21)],
+                       'dN_values': [0.35, 0.78, 1.03, 1.43, 1.80],
+                       'dS_values': [0.35, 0.78, 1.03, 1.43, 1.80]}],
+                '-': []}
         result = sort_orfs(orfs)
         self.assertEqual(expected, result)
 
     def testBacktoBackOrfs(self):
-        expected = {'+0': [[(1, 9)], [(16, 24)]], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
-        orfs = {1: [[(1, 9)], [(16, 24)]], -1: []}
+        expected = {'+0': [{'coords': [(1, 9)],
+                            'dN_values': [1.42, 0.67, 1.22, 0.74],
+                            'dS_values': [1.42, 0.67, 1.22, 0.74]},
+                           {'coords': [(16, 24)],
+                            'dN_values': [0.56, 0.89, 1.13],
+                            'dS_values': [0.56, 0.89, 1.13]}],
+                    '+1': [],
+                    '+2': [],
+                    '-0': [],
+                    '-1': [],
+                    '-2': []}
+        orfs = {'+': [{'coords': [(1, 9)],
+                       'dN_values': [1.42, 0.67, 1.22, 0.74],
+                       'dS_values': [1.42, 0.67, 1.22, 0.74]},
+                      {'coords': [(16, 24)],
+                       'dN_values': [0.56, 0.89, 1.13],
+                       'dS_values': [0.56, 0.89, 1.13]}],
+                '-': []}
         result = sort_orfs(orfs)
         self.assertEqual(expected, result)
 
     def testFwdReverseOrfs(self):
-        expected = {'+0': [[(5, 49)]], '+1': [], '+2': [], '-0': [], '-1': [], '-2': [[(3, 29)]]}
-        orfs = {1: [[(5, 49)]], -1: [[(3, 29)]]}
+        expected = {'+0': [{'coords': [(5, 49)],
+                            'dN_values': [0.56, 0.89, 1.13],
+                            'dS_values': [0.56, 0.89, 1.13]}],
+                    '+1': [],
+                    '+2': [],
+                    '-0': [],
+                    '-1': [],
+                    '-2': [{'coords': [(3, 29)],
+                            'dN_values': [0.35, 0.78, 1.03, 1.43, 1.80],
+                            'dS_values': [0.35, 0.78, 1.03, 1.43, 1.80]}]}
+        orfs = {'+': [{'coords': [(5, 49)],
+                       'dN_values': [0.56, 0.89, 1.13],
+                       'dS_values': [0.56, 0.89, 1.13]}],
+                '-': [{'coords': [(3, 29)],
+                       'dN_values': [0.35, 0.78, 1.03, 1.43, 1.80],
+                       'dS_values': [0.35, 0.78, 1.03, 1.43, 1.80]}]}
         result = sort_orfs(orfs)
         self.assertEqual(expected, result)
 
     def testAllSixOrfs(self):
-        expected = {'+0': [[(0, 8)]], '+1': [[(1, 9)]], '+2': [[(2, 10)]],
-                    '-0': [[(0, 8)]], '-1': [[(1, 9)]], '-2': [[(2, 10)]]}
-        orfs = {1: [[(0, 8)], [(1, 9)], [(2, 10)]], -1: [[(0, 8)], [(1, 9)], [(2, 10)]]}
+        expected = {'+0': [{'coords': [(0, 8)],
+                            'dN_values': [0.56, 0.89, 1.13],
+                            'dS_values': [0.56, 0.89, 1.13]}],
+                    '+1': [{'coords': [(1, 9)],
+                            'dN_values': [0.35, 0.78, 1.03, 1.43, 1.80],
+                            'dS_values': [0.35, 0.78, 1.03, 1.43, 1.80]}],
+                    '+2': [{'coords': [(2, 10)],
+                            'dN_values': [0.56, 0.89, 1.13],
+                            'dS_values': [0.56, 0.89, 1.13]}],
+                    '-0': [{'coords': [(0, 8)],
+                            'dN_values': [0.35, 0.78, 1.03, 1.43, 1.80],
+                            'dS_values': [0.35, 0.78, 1.03, 1.43, 1.80]}],
+                    '-1': [{'coords': [(1, 9)],
+                            'dN_values': [0.56, 0.89, 1.13],
+                            'dS_values': [0.56, 0.89, 1.13]}],
+                    '-2': [{'coords': [(2, 10)],
+                            'dN_values': [0.35, 0.78, 1.03, 1.43, 1.80],
+                            'dS_values': [0.35, 0.78, 1.03, 1.43, 1.80]}]}
+        orfs = {'+': [{'coords': [(0, 8)],
+                       'dN_values': [0.56, 0.89, 1.13],
+                       'dS_values': [0.56, 0.89, 1.13]},
+                      {'coords': [(1, 9)],
+                       'dN_values': [0.35, 0.78, 1.03, 1.43, 1.80],
+                       'dS_values': [0.35, 0.78, 1.03, 1.43, 1.80]},
+                      {'coords': [(2, 10)],
+                       'dN_values': [0.56, 0.89, 1.13],
+                       'dS_values': [0.56, 0.89, 1.13]}],
+                '-': [{'coords': [(0, 8)],
+                       'dN_values': [0.35, 0.78, 1.03, 1.43, 1.80],
+                       'dS_values': [0.35, 0.78, 1.03, 1.43, 1.80]},
+                      {'coords': [(1, 9)],
+                       'dN_values': [0.56, 0.89, 1.13],
+                       'dS_values': [0.56, 0.89, 1.13]},
+                      {'coords': [(2, 10)],
+                       'dN_values': [0.35, 0.78, 1.03, 1.43, 1.80],
+                       'dS_values': [0.35, 0.78, 1.03, 1.43, 1.80]}]}
         result = sort_orfs(orfs)
         self.assertEqual(expected, result)
+
+
+class TestDiscretization(unittest.TestCase):
+
+    def test_get_rate_values(self):
+        alpha = 1.25
+        ncat = 4
+        expected = [0.18399707613117805, 0.5408613381926227, 1.0316122738771036, 2.2435293117310526]
+        result = get_rate_values(alpha, ncat)
+        self.assertEqual(expected, result)
+
+    def test_discretize_gamma(self):
+        alpha = 1.25
+        ncat = 4
+        expected = np.array([0.18399708, 0.54086134, 1.03161227, 2.24352931])
+        result = discretize_gamma(alpha, ncat)
+        self.assertEqual(expected.all(), result.all())
 
 
 class TestParseInput(unittest.TestCase):
@@ -249,7 +408,7 @@ class TestParseInput(unittest.TestCase):
                     -1: []}
 
         res_seq, res_orfs = parse_genbank(in_seq)
-        self.assertEqual(exp_seq, res_seq[:70])     # First 70 nucleotides of the HBV genome
+        self.assertEqual(exp_seq, res_seq[:70])  # First 70 nucleotides of the HBV genome
         self.assertEqual(exp_orfs, res_orfs)
 
     def testParseFasta(self):
@@ -257,7 +416,7 @@ class TestParseInput(unittest.TestCase):
         exp_seq = 'CATTCGGGCTGGGTTTCACCCCACCGCACGGAGGCCTTTTGGGGTGGAGCCCTCAGGCTCAGGGCATACTACAAACTTTGCCAGCAAATCCGCC' \
                   'TCCTGCCTCCACCAATCGCCAGTCAGGAAGGCAGCCTACCCCGCTGTCTCCACCTTTGAGAAACACTCATCCTCAGGCCATGCAGTGG'
         res_seq = parse_fasta(in_seq)
-        self.assertEqual(exp_seq, res_seq[3000:])   # Last 182 nucleotides of the HBV genome
+        self.assertEqual(exp_seq, res_seq[3000:])  # Last 182 nucleotides of the HBV genome
 
     def testCheckOrfs(self):
         #  If user specified ORFs
