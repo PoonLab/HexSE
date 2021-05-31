@@ -283,74 +283,68 @@ def discretize_gamma(alpha, ncat):
     return rates
 
 
-def parse_genbank(in_seq, in_orfs=None, settings=None):
+def read_sequence(in_file):
     """
-    When input is in <genbank> format, extract nucleotide sequence and orfs (in case user does not specify).
-    :param in_seq: sequence in genbank Format
-    :param in_orfs: path to the input ORFs (for CSV file)
-    :param settings: dictionary of settings (from YAML file)
-    :return tuple: (sequence, orfs)
+    Extract the sequence from the input file
+    :param in_file: path to the file containing the sequence.
+        Supported file types are GenBank (.gb, .genbank) and FASTA (.fa, .fasta)
+    :return: the sequence as a string
+    """
+    seq = ''
+    if in_file.lower().endswith(".gb") or in_file.lower().endswith("genbank"):
+        # Loop through records
+        for rec in SeqIO.parse(in_file, format="genbank"):
+            seq = rec.seq
+        file_format = 'genbank'
+
+    elif in_file.lower().endswith(".fasta") or in_file.lower().endswith(".fa"):
+        # Read in the sequence
+        with open(in_file) as seq_file:
+            seq = ''
+            for line in seq_file:
+                # Skip header if the file is a FASTA file
+                if not (line.startswith(">") or line.startswith("#")):
+                    seq += line.strip('\n\r').upper()
+        file_format = 'fasta'
+
+    else:
+        print("Sequence files must end in '.fa', '.fasta', '.gb', 'genbank'")
+        logging.error("Invalid file type: files must end in '.fa', '.fasta', '.gb', 'genbank'")
+        sys.exit(1)
+
+    # Log information about sequence input type
+    logging.info("Input sequence is: {} in {} format".format(in_file.lower(), file_format))
+
+    return seq
+
+
+def parse_genbank_orfs(in_seq):
+    """
+    Extract ORFs from the GenBank file
     """
     orf_locations = {'+': [], '-': []}  # ORF locations sorted by strand
 
     # Loop through records
     for rec in SeqIO.parse(in_seq, format="genbank"):
-        seq = rec.seq
+        # Read ORFs from GenBank file
+        cds = [feat for feat in rec.features if feat.type == "CDS"]
+        # Record the first occurrence of the ORFs
+        for cd in cds:
+            orf = {}
+            strand = ''
+            for loc in cd.location.parts:
+                if loc.strand > 0:
+                    strand = '+'
+                else:
+                    strand = '-'
+                orf['coords'] = (int(loc.start), int(loc.end))
 
-        # Read ORFs from GenBank if not specified by the user
-        if in_orfs is not None or settings is not None:
-            # Read ORFs from GenBank file
-            cds = [feat for feat in rec.features if feat.type == "CDS"]
-            # Record the first occurrence of the ORFs
-            for cd in cds:
-                orf = {}
-                strand = ''
-                for loc in cd.location.parts:
-                    if loc.strand > 0:
-                        strand = '+'
-                    else:
-                        strand = '-'
-                    orf['coords'] = (int(loc.start), int(loc.end))
-
-                orf_locations[strand].append(orf)
-
-    return seq, orf_locations
-
-
-def parse_fasta(in_seq):
-    """
-    If input is a fasta file, retrieve nucleotide sequence
-    :param in_seq: the sequence
-    :return s: the nucleotide sequence
-    """
-    # Read in the sequence
-    with open(in_seq) as seq_file:
-        s = ''
-        for line in seq_file:
-            # Skip header if the file is a FASTA file
-            if not (line.startswith(">") or line.startswith("#")):
-                s += line.strip('\n\r').upper()
-    return s
-
-
-def set_global_dNdS_values(orf_locations, dN_values, dS_values):
-    """
-    Sets the dN and dS values for each the reading frames
-    :param orf_locations: dictionary of ORFs sorted by the strand
-    :param dN_values: list of dN values
-    :param dS_values: list of dS values
-    return: orf_locations updated to contains dN and dS values for each ORF
-    """
-    for strand in orf_locations:
-        orf_list = orf_locations[strand]
-        for orf in orf_list:
-            orf['dN_values'] = dN_values
-            orf['dS_values'] = dS_values
+            orf_locations[strand].append(orf)
 
     return orf_locations
 
 
-def read_orfs_from_csv(in_orfs, dN_values, dS_values):
+def parse_orfs_from_csv(in_orfs, dN_values, dS_values):
     """
     Reads ORFs from a csv file
     :param in_orfs: orfs specified by the user, default (None)
@@ -363,59 +357,56 @@ def read_orfs_from_csv(in_orfs, dN_values, dS_values):
     with open(in_orfs) as orf_handle:
         for line in orf_handle:
             line = line.strip()
+            line = line.split(',')
 
-            # Spliced ORF
-            if ':' in line:
-                orf = {}
-                line = line.split(':')
+            for partial_coord in line:
+                if ':' in partial_coord:
+                    orf = {}
+                    partial_coord = partial_coord.split(':')
 
-                # Read in partial ORFs
-                strand = ''
-                for coords in line:
-                    coords = coords.split(',')
-                    if len(coords) == 3:
-                        if int(coords[2]) > 0:
+                    # Check if strand is specified
+                    if len(line) == 3:
+                        if int(partial_coord[2]) > 0:
                             strand = '+'
                         else:
                             strand = '-'
-                    orf['coords'] = (int(coords[0]), int(coords[1]))
+
+                    orf['coords'] = (int(partial_coord[0]), int(partial_coord[1]))
                     orf['dN_values'] = dN_values
                     orf['dS_values'] = dS_values
 
-                # Check if the strand is valid
-                if strand != '+' and strand != '-':
-                    print("Invalid strand: {}".format(strand))
-                    sys.exit(1)
+                    orf_locations[strand].append(orf)
+                    continue
 
-                orf_locations[strand].append(orf)
-
-            else:
-                line = line.split(',')
-                if int(line[2]) > 0:
-                    strand = '+'
                 else:
-                    strand = '-'
+                    orf = {}
+                    if int(line[1]) > 0:
+                        strand = '+'
+                    else:
+                        strand = '-'
 
-                # Check if the strand is valid
-                if strand != '+' and strand != '-':
-                    print("Invalid strand: {}".format(strand))
-                    sys.exit(1)
+                    orf['coords'] = (int(line[0]), int(line[1]))
+                    orf['dN_values'] = dN_values
+                    orf['dS_values'] = dS_values
 
-                orf['coords'] = (int(line[0]), int(line[1]))
-                orf['dN_values'] = dN_values
-                orf['dS_values'] = dS_values
-
-                orf_locations[strand].append(orf)
+            orf_locations[strand].append(orf)
 
     return orf_locations
 
 
-def read_orfs_from_yaml(settings):
+def parse_orfs_from_yaml(in_path):
     """
     Reads ORFs from a YAML file containing the ORF coordinates and the parameters of the dN/dS distribution for each ORF
-    :param settings: a dictionary of settings
+    :param in_path: path to the YAML file
     :return: orf_locations, a dictionary of ORFs sorted by strand (+ or -)
     """
+    # Parse the config file
+    with open(in_path, 'r') as stream:
+        try:
+            settings = yaml.safe_load(stream)
+        except yaml.YAMLError as e:
+            print(e)
+
     orf_locations = {'+': [], '-': []}
 
     raw_coords = list(settings['orfs'].keys())
@@ -437,10 +428,10 @@ def read_orfs_from_yaml(settings):
                         strand = '-'
                 orf['coords'] = [(int(coords[0]), int(coords[1]))]
                 # Get dN and dS parameters based on the full ORF
-                orf['dN_values'] = get_rate_values(settings['orfs'][raw_coord]['dN_shape'],
-                                                   settings['orfs'][raw_coord]['dN_classes'])
-                orf['dS_values'] = get_rate_values(settings['orfs'][raw_coord]['dS_shape'],
-                                                   settings['orfs'][raw_coord]['dS_classes'])
+                orf['dN_values'] = get_rate_values(in_path['orfs'][raw_coord]['dN_shape'],
+                                                   in_path['orfs'][raw_coord]['dN_classes'])
+                orf['dS_values'] = get_rate_values(in_path['orfs'][raw_coord]['dS_shape'],
+                                                   in_path['orfs'][raw_coord]['dS_classes'])
 
                 orf_locations[strand].append(orf)
 
@@ -461,6 +452,23 @@ def read_orfs_from_yaml(settings):
                                                settings['orfs'][raw_coord]['dS_classes'])
 
             orf_locations[strand].append(orf)
+
+    return orf_locations
+
+
+def set_global_dNdS_values(orf_locations, dN_values, dS_values):
+    """
+    Sets the dN and dS values for each the reading frames
+    :param orf_locations: dictionary of ORFs sorted by the strand
+    :param dN_values: list of dN values
+    :param dS_values: list of dS values
+    return: orf_locations updated to contains dN and dS values for each ORF
+    """
+    for strand in orf_locations:
+        orf_list = orf_locations[strand]
+        for orf in orf_list:
+            orf['dN_values'] = dN_values
+            orf['dS_values'] = dS_values
 
     return orf_locations
 
@@ -583,61 +591,27 @@ def main():
     LOG_FILENAME = "{}_evol_simulation.log".format(file_name.split(".")[0])
     logging.basicConfig(filename=LOG_FILENAME, level=logging.INFO)
 
-    # Parse the config file
-    settings = None
-    if args.config:
-        with open(args.config, 'r') as stream:
-            try:
-                settings = yaml.safe_load(stream)
-            except yaml.YAMLError as e:
-                print(e)
+    # Read in sequence
+    s = read_sequence(args.seq)
 
     # Use a different dN/dS distribution for each ORF
-    if settings:
-        orf_locations = read_orfs_from_yaml(settings)
+    if args.config:
+        orf_locations = parse_orfs_from_yaml(args.config)
 
-        # Check input format for the nucleotide sequence
-        if input.endswith(".gb") or input.endswith("genbank"):  # If genbank file
-            s, _ = parse_genbank(args.seq, settings=settings)
-            format = 'genbank'
-        elif input.endswith(".fasta") or input.endswith(".fa"):
-            s = parse_fasta(args.seq)
-            format = 'fasta'
-        else:
-            print("Sequence files must end in '.fa', '.fasta', '.gb', 'genbank'")
-            logging.error("Invalid file type: files must end in '.fa', '.fasta', '.gb', 'genbank'")
-            sys.exit()
-
-    # Use the the same dN/dS distribution for each ORF
+    # Use the same dN/dS distribution for all ORFs
     else:
         dN_values = get_rate_values(args.dNshape, args.dNclasses)
         dS_values = get_rate_values(args.dSshape, args.dSclasses)
 
+        # Read ORFs from GenBank file
+        if args.seq.lower.endswith('.gb') or args.seq.lower.endswith('genbank'):
+            orfs = parse_genbank_orfs(args.seq)
+
+        # Read in ORFs from .csv file
         if args.orfs:
-            orf_locations = read_orfs_from_csv(args.orfs, dN_values, dS_values)
+            orfs = parse_orfs_from_csv(args.orfs, dN_values, dS_values)
 
-        # Check input format for the nucleotide sequence
-        if input.endswith(".gb") or input.endswith("genbank"):  # If genbank file
-            if args.orfs:
-                orf_locations = read_orfs_from_csv(args.orfs, dN_values, dS_values)
-                s, _ = parse_genbank(args.seq, in_orfs=args.orfs)
-            else:
-                s, orf_locations = parse_genbank(args.seq, in_orfs=args.orfs)
-                orf_locations = set_global_dNdS_values(orf_locations, dN_values, dS_values)
-            format = 'genbank'
-
-        elif input.endswith(".fasta") or input.endswith(".fa"):
-            s = parse_fasta(args.seq)
-            orf_locations = read_orfs_from_csv(args.orfs, dN_values, dS_values)
-            format = 'fasta'
-
-        else:
-            print("Sequence files must end in '.fa', '.fasta', '.gb', 'genbank'")
-            logging.error("Invalid file type: files must end in '.fa', '.fasta', '.gb', 'genbank'")
-            sys.exit()
-
-    # Log information about sequence input type
-    logging.info("Input sequence is: {} in {} format".format(input, format))
+        orf_locations = set_global_dNdS_values(orfs, dN_values, dS_values)
 
     pi = get_pi(args.pi, settings, s)
     print(pi)
