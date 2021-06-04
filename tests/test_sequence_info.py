@@ -9,6 +9,7 @@ DS_VALUES = [0.29327471612351436, 0.6550136761581515, 1.0699896623909886, 1.9817
 KAPPA = 0.3
 MU = 0.0005
 
+# str_sequence, orfs, kappa, mu, pi,
 
 class TestSequence1(unittest.TestCase):
     """
@@ -25,7 +26,7 @@ class TestSequence1(unittest.TestCase):
 
         s1 = 'GTACGATCGATCGATGCTAGC'
         pi1 = Sequence.get_frequency_rates(s1)
-        self.sequence1 = Sequence(s1, {'+0': [[(0, 21)]]}, KAPPA, MU, pi1, DN_VALUES, DS_VALUES)
+        self.sequence1 = Sequence(s1, {'+0': [[(0, 21)]]}, KAPPA, MU, pi1)
 
     def testReverseComplement(self):
         s = str(self.sequence1)
@@ -45,8 +46,6 @@ class TestSequence1(unittest.TestCase):
         self.assertEqual(self.sequence1.kappa, new_sequence1.kappa)
         self.assertEqual(self.sequence1.mu, new_sequence1.mu)
         self.assertEqual(self.sequence1.pi, new_sequence1.pi)
-        self.assertEqual(self.sequence1.dN_values, new_sequence1.dN_values)
-        self.assertEqual(self.sequence1.dS_values, new_sequence1.dS_values)
         self.assertEqual(self.sequence1.is_circular, new_sequence1.is_circular)
 
         # Event trees reference different Nucleotides, but the Nucleotides have the same states
@@ -139,7 +138,7 @@ class TestSequence2(unittest.TestCase):
         s2 = 'ATGAATAAACCCGTATGA'
         sorted_orfs = {'+0': [[(0, 18)]], '+1': [], '+2': [], '-0': [], '-1': [], '-2': [[(3, 15)]]}
         pi2 = Sequence.get_frequency_rates(s2)
-        self.sequence2 = Sequence(s2, sorted_orfs, KAPPA, MU, pi2, DN_VALUES, DS_VALUES)
+        self.sequence2 = Sequence(s2, sorted_orfs, KAPPA, MU, pi2)
 
     def testReverseComplement(self):
         s = str(self.sequence2)
@@ -159,8 +158,6 @@ class TestSequence2(unittest.TestCase):
         self.assertEqual(self.sequence2.kappa, new_sequence1.kappa)
         self.assertEqual(self.sequence2.mu, new_sequence1.mu)
         self.assertEqual(self.sequence2.pi, new_sequence1.pi)
-        self.assertEqual(self.sequence2.dN_values, new_sequence1.dN_values)
-        self.assertEqual(self.sequence2.dS_values, new_sequence1.dS_values)
         self.assertEqual(self.sequence2.is_circular, new_sequence1.is_circular)
 
         # Event trees reference different Nucleotides, but the Nucleotides have the same states
@@ -273,7 +270,7 @@ class TestSequence3(unittest.TestCase):
         s3 = 'ATGACGTGGTGA'
         sorted_orfs = {'+0': [[(0, 12)]], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
         pi3 = Sequence.get_frequency_rates(s3)
-        self.sequence3 = Sequence(s3, sorted_orfs, KAPPA, MU, pi3, DN_VALUES, DS_VALUES)
+        self.sequence3 = Sequence(s3, sorted_orfs, KAPPA, MU, pi3)
 
     def testReverseComplement(self):
         s = str(self.sequence3)
@@ -293,8 +290,6 @@ class TestSequence3(unittest.TestCase):
         self.assertEqual(self.sequence3.kappa, new_sequence1.kappa)
         self.assertEqual(self.sequence3.mu, new_sequence1.mu)
         self.assertEqual(self.sequence3.pi, new_sequence1.pi)
-        self.assertEqual(self.sequence3.dN_values, new_sequence1.dN_values)
-        self.assertEqual(self.sequence3.dS_values, new_sequence1.dS_values)
         self.assertEqual(self.sequence3.is_circular, new_sequence1.is_circular)
 
         # Event trees reference different Nucleotides, but the Nucleotides have the same states
@@ -395,7 +390,7 @@ class TestSequence4(unittest.TestCase):
         sorted_orfs = {'+0': [[(0, 12)]], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
         pi4 = Sequence.get_frequency_rates(s4)
         random.seed(4000)
-        self.sequence4 = Sequence(s4, sorted_orfs, KAPPA, MU, pi4, DN_VALUES, DS_VALUES)
+        self.sequence4 = Sequence(s4, sorted_orfs, KAPPA, MU, pi4)
 
     def testReverseComplement(self):
         s = str(self.sequence4)
@@ -415,8 +410,6 @@ class TestSequence4(unittest.TestCase):
         self.assertEqual(self.sequence4.kappa, new_sequence1.kappa)
         self.assertEqual(self.sequence4.mu, new_sequence1.mu)
         self.assertEqual(self.sequence4.pi, new_sequence1.pi)
-        self.assertEqual(self.sequence4.dN_values, new_sequence1.dN_values)
-        self.assertEqual(self.sequence4.dS_values, new_sequence1.dS_values)
         self.assertEqual(self.sequence4.is_circular, new_sequence1.is_circular)
 
         # Event trees reference different Nucleotides, but the Nucleotides have the same states
@@ -506,7 +499,7 @@ class TestSequence5(unittest.TestCase):
         s5 = 'ATGAATGCCTGACTAA'
         sorted_orfs = {'+0': [[(0, 12)]], '+1': [[(4, 16)]], '+2': [], '-0': [], '-1': [], '-2': []}
         pi5 = Sequence.get_frequency_rates(s5)
-        self.sequence5 = Sequence(s5, sorted_orfs, KAPPA, MU, pi5, DN_VALUES, DS_VALUES)
+        self.sequence5 = Sequence(s5, sorted_orfs, KAPPA, MU, pi5)
 
     def testReverseComplement(self):
         s = str(self.sequence5)
@@ -526,8 +519,6 @@ class TestSequence5(unittest.TestCase):
         self.assertEqual(self.sequence5.kappa, new_sequence1.kappa)
         self.assertEqual(self.sequence5.mu, new_sequence1.mu)
         self.assertEqual(self.sequence5.pi, new_sequence1.pi)
-        self.assertEqual(self.sequence5.dN_values, new_sequence1.dN_values)
-        self.assertEqual(self.sequence5.dS_values, new_sequence1.dS_values)
         self.assertEqual(self.sequence5.is_circular, new_sequence1.is_circular)
 
         # Event trees reference different Nucleotides, but the Nucleotides have the same states
@@ -625,7 +616,7 @@ class TestSequence6(unittest.TestCase):
         s6 = 'ATGATGGCCCTAA'
         sorted_orfs = {'+0': [[(0, 5), (6, 13)]], '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
         pi6 = Sequence.get_frequency_rates(s6)
-        self.sequence6 = Sequence(s6, sorted_orfs, KAPPA, MU, pi6, DN_VALUES, DS_VALUES)
+        self.sequence6 = Sequence(s6, sorted_orfs, KAPPA, MU, pi6)
 
     def testReverseComplement(self):
         s = str(self.sequence6)
@@ -645,8 +636,6 @@ class TestSequence6(unittest.TestCase):
         self.assertEqual(self.sequence6.kappa, new_sequence1.kappa)
         self.assertEqual(self.sequence6.mu, new_sequence1.mu)
         self.assertEqual(self.sequence6.pi, new_sequence1.pi)
-        self.assertEqual(self.sequence6.dN_values, new_sequence1.dN_values)
-        self.assertEqual(self.sequence6.dS_values, new_sequence1.dS_values)
         self.assertEqual(self.sequence6.is_circular, new_sequence1.is_circular)
 
         # Event trees reference different Nucleotides, but the Nucleotides have the same states

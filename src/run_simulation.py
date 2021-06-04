@@ -352,7 +352,6 @@ def parse_orfs_from_csv(in_orfs, dN_values, dS_values):
     """
 
     orf_locations = {'+': [], '-': []}  # ORF locations sorted by strand
-
     # Read ORFs from csv file
     with open(in_orfs) as orf_handle:
         for line in orf_handle:
@@ -389,24 +388,18 @@ def parse_orfs_from_csv(in_orfs, dN_values, dS_values):
                     orf['dN_values'] = dN_values
                     orf['dS_values'] = dS_values
 
-            orf_locations[strand].append(orf)
+            if orf not in orf_locations[strand]:
+                orf_locations[strand].append(orf)
 
     return orf_locations
 
 
-def parse_orfs_from_yaml(in_path):
+def parse_orfs_from_yaml(settings):
     """
     Reads ORFs from a YAML file containing the ORF coordinates and the parameters of the dN/dS distribution for each ORF
-    :param in_path: path to the YAML file
+    :param settings: dictionary representation of YAML file
     :return: orf_locations, a dictionary of ORFs sorted by strand (+ or -)
     """
-    # Parse the config file
-    with open(in_path, 'r') as stream:
-        try:
-            settings = yaml.safe_load(stream)
-        except yaml.YAMLError as e:
-            print(e)
-
     orf_locations = {'+': [], '-': []}
 
     raw_coords = list(settings['orfs'].keys())
@@ -428,10 +421,10 @@ def parse_orfs_from_yaml(in_path):
                         strand = '-'
                 orf['coords'] = [(int(coords[0]), int(coords[1]))]
                 # Get dN and dS parameters based on the full ORF
-                orf['dN_values'] = get_rate_values(in_path['orfs'][raw_coord]['dN_shape'],
-                                                   in_path['orfs'][raw_coord]['dN_classes'])
-                orf['dS_values'] = get_rate_values(in_path['orfs'][raw_coord]['dS_shape'],
-                                                   in_path['orfs'][raw_coord]['dS_classes'])
+                orf['dN_values'] = get_rate_values(settings['orfs'][raw_coord]['dN_shape'],
+                                                   settings['orfs'][raw_coord]['dN_classes'])
+                orf['dS_values'] = get_rate_values(settings['orfs'][raw_coord]['dS_shape'],
+                                                   settings['orfs'][raw_coord]['dS_classes'])
 
                 orf_locations[strand].append(orf)
 
@@ -490,7 +483,7 @@ def stop_in_seq(seq, start, end):
     Look for stop codons inside the CDS
     """
     cds = seq[start:end]
-    stop =  ["TGA", "TAG", "TAA"]
+    stop = ["TGA", "TAG", "TAA"]
     stop_count = 0
     for codon, nt in codon_iterator(cds, start, end):
         if codon in stop:
@@ -528,7 +521,7 @@ def count_internal_stop_codons(seq, strand, orf):
     stop_count, cds = 0, ""
 
     # Get CDS
-    cds += seq[orf['coords'][0][0]: orf['coords'][-1][1]]
+    cds += seq[orf['coords'][0]: orf['coords'][1]]
 
     if strand == '-':    # Reverse strand
         cds = cds[::-1]
@@ -536,8 +529,9 @@ def count_internal_stop_codons(seq, strand, orf):
 
     # Check if the STOP codon is in the same frame the start codon and is not the last STOP codon in the ORF
     for match in stop_matches:
+        stop_start = match.span()[0]
         stop_end = match.span()[1]
-        if (stop_end - 1) % 3 == orf['coords'][0][0] % 3 and stop_end > orf['coords'][-1][1]:
+        if stop_start % 3 == orf['coords'][0] % 3 and stop_end < orf['coords'][1]:
             stop_count += 1
 
     return stop_count
@@ -548,20 +542,21 @@ def get_pi(pi, settings, s):
 
     if settings is not None:
         pi = list(settings['pi'].values())
-        pi = dict(zip(keys, pi))
-
-    # If the user did not specify stationary frequencies
-    if all(freq is None for freq in pi):
-        pi = Sequence.get_frequency_rates(s)
+        return dict(zip(keys, pi))
 
     # If the user specified stationary frequencies
-    elif all(freq is type(float) for freq in pi):
+    if all(type(freq) == float for freq in pi):
         pi = dict(zip(keys, pi))
+        return pi
+
+    # If the user did not specify stationary frequencies
+    elif all(freq is None for freq in pi):
+        pi = Sequence.get_frequency_rates(s)
+        return pi
 
     else:
         print("Invalid input: {}".format(pi))
-
-    return pi
+        sys.exit(1)
 
 
 def get_kappa(kappa, settings):
@@ -594,9 +589,19 @@ def main():
     # Read in sequence
     s = read_sequence(args.seq)
 
+    # Parse the config file if it exists
+    if args.config:
+        with open(args.config, 'r') as stream:
+            try:
+                settings = yaml.safe_load(stream)
+            except yaml.YAMLError as e:
+                print(e)
+    else:
+        settings = {}
+
     # Use a different dN/dS distribution for each ORF
     if args.config:
-        orf_locations = parse_orfs_from_yaml(args.config)
+        orf_locations = parse_orfs_from_yaml(settings)
 
     # Use the same dN/dS distribution for all ORFs
     else:
@@ -614,13 +619,10 @@ def main():
         orf_locations = set_global_dNdS_values(orfs, dN_values, dS_values)
 
     pi = get_pi(args.pi, settings, s)
-    print(pi)
 
     kappa = get_kappa(args.kappa, settings)
-    print(kappa)
 
     mu = get_mu(args.mu, settings)
-    print(mu)
 
     # Check if the ORFs are valid
     invalid_orfs = valid_orfs(orf_locations, len(s))
@@ -640,7 +642,7 @@ def main():
     for strand in orf_locations:
         orfs = orf_locations[strand]
         for orf_coords in orfs:
-            if strand == -1:       # Reverse strand
+            if strand == '-':       # Reverse strand
                 stop_count = count_internal_stop_codons(Sequence.complement(s), strand, orf_coords)
             else:                   # Forward strand
                 stop_count = count_internal_stop_codons(s, strand, orf_coords)

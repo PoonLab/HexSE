@@ -477,7 +477,11 @@ class TestReadOrfs(unittest.TestCase):
         self.assertEqual(exp_orfs, res_orfs)
 
     def test_yaml_format(self):
-        in_path = os.path.join(CURR_ABSPATH, 'fixtures/test_HBV.yaml')
+        path = os.path.join(CURR_ABSPATH, 'fixtures/test_HBV.yaml')
+
+        with open(path, 'r') as stream:
+            settings = yaml.safe_load(stream)
+
         exp_orfs = {'+': [{'coords': [[2849, 3182]],
                            'dN_values': [0.28472554730432975, 0.8017146834895286, 1.9135597691869002],
                            'dS_values': [0.28472554730432975, 0.8017146834895286, 1.9135597691869002]},
@@ -503,30 +507,111 @@ class TestReadOrfs(unittest.TestCase):
                            'dN_values': [0.3075971532102495, 0.5999467116400771, 0.8730832667988639, 1.2223993729945162, 1.9969734953254998],
                            'dS_values': [0.3075971532102495, 0.5999467116400771, 0.8730832667988639, 1.2223993729945162, 1.9969734953254998]}],
                     '-': []}
-        res_orfs = parse_orfs_from_yaml(in_path)
+        res_orfs = parse_orfs_from_yaml(settings)
         self.assertEqual(exp_orfs, res_orfs)
 
 
-class TestParseFasta(unittest.TestCase):
-    def test_small(self):
-        in_seq = os.path.join(CURR_ABSPATH, 'fixtures/HBV.fasta')
-        exp_seq = 'CATTCGGGCTGGGTTTCACCCCACCGCACGGAGGCCTTTTGGGGTGGAGCCCTCAGGCTCAGGGCATACTACAAACTTTGCCAGCAAATCCGCC' \
-                  'TCCTGCCTCCACCAATCGCCAGTCAGGAAGGCAGCCTACCCCGCTGTCTCCACCTTTGAGAAACACTCATCCTCAGGCCATGCAGTGG'
-        res_seq = parse_fasta(in_seq)
-        self.assertEqual(exp_seq, res_seq[3000:])  # Last 182 nucleotides of the HBV genome
+class TestHandleStopCodons(unittest.TestCase):
 
-    def testCheckOrfs(self):
-        #  If user specified ORFs
-        in_orfs = os.path.join(CURR_ABSPATH, 'fixtures/test_HBV_orfs.csv')
-        exp_orfs = [(2849, 3182), (0, 837), (3173, 3182), (156, 837),
-                    (1375, 1840), (1815, 2454), (1853, 1922), (1902, 2454)]
-        self.assertEqual(exp_orfs, check_orfs(in_orfs))
+    def test_internal_stop(self):
+        seq = "ATGGCCTAATGA"
+        exp_count = 2
+        res_count = stop_in_seq(seq, start=0, end=12)
+        self.assertEqual(exp_count, res_count)
 
-        # If user did not specify ORFs
-        in_orfs = None
-        s = 'ATGAAAGTGCAACATGGGTAAATAG'
-        exp_orfs = [(0, 21), (13, 25)]
-        self.assertEqual(exp_orfs, check_orfs(in_orfs, s))
+    def test_stop_out_of_frame(self):
+        seq = "ATGAAAGCAATGAGGTGA"
+        exp_count = 1
+        res_count = stop_in_seq(seq, start=0, end=18)
+        self.assertEqual(exp_count, res_count)
+
+    def test_no_internal_stop_codons(self):
+        expected = 0
+        seq = 'ATGGGAGAACGGGCTAGAGCTAGCA'
+        orf = {'coords': (0, 18)}
+        result = count_internal_stop_codons(seq, '+', orf)
+        self.assertEqual(expected, result)
+
+    def test_internal_stop_codon(self):
+        seq = "ATGTGATAA"
+        orf = {'coords': [0, 9],
+               'dN_values': [1.42, 0.67, 1.22, 0.74],
+               'dS_values': [1.42, 0.67, 1.22, 0.74]}
+        exp = 1
+        res = count_internal_stop_codons(seq, '+', orf)
+        self.assertEqual(exp, res)
+
+
+class TestGetParameters(unittest.TestCase):
+
+    def test_get_pi_from_seq(self):
+        expected = {'A': 0.44, 'C': 0.0, 'G': 0.22, 'T': 0.33}
+        s = 'ATGTGATAA'
+        settings = None
+        pi = [None, None, None, None]
+        result = get_pi(pi, settings, s)
+        self.assertEqual(expected, result)
+
+    def test_get_pi_from_settings(self):
+        expected = {'A': 0.25, 'C': 0.25, 'G': 0.25, 'T': 0.25}
+        s = 'ATGTGATAA'
+        pi = [0.05, 0.05, 0.05, 0.85]   # input file takes priority
+
+        path = os.path.join(CURR_ABSPATH, 'fixtures/test_HBV.yaml')
+        with open(path, 'r') as stream:
+            settings = yaml.safe_load(stream)
+
+        result = get_pi(pi, settings, s)
+        self.assertEqual(expected, result)
+
+    def test_user_spec_pi(self):
+        expected = {'A': 0.05, 'C': 0.85, 'G': 0.05, 'T': 0.05}
+        s = 'ATGTGATAA'
+        pi = [0.05, 0.05, 0.05, 0.85]
+        settings = None
+        result = get_pi(pi, settings, s)
+        self.assertEqual(expected, result)
+
+    def test_invalid_pi(self):
+        with self.assertRaises(SystemExit) as e:
+            s = 'ATGCTGCATGGCGCA'
+            settings = None
+            pi = [0, 1, 2, 3]
+            get_pi(pi, settings, s)
+
+        self.assertEqual(e.exception.code, 1)
+
+    def test_get_kappa_settings(self):
+        expected = 0.3  # Input file takes priority
+
+        path = os.path.join(CURR_ABSPATH, 'fixtures/test_HBV.yaml')
+        with open(path, 'r') as stream:
+            settings = yaml.safe_load(stream)
+
+        result = get_kappa(0.03, settings)
+        self.assertEqual(expected, result)
+
+    def test_user_spec_kappa(self):
+        expected = 0.03
+        settings = None
+        result = get_kappa(0.03, settings)
+        self.assertEqual(expected, result)
+
+    def test_get_mu_settings(self):
+        expected = 0.0005  # Input file takes priority
+
+        path = os.path.join(CURR_ABSPATH, 'fixtures/test_HBV.yaml')
+        with open(path, 'r') as stream:
+            settings = yaml.safe_load(stream)
+
+        result = get_mu(0.01, settings)
+        self.assertEqual(expected, result)
+
+    def test_user_spec_mu(self):
+        expected = 0.01
+        settings = None
+        result = get_mu(0.01, settings)
+        self.assertEqual(expected, result)
 
 
 if __name__ == '__main__':
