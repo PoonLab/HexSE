@@ -1,5 +1,5 @@
 ---
-mu: 0.0005
+global_rate: 0.0005
 
 kappa: 0.3
 
@@ -9,53 +9,51 @@ pi:
   pi_G: 0.25
   pi_C: 0.25
 
-circular: true 
-
 orfs: 
   2849,3182:
-    dN_classes: 3
-    dN_shape: 1.5
-    dS_classes: 3
-    dS_shape: 1.5
+    omega_classes: 3
+    omega_shape: 1.5
+    omega_dist: gamma
   
   0,837:
-    dN_classes: 4
-    dN_shape: 1.7
-    dS_classes: 4
-    dS_shape: 1.7
+    omega_classes: 4
+    omega_shape: 1.7
+    omega_dist: gamma
   
   3173,3182:
-    dN_classes: 5
-    dN_shape: 1.9
-    dS_classes: 5
-    dS_shape: 1.9
+    omega_classes: 5
+    omega_shape: 1.9
+    omega_dist: gamma
   
   156,837:
-    dN_classes: 6
-    dN_shape: 1.2
-    dS_classes: 6
-    dS_shape: 1.2
+    omega_classes: 6
+    omega_shape: 1.2
+    omega_dist: gamma
   
   1375,1840:
-    dN_classes: 7
-    dN_shape: 1.30
-    dS_classes: 7
-    dS_shape: 1.03
+    omega_classes: 7
+    omega_shape: 1.30
+    omega_dist: gamma
   
   1815,2454:
-    dN_classes: 3
-    dN_shape: 1.25
-    dS_classes: 3
-    dS_shape: 1.25
+    omega_classes: 3
+    omega_shape: 1.25
+    omega_dist: gamma
   
   1853,1922:
-    dN_classes: 4
-    dN_shape: 1.87
-    dS_classes: 4
-    dS_shape: 1.78
+    omega_classes: 4
+    omega_shape: 1.87
+    omega_dist: gamma
   
   1902,2454:
-    dN_classes: 5
-    dN_shape: 2.5
-    dS_classes: 5
-    dS_shape: 2.5
+    omega_classes: 5
+    omega_shape: 2.5
+    omega_dist = gamma
+
+
+mu:
+  mu_classes: 4
+  mu_shape: 1.0
+  mu_dist: lognorm
+
+circular: false

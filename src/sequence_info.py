@@ -38,7 +38,7 @@ class Sequence:
     Store inputs and create sequence objects
     """
 
-    def __init__(self, str_sequence, orfs, kappa, global_rate, pi, omega_values, cat_values, circular=False):
+    def __init__(self, str_sequence, orfs, kappa, global_rate, pi, cat_values, circular=False):
         """
         Creates a list of nucleotides, locates open reading frames, and creates a list of codons.
         :param orfs: A dictionary of ORFs, sorted by reading frame where:
@@ -48,8 +48,6 @@ class Sequence:
         :param kappa: transition/ transversion rate ratio
         :param global_rate: The global rate (substitutions/site/unit time)
         :param pi: Frequency of nucleotides in a given sequence, with nucleotide as keys
-        :param omega_values: Numeric values for omega (drawn from a gamma distribution by default)
-                             Applied in case that a mutation is non_synonymous
         :param cat_values: Values drawn from a gamma distribution to categorize nucleotides
                             according to their mutation rates
         :param circular: True if the genome is circular, false if the genome is linear (default: linear)
@@ -58,7 +56,6 @@ class Sequence:
         self.kappa = kappa  # Transition/ transversion rate ratio
         self.global_rate = global_rate  # The global rate (substitutions/site/unit time)
         self.pi = pi  # Frequency of nucleotides, with nucleotide as keys
-        self.omega_values = omega_values  # Numeric values for omega (drawn from a gamma distribution by default)
         self.__codons = []  # Store references to all codons
         self.nt_sequence = []  # List of Nucleotide objects
         self.is_circular = circular  # True if the genome is circular, False otherwise
@@ -90,13 +87,9 @@ class Sequence:
             self.set_substitution_rates(nt)  # Get substitution rates for the nucleotide
             self.nt_in_event_tree(nt)  # Locate nucleotide in the event tree
 
-        #print(self.total_omegas)
-
-        # print(self.event_tree)
         # Create probability tree with the probabilities for each branch
         self.probability_tree = self.create_probability_tree()
         self.populate_prob_tree_with_events()
-        #print(self.probability_tree)
 
     def create_probability_tree(self):
         """
@@ -355,38 +348,43 @@ class Sequence:
                 if self.is_transv(current_nt, to_nt):
                     sub_rates[to_nt] *= self.kappa
 
-                chosen_omegas = [0 for _ in range(len(self.omega_values) + 1)]
+                # Keep track of the omega values using a list of lists that is num_codons long
+                # The inner list is 1 + number of omega classes
+                chosen_omegas = []
+                for codon in nt.codons:
+                    omega_values = codon.orf['omega_values']
+                    num_omegas = len(omega_values)
+                    chosen_omegas.append([0 for _ in range(num_omegas + 1)])
+
                 # If nucleotide belongs to a codon
                 if nt.codons:
 
                     # If mutation does not introduce a STOP and nucleotide is not part of a START codon
                     if not self.is_start_stop_codon(nt, to_nt):
 
-                        chosen_omegas = [0 for _ in range(len(self.omega_values) + 1)]  # Reset omegas
+                        # Iterate over codons to initialize the list to store chosen omegas
+                        chosen_omegas = []
                         for codon in nt.codons:
+                            num_omegas = len(codon.orf['omega_values'])
+                            chosen_omegas.append([0 for _ in range(num_omegas + 1)])
+
+                        # Loop through codons again to process the codons
+                        for idx, codon in enumerate(nt.codons):
+                            omega_values = codon.orf['omega_values']
                             pos_in_codon = codon.nt_in_pos(nt)
-
-                            # Get the dN and dS values associated with the ORF
-                            dN_values = codon.orf['dN_values']
-                            dS_values = codon.orf['dS_values']
-                            num_dN = len(dN_values)
-                            num_dS = len(dS_values)
-
-                            # Initialize the lists to store dN and dS values
-                            chosen_dN = [0 for _ in range(num_dN)]
-                            chosen_dS = [0 for _ in range(num_dS)]
+                            num_omegas = len(codon.orf['omega_values'])
 
                             # Apply omega when mutation is non-synonymous
                             if codon.is_nonsyn(pos_in_codon, to_nt):
 
                                 # Randomly select a key in the omega values dictionary
-                                omega_index = random.randrange(len(self.omega_values))
-                                sub_rates[to_nt] *= self.omega_values[omega_index]
-                                chosen_omegas[omega_index] += 1
+                                omega_index = random.randrange(num_omegas)
+                                sub_rates[to_nt] *= omega_values[omega_index]
+                                chosen_omegas[idx][omega_index] += 1
 
                             # Record that mutation is synonymous
                             else:
-                                chosen_omegas[len(self.omega_values)] += 1
+                                chosen_omegas[idx][num_omegas] += 1
 
                     else:  # Mutation introduces or destroys a STOP or nt is part of a START
                         sub_rates[to_nt] *= 0
@@ -394,13 +392,13 @@ class Sequence:
                 # Randomly select one of the mu Values
                 selected_cat = random.choice(list(self.cat_values))
                 sub_rates[to_nt] *= self.cat_values[selected_cat]
-                chosen_omegas = tuple(chosen_omegas)
+                chosen_omegas = tuple(chosen_omegas)        # Tuple of lists
                 my_omega_keys[to_nt] = chosen_omegas  # Store omega keys used in the substitution
 
                 my_cat_keys[to_nt] = selected_cat
 
                 # If key is not in total omegas dict, create it
-                self.set_total_omegas(chosen_omegas)
+                self.set_total_omegas(chosen_omegas, nt.codons)
 
         # Set substitution rates and key values for the nucleotide object
         nt.set_rates(sub_rates)
@@ -408,22 +406,39 @@ class Sequence:
         nt.set_omega(my_omega_keys)
         nt.get_mutation_rate()
 
-    def set_total_omegas(self, chosen_omegas):
+    def set_total_omegas(self, chosen_omegas, codons):
         """
         Adds unique combinations of omega values to total_omegas
         Synonymous mutations are represented as tuples containing all zeroes
-        :param chosen_omegas: tuple of values representing the indices of the selected omega values
+        :param chosen_omegas: tuple of lists of values representing the indices of the selected omega values
         """
-        nonsyn_values = chosen_omegas[:len(chosen_omegas)-1]       # Exclude last position (synonymous)
-        if any(nonsyn_values):
-            # If key is not in total omegas dict, create it
-            if nonsyn_values not in self.total_omegas:
-                value = 1
-                for pos, omega_index in enumerate(nonsyn_values):
-                    if omega_index != 0:
-                        value *= self.omega_values[pos] ** omega_index
-                # Store key of combined omegas, and their multiplied value
-                self.total_omegas[chosen_omegas] = value
+
+        # Number of codons a nucleotide is part of is the same as the number of ORFS (and number of omega values)
+        for codon_idx in range(len(codons) + 1):
+
+            # Exclude last position (synonymous)
+            nonsyn_values = chosen_omegas[codon_idx][:len(chosen_omegas[codon_idx]) - 1]
+
+            if any(nonsyn_values):
+                if nonsyn_values not in self.total_omegas:
+                    value = 1
+                    for pos, omega_index in enumerate(nonsyn_values):
+                        if omega_index != 0:
+                            # Access the omega value associated with the correct ORF
+                            value *= codons[codon_idx].orf['omega_values'][pos] ** omega_index
+                    # Store key of combined omegas, and their multiplied value
+                    self.total_omegas[chosen_omegas] = value
+
+        # nonsyn_values = chosen_omegas[:len(chosen_omegas) - 1]  # Exclude last position (synonymous)
+        # if any(nonsyn_values):
+        #     # If key is not in total omegas dict, create it
+        #     if nonsyn_values not in self.total_omegas:
+        #         value = 1
+        #         for pos, omega_index in enumerate(nonsyn_values):
+        #             if omega_index != 0:
+        #                 value *= self.omega_values[pos] ** omega_index
+        #         # Store key of combined omegas, and their multiplied value
+        #         self.total_omegas[chosen_omegas] = value
 
     @staticmethod
     def is_start_stop_codon(nt, to_nt):
@@ -509,7 +524,7 @@ class Sequence:
             yield my_orf[i:i + 3]
             i += 3
 
-    def find_codons(self, frame, orf):
+    def find_codons(self, frame, orf_coords):
         """
         Gets the Codon sequence
         :param frame: the frame of the ORF
@@ -518,7 +533,7 @@ class Sequence:
         """
         codons = []
         cds = []
-        for coord in orf['coords']:
+        for coord in orf_coords:
             cds.extend(self.nt_sequence[coord[0]: coord[1]])
 
         # Reverse strand orf
@@ -528,7 +543,7 @@ class Sequence:
         # Iterate over list by threes and create Codons
         for i in range(3, len(cds) + 1, 3):
             cdn = cds[i - 3: i]
-            codon = Codon(frame, orf, cdn)
+            codon = Codon(frame, orf_coords, cdn)
             codons.append(codon)
 
         return codons
@@ -644,7 +659,6 @@ class Nucleotide:
         (Useful for debugging)
         """
         info = {"state": self.state, "position": self.pos_in_seq,
-                "dn": self.dN_keys, "ds": self.dS_keys,
                 "rates": self.rates, "mutation rate": self.mutation_rate, "codons": self.codons}
 
         return info

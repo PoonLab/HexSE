@@ -63,7 +63,7 @@ def get_args(parser):
     )
     parser.add_argument(
         '--omega_dist', type=str, default=ss.gamma,
-        help='The shape parameter of the gamma distribution, from which omega values are drawn'
+        help='The distribution type from which, from which the omega values are drawn'
     )
     parser.add_argument(
         '--mu_classes', type=int, default=4,
@@ -74,7 +74,7 @@ def get_args(parser):
         help='The shape parameter of the mu distribution (log normal or gamma)'
     )
     parser.add_argument(
-        '--mu_dist', type=str, default=ss.lognorm, #ss.lognorm
+        '--mu_dist', type=str, default=ss.lognorm,  # ss.lognorm
         help='The distribution type from which get numbers for the mu classes'
     )
     parser.add_argument(
@@ -316,7 +316,6 @@ def read_sequence(in_file):
         # Loop through records
         for rec in SeqIO.parse(in_file, format="genbank"):
             seq = rec.seq
-        file_format = 'genbank'
 
     elif in_file.lower().endswith(".fasta") or in_file.lower().endswith(".fa"):
         # Read in the sequence
@@ -326,15 +325,11 @@ def read_sequence(in_file):
                 # Skip header if the file is a FASTA file
                 if not (line.startswith(">") or line.startswith("#")):
                     seq += line.strip('\n\r').upper()
-        file_format = 'fasta'
 
     else:
         print("Sequence files must end in '.fa', '.fasta', '.gb', 'genbank'")
         logging.error("Invalid file type: files must end in '.fa', '.fasta', '.gb', 'genbank'")
         sys.exit(1)
-
-    # Log information about sequence input type
-    logging.info("Input sequence is: {} in {} format".format(in_file.lower(), file_format))
 
     return seq
 
@@ -365,10 +360,11 @@ def parse_genbank_orfs(in_seq):
     return orf_locations
 
 
-def parse_orfs_from_csv(in_orfs, dN_values, dS_values):
+def parse_orfs_from_csv(in_orfs, omega_values):
     """
     Reads ORFs from a csv file
     :param in_orfs: orfs specified by the user, default (None)
+    :param omega_values: omega values, derived from the discretized gamma distribution
     :return: ORFs as a list of tuples
     """
 
@@ -392,8 +388,7 @@ def parse_orfs_from_csv(in_orfs, dN_values, dS_values):
                             strand = '-'
 
                     orf['coords'] = (int(partial_coord[0]), int(partial_coord[1]))
-                    orf['dN_values'] = dN_values
-                    orf['dS_values'] = dS_values
+                    orf['omega_values'] = omega_values
 
                     orf_locations[strand].append(orf)
                     continue
@@ -406,8 +401,7 @@ def parse_orfs_from_csv(in_orfs, dN_values, dS_values):
                         strand = '-'
 
                     orf['coords'] = (int(line[0]), int(line[1]))
-                    orf['dN_values'] = dN_values
-                    orf['dS_values'] = dS_values
+                    orf['omega_values'] = omega_values
 
             if orf not in orf_locations[strand]:
                 orf_locations[strand].append(orf)
@@ -441,11 +435,13 @@ def parse_orfs_from_yaml(settings):
                     else:
                         strand = '-'
                 orf['coords'] = [(int(coords[0]), int(coords[1]))]
-                # Get dN and dS parameters based on the full ORF
-                orf['dN_values'] = get_rate_values(settings['orfs'][raw_coord]['dN_shape'],
-                                                   settings['orfs'][raw_coord]['dN_classes'])
-                orf['dS_values'] = get_rate_values(settings['orfs'][raw_coord]['dS_shape'],
-                                                   settings['orfs'][raw_coord]['dS_classes'])
+
+                # Get omega values based on the full ORF
+                orf['omega_shape'] = settings['orfs'][raw_coord]['omega_shape']
+                orf['omega_classes'] = settings['orfs'][raw_coords]['omega_classes']
+                orf['omega_values'] = list(discretize(settings['orfs'][raw_coord]['omega_shape'],
+                                                      settings['orfs'][raw_coord]['omega_classes'],
+                                                      settings['orfs'][raw_coord]['omega_dist']))
 
                 orf_locations[strand].append(orf)
 
@@ -460,29 +456,30 @@ def parse_orfs_from_yaml(settings):
             else:
                 strand = '-'
 
-            orf['dN_values'] = get_rate_values(settings['orfs'][raw_coord]['dN_shape'],
-                                               settings['orfs'][raw_coord]['dN_classes'])
-            orf['dS_values'] = get_rate_values(settings['orfs'][raw_coord]['dS_shape'],
-                                               settings['orfs'][raw_coord]['dS_classes'])
+            orf['omega_shape'] = settings['orfs'][raw_coord]['omega_shape']
+            orf['omega_classes'] = settings['orfs'][raw_coords]['omega_classes']
+            orf['omega_values'] = list(discretize(settings['orfs'][raw_coord]['omega_shape'],
+                                                  settings['orfs'][raw_coord]['omega_classes'],
+                                                  settings['orfs'][raw_coord]['omega_dist']))
 
             orf_locations[strand].append(orf)
 
     return orf_locations
 
 
-def set_global_dNdS_values(orf_locations, dN_values, dS_values):
+def set_global_omega_values(orf_locations, omega_values, omega_shape, omega_classes):
     """
     Sets the dN and dS values for each the reading frames
     :param orf_locations: dictionary of ORFs sorted by the strand
-    :param dN_values: list of dN values
-    :param dS_values: list of dS values
+    :param omega_values: list of omega values, derived from the discretized gamma distribution
     return: orf_locations updated to contains dN and dS values for each ORF
     """
     for strand in orf_locations:
         orf_list = orf_locations[strand]
         for orf in orf_list:
-            orf['dN_values'] = dN_values
-            orf['dS_values'] = dS_values
+            orf['omega_values'] = omega_values
+            orf['omega_shape'] = omega_shape
+            orf['omega_classes'] = omega_classes
 
     return orf_locations
 
@@ -559,6 +556,13 @@ def count_internal_stop_codons(seq, strand, orf):
 
 
 def get_pi(pi, settings, s):
+    """
+    Extracts the value of pi from the command line or a configuration file
+    :param pi: the value of pi input from the command line, can be 'None'
+    :param settings: a dictionary of settings from the configuration file, can be 'None'
+    :param s: the sequence as a string
+    :return: the value of pi
+    """
     keys = ['A', 'T', 'G', 'C']
 
     if settings is not None:
@@ -586,10 +590,46 @@ def get_kappa(kappa, settings):
     return kappa
 
 
-def get_mu(mu, settings):
+def get_global_rate(global_rate, settings):
     if settings:
-        mu = settings['mu']
-    return mu
+        global_rate = settings['global_rate']
+    return global_rate
+
+
+def get_mu_classes(mu_classes, settings):
+    if settings:
+        mu_classes = settings['mu_classes']
+    return mu_classes
+
+
+def get_mu_shape(mu_shape, settings):
+    if settings:
+        mu_shape = settings['mu_shape']
+    return mu_shape
+
+
+def get_mu_dist(mu_dist, settings):
+    if settings:
+        mu_dist = settings['mu_dist']
+    return mu_dist
+
+
+def read_settings_from_config(config_path):
+    """
+    Parse the config file if it exists
+    :param config_path: path to the configuration file
+    :return: a dictionary of settings from the configuration file (if no config file exists, the dictionary is empty)
+    """
+    settings = {}
+
+    if config_path:
+        with open(config_path, 'r') as stream:
+            try:
+                settings = yaml.safe_load(stream)
+            except yaml.YAMLError as e:
+                print(e)
+
+    return settings
 
 
 def main():
@@ -611,7 +651,7 @@ def main():
     # Read in sequence
     s = read_sequence(args.seq)
 
-    # Parse the config file if it exists
+    # Parse configuration file (if it exists)
     if args.config:
         with open(args.config, 'r') as stream:
             try:
@@ -621,14 +661,34 @@ def main():
     else:
         settings = {}
 
-    # Use a different dN/dS distribution for each ORF
+    # Get parameters for run
+    pi = get_pi(args.pi, settings, s)
+    global_rate = get_global_rate(args.global_rate, settings)
+    kappa = get_kappa(args.kappa, settings)
+    mu_classes = get_mu_classes(args.mu_classes, settings)
+    mu_shape = get_mu_shape(args.mu_shape, settings)
+    mu_dist = get_mu_dist(args.mu_dist, settings)
+
+    # Create classes to classify nucleotides on the Event Tree
+    mu_values = create_values_dict(mu_shape, mu_classes, "mu", mu_dist)
+    print(f"Categories: {mu_values}")
+
+    # Log global parameters
+    logging.info(f"Parameters for the run: \n"
+                 f"Pi: {pi}\n"
+                 f"Global rate: {global_rate}\n"
+                 f"Kappa: {kappa}\n"
+                 f"Number of nucleotide classification classes: {mu_classes}\n"
+                 f"Nucleotide classification shape parameter: {mu_shape}\n"
+                 f"Rates classification values: {mu_values}")
+
+    # Use a different omega distribution for each ORF
     if args.config:
         orf_locations = parse_orfs_from_yaml(settings)
 
-    # Use the same dN/dS distribution for all ORFs
+    # Use the same omega distribution for all ORFs
     else:
-        dN_values = get_rate_values(args.dNshape, args.dNclasses)
-        dS_values = get_rate_values(args.dSshape, args.dSclasses)
+        omega_values = list(discretize(args.omega_shape, args.omega_classes, args.omega_dist))
 
         # Read ORFs from GenBank file
         if args.seq.lower.endswith('.gb') or args.seq.lower.endswith('genbank'):
@@ -636,15 +696,9 @@ def main():
 
         # Read in ORFs from .csv file
         if args.orfs:
-            orfs = parse_orfs_from_csv(args.orfs, dN_values, dS_values)
+            orfs = parse_orfs_from_csv(args.orfs, omega_values)
 
-        orf_locations = set_global_dNdS_values(orfs, dN_values, dS_values)
-
-    pi = get_pi(args.pi, settings, s)
-
-    kappa = get_kappa(args.kappa, settings)
-
-    mu = get_mu(args.mu, settings)
+        orf_locations = set_global_omega_values(orfs, omega_values, args.omega_shape, args.omega_classes)
 
     # Check if the ORFs are valid
     invalid_orfs = valid_orfs(orf_locations, len(s))
@@ -686,9 +740,6 @@ def main():
         logging.error("Invalid sequence: {}".format(s))
         sys.exit(0)
 
-    # Record global parameters for the run
-    logging.info("Parameters for the run: \nPi: {}\nMu: {}\nKappa: {}\n".format(pi, mu, kappa))
-
     # Record the parameters for each ORF
     for frame in orfs:
         orf_list = orfs[frame]
@@ -696,30 +747,13 @@ def main():
             for c in orf['coords']:
                 coords = ','.join(map(str, c))
 
-    # Draw omega values and create classes to classify nucleotides on the Event Tree
-    omega_values = list(discretize(args.omega_shape, args.omega_classes, args.omega_dist))
-    mu_values = create_values_dict(args.mu_shape, args.mu_classes, "mu", args.mu_dist)
-    print(f"Omega values: {omega_values}")
-    print(f"Categories: {mu_values}")
-
-    logging.info(f"Parameters for the run: \n"
-                 f"Pi: {pi}\n"
-                 f"Global rate: {args.global_rate}\n"
-                 f"Kappa: {args.kappa}\n"
-                 f"Number of omega classes: {args.omega_classes}\n"
-                 f"Omega shape parameter: {args.omega_shape}\n"
-                 f"Omega values: {omega_values}\n"
-                 f"Number of nucleotide classification classes: {args.mu_classes}\n"
-                 f"Nucleotide classification shape parameter: {args.mu_shape}\n"
-                 f"Rates classification values: {mu_values}")
-
     # Read in the tree
     phylo_tree = Phylo.read(args.tree, 'newick', rooted=True)
     # logging.info("Phylogenetic tree: {}".format(args.tree))
 
     # # Make Sequence object
     print("\nCreating root sequence")
-    root_sequence = Sequence(s, orfs, args.kappa, args.global_rate, pi, omega_values, mu_values, args.circular)
+    root_sequence = Sequence(s, orfs, kappa, global_rate, pi, mu_values, args.circular)
 
     # Run simulation
     # print("\nRunning simulation")
@@ -730,7 +764,6 @@ def main():
     print(f"Simulation duration: {end_time - start_time} seconds")
     logging.info(f"\nSimulation Ended at: {end_time}\n"
                  f"Simulation lasted: {end_time - start_time} seconds\n")
-
 
 
 if __name__ == '__main__':
