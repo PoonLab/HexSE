@@ -41,7 +41,7 @@ def get_args(parser):
              'of gamma classes for each ORF as well as the dN and dS values'
     )
     parser.add_argument(
-        '--mu', type=float, default=0.0005,
+        '--global_rate', type=float, default=1,
         help='Global substitution rate per site per unit time'
     )
     parser.add_argument(
@@ -54,20 +54,28 @@ def get_args(parser):
              'the program will use the empirical frequencies in the sequence. Format: [A, T, G, C]'
     )
     parser.add_argument(
-        '--dNclasses', type=int, default=4,
-        help='The number of dN classes'
+        '--omega_classes', type=int, default=4,
+        help='The number of omega classes'
     )
     parser.add_argument(
-        '--dNshape', type=float, default=2.0,
-        help='The shape parameter of the gamma distribution, from which dN values are drawn'
+        '--omega_shape', type=float, default=2.0,
+        help='The shape parameter of the gamma distribution, from which omega values are drawn'
     )
     parser.add_argument(
-        '--dSclasses', type=int, default=4,
-        help='The number of dS classes'
+        '--omega_dist', type=str, default=ss.gamma,
+        help='The shape parameter of the gamma distribution, from which omega values are drawn'
     )
     parser.add_argument(
-        '--dSshape', type=float, default=2.0,
-        help='The shape parameter of the gamma distribution, from which dS values are drawn'
+        '--mu_classes', type=int, default=4,
+        help='Number of nucleotide classes: The number of classes in which we are going to classify nucleotides on the Event Tree'
+    )
+    parser.add_argument(
+        '--mu_shape', type=float, default=1,
+        help='The shape parameter of the mu distribution (log normal or gamma)'
+    )
+    parser.add_argument(
+        '--mu_dist', type=str, default=ss.lognorm, #ss.lognorm
+        help='The distribution type from which get numbers for the mu classes'
     )
     parser.add_argument(
         '--circular', action='store_true',
@@ -252,34 +260,47 @@ def sort_orfs(orf_locations):
     return sorted_orfs
 
 
-def get_rate_values(alpha, ncat):
+def create_values_dict(alpha, ncat, string, dist):
     """
-    Draw ncat number of dN or dS values from a discretized gamma distribution
+    Creates dictionary with values (as rates) drawn from a discretized gamma distribution
     :param alpha: shape parameter
-    :param ncat: Number of categories (expected dS values)
-    :return: list of ncat number of omega values (e.i. if ncat = 3, omega_values = [0.29, 0.65, 1.06])
+    :param ncat: Number of categories
+    :param dist: the distribution (gamma or log normal)
+    :param string: strings like "omega" or "mu" to name the keys of the dictionary
     """
-    values = discretize_gamma(alpha, ncat)
-    rate_values = list(values)
-    return rate_values
+
+    nt_categories = discretize(alpha, ncat, dist)
+    nt_categories_dict = {}
+    for i, item in enumerate(nt_categories):
+        cat = f"{string}{i+1}"
+        nt_categories_dict[cat] = item
+
+    return nt_categories_dict
 
 
-def discretize_gamma(alpha, ncat):
+def discretize(alpha, ncat, dist):
     """
-    Divide the gamma distribution into a number of intervals with equal probability and get the mid point of those intervals
+    Divide a distribution into a number of intervals with equal probability and get the mid point of those intervals
     From https://gist.github.com/kgori/95f604131ce92ec15f4338635a86dfb9
     :param alpha: shape parameter
     :param ncat: Number of categories
+    :param dist: distribution of probabilities
     :return: array with ncat number of values
     """
-    dist = ss.gamma(alpha, scale=1 / alpha)
+
+    if dist == ss.gamma:
+        dist = dist(alpha, scale=0.4)
+    elif dist == ss.lognorm:
+        dist = dist(s=alpha, scale=0.5)  # scale=np.exp(0.05 * alpha**2)
 
     quantiles = dist.ppf(np.arange(0, ncat) / ncat)
-    rates = np.zeros(ncat, dtype=np.double)  # return a new array of shape ncat and type double
+    rates = np.zeros(ncat, dtype=np.double)
 
-    for i in range(ncat - 1):
-        rates[i] = ncat * scipy.integrate.quad(lambda x: x * dist.pdf(x), quantiles[i], quantiles[i + 1])[0]
-    rates[ncat - 1] = ncat * scipy.integrate.quad(lambda x: x * dist.pdf(x), quantiles[ncat - 1], np.inf)[0]
+    for i in range(ncat-1):
+        rates[i] = (ncat * scipy.integrate.quad(lambda x: x * dist.pdf(x), quantiles[i], quantiles[i+1])[0])
+
+    rates[ncat-1] = ncat * scipy.integrate.quad(lambda x: x * dist.pdf(x), quantiles[ncat-1], np.inf)[0]
+
     return rates
 
 
@@ -504,7 +525,7 @@ def codon_iterator(my_orf, start_pos, end_pos):
         my_orf.reverse()
     i = 0
     while i < len(my_orf):
-        yield (my_orf[i:i + 3], i)
+        yield my_orf[i:i + 3], i
         i += 3
 
 
@@ -583,8 +604,9 @@ def main():
 
     # Create log file
     file_name = input.split("/")[-1]
-    LOG_FILENAME = "{}_evol_simulation.log".format(file_name.split(".")[0])
+    LOG_FILENAME = f'{file_name.split(".")[0]}_evol_simulation.log'
     logging.basicConfig(filename=LOG_FILENAME, level=logging.INFO)
+    logging.info(f"\nSimulation started at: {start_time}")
 
     # Read in sequence
     s = read_sequence(args.seq)
@@ -633,10 +655,12 @@ def main():
         for strand in invalid_orfs:
             orfs = invalid_orfs[strand]
             for orf in orfs:
-                invalid_orf_msg += " {} ".format(orf)
+                invalid_orf_msg += f" {orf} "
                 orf_locations[strand].remove(orf)
-        print("\nOmitted orfs: {}\n".format(invalid_orf_msg))
-        logging.warning("Omitted orfs: {}".format(invalid_orf_msg))
+
+        if invalid_orf_msg:
+            print(f"\nOmitted orfs: {invalid_orf_msg}\n")
+            logging.warning(f"Omitted orfs: {invalid_orf_msg}")
 
     # Check if the CDSs have stop codons inside them
     for strand in orf_locations:
@@ -672,29 +696,41 @@ def main():
             for c in orf['coords']:
                 coords = ','.join(map(str, c))
 
-            logging.info("Orf: {} "
-                         "\nNumber of dN classes: {} \ndN shape parameter: {} \ndN values: {} "
-                         "\nNumber of dS classes: {} \ndS shape parameter: {} \ndS values: {}\n"
-                         .format(coords,
-                                 settings['orfs'][coords]['dN_classes'], settings['orfs'][coords]['dN_shape'],
-                                 orf['dN_values'],
-                                 settings['orfs'][coords]['dS_classes'], settings['orfs'][coords]['dS_shape'],
-                                 orf['dS_values']))
+    # Draw omega values and create classes to classify nucleotides on the Event Tree
+    omega_values = list(discretize(args.omega_shape, args.omega_classes, args.omega_dist))
+    mu_values = create_values_dict(args.mu_shape, args.mu_classes, "mu", args.mu_dist)
+    print(f"Omega values: {omega_values}")
+    print(f"Categories: {mu_values}")
+
+    logging.info(f"Parameters for the run: \n"
+                 f"Pi: {pi}\n"
+                 f"Global rate: {args.global_rate}\n"
+                 f"Kappa: {args.kappa}\n"
+                 f"Number of omega classes: {args.omega_classes}\n"
+                 f"Omega shape parameter: {args.omega_shape}\n"
+                 f"Omega values: {omega_values}\n"
+                 f"Number of nucleotide classification classes: {args.mu_classes}\n"
+                 f"Nucleotide classification shape parameter: {args.mu_shape}\n"
+                 f"Rates classification values: {mu_values}")
 
     # Read in the tree
     phylo_tree = Phylo.read(args.tree, 'newick', rooted=True)
-    logging.info("Phylogenetic tree: {}".format(args.tree))
+    # logging.info("Phylogenetic tree: {}".format(args.tree))
 
-    # Make Sequence object
+    # # Make Sequence object
     print("\nCreating root sequence")
-    root_sequence = Sequence(s, orfs, kappa, mu, pi, args.circular)
+    root_sequence = Sequence(s, orfs, args.kappa, args.global_rate, pi, omega_values, mu_values, args.circular)
 
     # Run simulation
-    print("\nRunning simulation")
+    # print("\nRunning simulation")
     simulation = SimulateOnTree(root_sequence, phylo_tree, args.outfile)
     simulation.get_alignment(args.outfile)
 
-    print("Simulation duration: {} seconds".format(datetime.now() - start_time))
+    end_time = datetime.now()
+    print(f"Simulation duration: {end_time - start_time} seconds")
+    logging.info(f"\nSimulation Ended at: {end_time}\n"
+                 f"Simulation lasted: {end_time - start_time} seconds\n")
+
 
 
 if __name__ == '__main__':
