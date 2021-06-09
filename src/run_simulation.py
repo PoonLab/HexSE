@@ -284,9 +284,15 @@ def discretize(alpha, ncat, dist):
     From https://gist.github.com/kgori/95f604131ce92ec15f4338635a86dfb9
     :param alpha: shape parameter
     :param ncat: Number of categories
-    :param dist: distribution of probabilities
+    :param dist: distribution of probabilities, can be a string
     :return: array with ncat number of values
     """
+
+    # Handle if distribution was specified from input file (parsed as a string)
+    if dist == 'ss.gamma':
+        dist = ss.gamma
+    elif dist == 'ss.lognorm':
+        dist = ss.lognorm
 
     if dist == ss.gamma:
         dist = dist(alpha, scale=0.4)
@@ -439,9 +445,10 @@ def parse_orfs_from_yaml(settings):
                 # Get omega values based on the full ORF
                 orf['omega_shape'] = settings['orfs'][raw_coord]['omega_shape']
                 orf['omega_classes'] = settings['orfs'][raw_coords]['omega_classes']
+                dist = settings['orfs'][raw_coord]['omega_dist']
+                dist = '%s%s' % ('ss.', dist)
                 orf['omega_values'] = list(discretize(settings['orfs'][raw_coord]['omega_shape'],
-                                                      settings['orfs'][raw_coord]['omega_classes'],
-                                                      settings['orfs'][raw_coord]['omega_dist']))
+                                                         settings['orfs'][raw_coord]['omega_classes'], dist))
 
                 orf_locations[strand].append(orf)
 
@@ -457,10 +464,11 @@ def parse_orfs_from_yaml(settings):
                 strand = '-'
 
             orf['omega_shape'] = settings['orfs'][raw_coord]['omega_shape']
-            orf['omega_classes'] = settings['orfs'][raw_coords]['omega_classes']
+            orf['omega_classes'] = settings['orfs'][raw_coord]['omega_classes']
+            dist = settings['orfs'][raw_coord]['omega_dist']
+            dist = '%s%s' % ('ss.', dist)
             orf['omega_values'] = list(discretize(settings['orfs'][raw_coord]['omega_shape'],
-                                                  settings['orfs'][raw_coord]['omega_classes'],
-                                                  settings['orfs'][raw_coord]['omega_dist']))
+                                                     settings['orfs'][raw_coord]['omega_classes'], dist))
 
             orf_locations[strand].append(orf)
 

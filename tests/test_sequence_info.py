@@ -1,15 +1,14 @@
 import random
 import unittest
 
-from src.sequence_info import Sequence
+from src.sequence_info import Sequence, Nucleotide
 
 MAX_DIFF = None
-DN_VALUES = [0.29327471612351436, 0.6550136761581515, 1.0699896623909886, 1.9817219453273531]
-DS_VALUES = [0.29327471612351436, 0.6550136761581515, 1.0699896623909886, 1.9817219453273531]
+CAT_VALUES = {'mu1': 0.051710707633483066, 'mu2': 0.15181054803756722, 'mu3': 0.26809045653750935,
+              'mu4': 0.4186255904232465, 'mu5': 0.6442570794470408, 'mu6': 1.2255056178040284}
 KAPPA = 0.3
-MU = 0.0005
+GLOBAL_RATE = 0.0005
 
-# str_sequence, orfs, kappa, mu, pi,
 
 class TestSequence1(unittest.TestCase):
     """
@@ -24,9 +23,18 @@ class TestSequence1(unittest.TestCase):
         self.maxDiff = MAX_DIFF
         random.seed(9001)     # Set seed for pseudo-random number generator
 
+        orfs = {'+0': [{'coords': [[(0, 21)]],
+                        'omega_classes': 3, 'omega_shape': 1.5,
+                        'omega_values': [0.1708353283825978, 0.4810288100937172, 1.1481358615121404]}],
+                '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
+
         s1 = 'GTACGATCGATCGATGCTAGC'
         pi1 = Sequence.get_frequency_rates(s1)
-        self.sequence1 = Sequence(s1, {'+0': [[(0, 21)]]}, KAPPA, MU, pi1)
+        self.sequence1 = Sequence(s1, orfs, KAPPA, GLOBAL_RATE, pi1, CAT_VALUES)
+        orf = {'coords': [[(0, 21)]],
+               'omega_classes': 3, 'omega_shape': 1.5,
+               'omega_values': [0.1708353283825978, 0.4810288100937172, 1.1481358615121404]}
+        self.seq1_codons = self.sequence1.find_codons('+0', orf)
 
     def testReverseComplement(self):
         s = str(self.sequence1)
@@ -44,7 +52,7 @@ class TestSequence1(unittest.TestCase):
         self.assertIsNot(self.sequence1, new_sequence1)
         self.assertEqual(self.sequence1.orfs, new_sequence1.orfs)
         self.assertEqual(self.sequence1.kappa, new_sequence1.kappa)
-        self.assertEqual(self.sequence1.mu, new_sequence1.mu)
+        self.assertEqual(self.sequence1.global_rate, new_sequence1.global_rate)
         self.assertEqual(self.sequence1.pi, new_sequence1.pi)
         self.assertEqual(self.sequence1.is_circular, new_sequence1.is_circular)
 
@@ -79,20 +87,107 @@ class TestSequence1(unittest.TestCase):
         result = Sequence.get_frequency_rates(str(self.sequence1))
         self.assertEqual(expected, result)
 
-    def testGetSubstitutionRates(self):
+    def testEmptyEventTree(self):
+        expected = {'to_nt': {'A': {'from_nt': {'A': None,
+                                                'C': {'category': {'mu1': {},
+                                                                   'mu2': {},
+                                                                   'mu3': {},
+                                                                   'mu4': {},
+                                                                   'mu5': {},
+                                                                   'mu6': {}}},
+                                                'G': {'category': {'mu1': {},
+                                                                   'mu2': {},
+                                                                   'mu3': {},
+                                                                   'mu4': {},
+                                                                   'mu5': {},
+                                                                   'mu6': {}}},
+                                                'T': {'category': {'mu1': {},
+                                                                   'mu2': {},
+                                                                   'mu3': {},
+                                                                   'mu4': {},
+                                                                   'mu5': {},
+                                                                   'mu6': {}}}}},
+                              'C': {'from_nt': {'A': {'category': {'mu1': {},
+                                                                   'mu2': {},
+                                                                   'mu3': {},
+                                                                   'mu4': {},
+                                                                   'mu5': {},
+                                                                   'mu6': {}}},
+                                                'C': None,
+                                                'G': {'category': {'mu1': {},
+                                                                   'mu2': {},
+                                                                   'mu3': {},
+                                                                   'mu4': {},
+                                                                   'mu5': {},
+                                                                   'mu6': {}}},
+                                                'T': {'category': {'mu1': {},
+                                                                   'mu2': {},
+                                                                   'mu3': {},
+                                                                   'mu4': {},
+                                                                   'mu5': {},
+                                                                   'mu6': {}}}}},
+                              'G': {'from_nt': {'A': {'category': {'mu1': {},
+                                                                   'mu2': {},
+                                                                   'mu3': {},
+                                                                   'mu4': {},
+                                                                   'mu5': {},
+                                                                   'mu6': {}}},
+                                                'C': {'category': {'mu1': {},
+                                                                   'mu2': {},
+                                                                   'mu3': {},
+                                                                   'mu4': {},
+                                                                   'mu5': {},
+                                                                   'mu6': {}}},
+                                                'G': None,
+                                                'T': {'category': {'mu1': {},
+                                                                   'mu2': {},
+                                                                   'mu3': {},
+                                                                   'mu4': {},
+                                                                   'mu5': {},
+                                                                   'mu6': {}}}}},
+                              'T': {'from_nt': {'A': {'category': {'mu1': {},
+                                                                   'mu2': {},
+                                                                   'mu3': {},
+                                                                   'mu4': {},
+                                                                   'mu5': {},
+                                                                   'mu6': {}}},
+                                                'C': {'category': {'mu1': {},
+                                                                   'mu2': {},
+                                                                   'mu3': {},
+                                                                   'mu4': {},
+                                                                   'mu5': {},
+                                                                   'mu6': {}}},
+                                                'G': {'category': {'mu1': {},
+                                                                   'mu2': {},
+                                                                   'mu3': {},
+                                                                   'mu4': {},
+                                                                   'mu5': {},
+                                                                   'mu6': {}}},
+                                                'T': None}}}}
+        result = self.sequence1.create_event_tree()
+        self.assertEqual(expected, result)
+
+    def testSetSubstitutionRates(self):
         random.seed(9001)  # Set seed value to initialize pseudo-random number generator
 
         nt = self.sequence1.nt_sequence[0]  # First nucleotide is G
-        self.sequence1.get_substitution_rates(nt)
-        exp_sub_rates = {'A': 3.974321933436628e-05, 'C': 0.00015870631784843496,
-                         'G': None,                  'T': 0.00015870631784843496}
-        exp_dN_values = {'A': (1, 0, 0, 0), 'C': (0, 0, 1, 0), 'G': None, 'T': (0, 0, 1, 0)}
-        exp_dS_values = {'A': (0, 0, 1, 0), 'C': (1, 0, 0, 0), 'G': None, 'T': (1, 0, 0, 0)}
-        exp_total_rate = 0.0003571558550312362
+        self.sequence1.set_substitution_rates(nt)
+
+        exp_sub_rates = {'A': 6.640901570929766e-06,
+                         'C': 1.082033797048673e-06,
+                         'G': None,
+                         'T': 1.3389485626674619e-05}
         self.assertEqual(exp_sub_rates, nt.rates)
-        self.assertEqual(exp_dN_values, nt.dN_keys)
-        self.assertEqual(exp_dS_values, nt.dS_keys)
+        exp_omegas = {'A': ((1, 0, 0, 0),), 'C': ((0, 1, 0, 0),), 'G': None, 'T': ((0, 0, 1, 0),)}
+        self.assertEqual(exp_omegas, nt.omega_keys)
+        exp_cat_keys = {'A': 'mu3', 'C': 'mu1', 'T': 'mu3'}
+        self.assertEqual(exp_cat_keys, nt.cat_keys)
+        exp_total_rate = 2.1112420994653056e-05
         self.assertEqual(exp_total_rate, nt.mutation_rate)
+        exp_total_omegas = {((0, 0, 1, 0),): 1.1481358615121404,
+                            ((0, 1, 0, 0),): 0.4810288100937172,
+                            ((1, 0, 0, 0),): 0.1708353283825978}
+        self.assertEqual(exp_total_omegas, self.sequence1.total_omegas)
 
     def testIsTransv(self):
         nt = self.sequence1.nt_sequence[2]  # A
@@ -120,6 +215,388 @@ class TestSequence1(unittest.TestCase):
         for pos, cdn in enumerate(result):
             for idx, nt in enumerate(cdn):
                 self.assertEqual(expected[pos][idx], nt.state)
+
+    def testFindCodons(self):
+        # Test forward strand ORF
+        expected = ['GTA', 'CGA', 'TCG', 'ATC', 'GAT', 'GCT', 'AGC']
+        orf = {'coords': [[(0, 21)]],
+               'omega_classes': 3, 'omega_shape': 1.5,
+               'omega_values': [0.1708353283825978, 0.4810288100937172, 1.1481358615121404]}
+        result = self.sequence1.find_codons('+0', orf)
+        self.assertEqual(len(expected), len(result))
+
+        for idx, codon in enumerate(result):
+            self.assertEqual(codon.frame, '+0')
+            self.assertEqual(expected[idx], str(codon))
+
+    def testIsStopStartCodon(self):
+        nt = self.sequence1.nt_sequence[0]  # G in codon GTA
+        expected = False
+        result = self.sequence1.is_start_stop_codon(nt, 'C')
+        self.assertEqual(expected, result)
+
+    def testCreateProbabilityTree(self):
+        expected = {'to_nt': {'A': {'number_of_events': 0,
+                                    'from_nt': {'A': None,
+                                                'T': {'prob': 0.18749999999999997,
+                                                      'cat': {'mu1': {'prob': 0.01873576363611503, 'omega': {((0, 0, 0, 1),): {'prob': 0.3571428571443297, 'number_of_events': 0}}, 'number_of_events': 0},
+                                                              'mu2': {'prob': 0.05500382175507591, 'omega': {}, 'number_of_events': 0},
+                                                              'mu3': {'prob': 0.09713422338727759, 'omega': {}, 'number_of_events': 0},
+                                                              'mu4': {'prob': 0.15167593856558387, 'omega': {((0, 0, 1, 0),): {'prob': 0.3571428571443297, 'number_of_events': 0}}, 'number_of_events': 0},
+                                                              'mu5': {'prob': 0.23342647807042782, 'omega': {((0, 0, 1, 0),): {'prob': 0.3571428571443297, 'number_of_events': 0}}, 'number_of_events': 0},
+                                                              'mu6': {'prob': 0.4440237745855198, 'omega': {((0, 0, 1, 0),): {'prob': 0.3571428571443297, 'number_of_events': 0}}, 'number_of_events': 0}},
+                                                      'number_of_events': 0},
+                                                'C': {'prob': 0.18749999999999997,
+                                                      'cat': {'mu1': {'prob': 0.01873576363611503, 'omega': {((0, 0, 0, 1),): {'prob': 0.3571428571443297, 'number_of_events': 0}, ((0, 1, 0, 0),): {'prob': 0.3571428571443297, 'number_of_events': 0}}, 'number_of_events': 0},
+                                                              'mu2': {'prob': 0.05500382175507591, 'omega': {}, 'number_of_events': 0},
+                                                              'mu3': {'prob': 0.09713422338727759, 'omega': {}, 'number_of_events': 0},
+                                                              'mu4': {'prob': 0.15167593856558387, 'omega': {}, 'number_of_events': 0},
+                                                              'mu5': {'prob': 0.23342647807042782, 'omega': {((0, 0, 0, 1),): {'prob': 0.3571428571443297, 'number_of_events': 0}}, 'number_of_events': 0},
+                                                              'mu6': {'prob': 0.4440237745855198, 'omega': {((0, 1, 0, 0),): {'prob': 0.3571428571443297, 'number_of_events': 0}}, 'number_of_events': 0}},
+                                                      'number_of_events': 0},
+                                                'G': {'prob': 0.625,
+                                                      'cat': {'mu1': {'prob': 0.01873576363611503, 'omega': {((0, 1, 0, 0),): {'prob': 0.3571428571443297, 'number_of_events': 0}}, 'number_of_events': 0},
+                                                              'mu2': {'prob': 0.05500382175507591, 'omega': {}, 'number_of_events': 0},
+                                                              'mu3': {'prob': 0.09713422338727759, 'omega': {((1, 0, 0, 0),): {'prob': 0.3571428571443297, 'number_of_events': 0}, ((0, 0, 1, 0),): {'prob': 0.3571428571443297, 'number_of_events': 0}}, 'number_of_events': 0},
+                                                              'mu4': {'prob': 0.15167593856558387, 'omega': {((0, 0, 0, 1),): {'prob': 0.3571428571443297, 'number_of_events': 0}}, 'number_of_events': 0},
+                                                              'mu5': {'prob': 0.23342647807042782, 'omega': {((0, 0, 1, 0),): {'prob': 0.3571428571443297, 'number_of_events': 0}}, 'number_of_events': 0},
+                                                              'mu6': {'prob': 0.4440237745855198, 'omega': {}, 'number_of_events': 0}},
+                                                      'number_of_events': 0}}},
+                              'T': {'number_of_events': 0,
+                                    'from_nt': {'A': {'prob': 0.18749999999999997,
+                                                      'cat': {'mu1': {'prob': 0.01873576363611503, 'omega': {}, 'number_of_events': 0},
+                                                              'mu2': {'prob': 0.05500382175507591, 'omega': {((1, 0, 0, 0),): {'prob': 0.3571428571443297, 'number_of_events': 0}}, 'number_of_events': 0},
+                                                              'mu3': {'prob': 0.09713422338727759, 'omega': {((1, 0, 0, 0),): {'prob': 0.3571428571443297, 'number_of_events': 0}}, 'number_of_events': 0},
+                                                              'mu4': {'prob': 0.15167593856558387, 'omega': {((0, 0, 0, 1),): {'prob': 0.3571428571443297, 'number_of_events': 0}, ((1, 0, 0, 0),): {'prob': 0.3571428571443297, 'number_of_events': 0}}, 'number_of_events': 0},
+                                                              'mu5': {'prob': 0.23342647807042782, 'omega': {}, 'number_of_events': 0},
+                                                              'mu6': {'prob': 0.4440237745855198, 'omega': {((0, 0, 0, 1),): {'prob': 0.3571428571443297, 'number_of_events': 0}}, 'number_of_events': 0}},
+                                                      'number_of_events': 0},
+                                                'T': None,
+                                                'C': {'prob': 0.625,
+                                                      'cat': {'mu1': {'prob': 0.01873576363611503, 'omega': {}, 'number_of_events': 0},
+                                                              'mu2': {'prob': 0.05500382175507591, 'omega': {}, 'number_of_events': 0},
+                                                              'mu3': {'prob': 0.09713422338727759, 'omega': {((0, 0, 0, 1),): {'prob': 0.3571428571443297, 'number_of_events': 0}}, 'number_of_events': 0},
+                                                              'mu4': {'prob': 0.15167593856558387, 'omega': {((0, 0, 1, 0),): {'prob': 0.3571428571443297, 'number_of_events': 0}}, 'number_of_events': 0},
+                                                              'mu5': {'prob': 0.23342647807042782, 'omega': {}, 'number_of_events': 0},
+                                                              'mu6': {'prob': 0.4440237745855198, 'omega': {((0, 1, 0, 0),): {'prob': 0.3571428571443297, 'number_of_events': 0}, ((0, 0, 0, 1),): {'prob': 0.3571428571443297, 'number_of_events': 0}}, 'number_of_events': 0}},
+                                                      'number_of_events': 0},
+                                                'G': {'prob': 0.18749999999999997,
+                                                      'cat': {'mu1': {'prob': 0.01873576363611503, 'omega': {}, 'number_of_events': 0},
+                                                              'mu2': {'prob': 0.05500382175507591, 'omega': {}, 'number_of_events': 0},
+                                                              'mu3': {'prob': 0.09713422338727759, 'omega': {((0, 0, 1, 0),): {'prob': 0.3571428571443297, 'number_of_events': 0}}, 'number_of_events': 0},
+                                                              'mu4': {'prob': 0.15167593856558387, 'omega': {}, 'number_of_events': 0},
+                                                              'mu5': {'prob': 0.23342647807042782, 'omega': {((0, 0, 0, 1),): {'prob': 0.3571428571443297, 'number_of_events': 0}, ((1, 0, 0, 0),): {'prob': 0.3571428571443297, 'number_of_events': 0}}, 'number_of_events': 0},
+                                                              'mu6': {'prob': 0.4440237745855198, 'omega': {((0, 1, 0, 0),): {'prob': 0.3571428571443297, 'number_of_events': 0}}, 'number_of_events': 0}},
+                                                      'number_of_events': 0}}},
+                              'C': {'number_of_events': 0,
+                                    'from_nt': {'A': {'prob': 0.18749999999999997,
+                                                      'cat': {'mu1': {'prob': 0.01873576363611503, 'omega': {((0, 0, 1, 0),): {'prob': 0.3571428571443297, 'number_of_events': 0}}, 'number_of_events': 0},
+                                                              'mu2': {'prob': 0.05500382175507591, 'omega': {((0, 0, 0, 1),): {'prob': 0.3571428571443297, 'number_of_events': 0}, ((0, 1, 0, 0),): {'prob': 0.3571428571443297, 'number_of_events': 0}}, 'number_of_events': 0},
+                                                              'mu3': {'prob': 0.09713422338727759, 'omega': {((0, 0, 0, 1),): {'prob': 0.3571428571443297, 'number_of_events': 0}}, 'number_of_events': 0},
+                                                              'mu4': {'prob': 0.15167593856558387, 'omega': {}, 'number_of_events': 0},
+                                                              'mu5': {'prob': 0.23342647807042782, 'omega': {((1, 0, 0, 0),): {'prob': 0.3571428571443297, 'number_of_events': 0}}, 'number_of_events': 0},
+                                                              'mu6': {'prob': 0.4440237745855198, 'omega': {}, 'number_of_events': 0}},
+                                                      'number_of_events': 0},
+                                                'T': {'prob': 0.625,
+                                                      'cat': {'mu1': {'prob': 0.01873576363611503, 'omega': {((0, 0, 1, 0),): {'prob': 0.3571428571443297, 'number_of_events': 0}}, 'number_of_events': 0},
+                                                              'mu2': {'prob': 0.05500382175507591, 'omega': {((1, 0, 0, 0),): {'prob': 0.3571428571443297, 'number_of_events': 0}, ((0, 0, 0, 1),): {'prob': 0.3571428571443297, 'number_of_events': 0}}, 'number_of_events': 0},
+                                                              'mu3': {'prob': 0.09713422338727759, 'omega': {}, 'number_of_events': 0},
+                                                              'mu4': {'prob': 0.15167593856558387, 'omega': {}, 'number_of_events': 0},
+                                                              'mu5': {'prob': 0.23342647807042782, 'omega': {}, 'number_of_events': 0},
+                                                              'mu6': {'prob': 0.4440237745855198, 'omega': {((1, 0, 0, 0),): {'prob': 0.3571428571443297, 'number_of_events': 0}, ((0, 0, 0, 1),): {'prob': 0.3571428571443297, 'number_of_events': 0}}, 'number_of_events': 0}},
+                                                      'number_of_events': 0},
+                                                'C': None,
+                                                'G': {'prob': 0.18749999999999997,
+                                                      'cat': {'mu1': {'prob': 0.01873576363611503, 'omega': {((0, 1, 0, 0),): {'prob': 0.3571428571443297, 'number_of_events': 0}}, 'number_of_events': 0},
+                                                              'mu2': {'prob': 0.05500382175507591, 'omega': {}, 'number_of_events': 0},
+                                                              'mu3': {'prob': 0.09713422338727759, 'omega': {}, 'number_of_events': 0},
+                                                              'mu4': {'prob': 0.15167593856558387, 'omega': {((1, 0, 0, 0),): {'prob': 0.3571428571443297, 'number_of_events': 0}, ((0, 1, 0, 0),): {'prob': 0.3571428571443297, 'number_of_events': 0}}, 'number_of_events': 0},
+                                                              'mu5': {'prob': 0.23342647807042782, 'omega': {((1, 0, 0, 0),): {'prob': 0.3571428571443297, 'number_of_events': 0}, ((0, 0, 0, 1),): {'prob': 0.3571428571443297, 'number_of_events': 0}}, 'number_of_events': 0},
+                                                              'mu6': {'prob': 0.4440237745855198, 'omega': {((0, 0, 1, 0),): {'prob': 0.3571428571443297, 'number_of_events': 0}}, 'number_of_events': 0}},
+                                                      'number_of_events': 0}}},
+                              'G': {'number_of_events': 0,
+                                    'from_nt': {'A': {'prob': 0.625,
+                                                      'cat': {'mu1': {'prob': 0.01873576363611503, 'omega': {}, 'number_of_events': 0},
+                                                              'mu2': {'prob': 0.05500382175507591, 'omega': {}, 'number_of_events': 0},
+                                                              'mu3': {'prob': 0.09713422338727759, 'omega': {}, 'number_of_events': 0},
+                                                              'mu4': {'prob': 0.15167593856558387, 'omega': {((0, 1, 0, 0),): {'prob': 0.3571428571443297, 'number_of_events': 0}}, 'number_of_events': 0},
+                                                              'mu5': {'prob': 0.23342647807042782, 'omega': {((0, 0, 0, 1),): {'prob': 0.3571428571443297, 'number_of_events': 0}, ((1, 0, 0, 0),): {'prob': 0.3571428571443297, 'number_of_events': 0}}, 'number_of_events': 0},
+                                                              'mu6': {'prob': 0.4440237745855198, 'omega': {((0, 0, 1, 0),): {'prob': 0.3571428571443297, 'number_of_events': 0}}, 'number_of_events': 0}},
+                                                      'number_of_events': 0},
+                                                'T': {'prob': 0.18749999999999997,
+                                                      'cat': {'mu1': {'prob': 0.01873576363611503, 'omega': {}, 'number_of_events': 0},
+                                                              'mu2': {'prob': 0.05500382175507591, 'omega': {((0, 1, 0, 0),): {'prob': 0.3571428571443297, 'number_of_events': 0}}, 'number_of_events': 0},
+                                                              'mu3': {'prob': 0.09713422338727759, 'omega': {((0, 1, 0, 0),): {'prob': 0.3571428571443297, 'number_of_events': 0}}, 'number_of_events': 0},
+                                                              'mu4': {'prob': 0.15167593856558387, 'omega': {((0, 0, 0, 1),): {'prob': 0.3571428571443297, 'number_of_events': 0}}, 'number_of_events': 0},
+                                                              'mu5': {'prob': 0.23342647807042782, 'omega': {}, 'number_of_events': 0},
+                                                              'mu6': {'prob': 0.4440237745855198, 'omega': {((0, 0, 1, 0),): {'prob': 0.3571428571443297, 'number_of_events': 0}, ((1, 0, 0, 0),): {'prob': 0.3571428571443297, 'number_of_events': 0}}, 'number_of_events': 0}},
+                                                      'number_of_events': 0},
+                                                'C': {'prob': 0.18749999999999997,
+                                                      'cat': {'mu1': {'prob': 0.01873576363611503, 'omega': {}, 'number_of_events': 0},
+                                                              'mu2': {'prob': 0.05500382175507591, 'omega': {((1, 0, 0, 0),): {'prob': 0.3571428571443297, 'number_of_events': 0}, ((0, 0, 1, 0),): {'prob': 0.3571428571443297, 'number_of_events': 0}}, 'number_of_events': 0},
+                                                              'mu3': {'prob': 0.09713422338727759, 'omega': {((0, 0, 1, 0),): {'prob': 0.3571428571443297, 'number_of_events': 0}}, 'number_of_events': 0},
+                                                              'mu4': {'prob': 0.15167593856558387, 'omega': {((0, 1, 0, 0),): {'prob': 0.3571428571443297, 'number_of_events': 0}}, 'number_of_events': 0},
+                                                              'mu5': {'prob': 0.23342647807042782, 'omega': {((0, 1, 0, 0),): {'prob': 0.3571428571443297, 'number_of_events': 0}}, 'number_of_events': 0},
+                                                              'mu6': {'prob': 0.4440237745855198, 'omega': {}, 'number_of_events': 0}},
+                                                      'number_of_events': 0},
+                                                'G': None}}}}
+
+
+
+        result = self.sequence1.create_probability_tree()
+        print(result)
+        self.assertEqual(expected, result)
+
+    def testNtInEventTree(self):
+        random.seed(9001)
+
+        g0 = self.sequence1.nt_sequence[0]
+        t1 = self.sequence1.nt_sequence[1]
+        a2 = self.sequence1.nt_sequence[2]
+        c3 = self.sequence1.nt_sequence[3]
+        g4 = self.sequence1.nt_sequence[4]
+        a5 = self.sequence1.nt_sequence[5]
+        t6 = self.sequence1.nt_sequence[6]
+        c7 = self.sequence1.nt_sequence[7]
+        g8 = self.sequence1.nt_sequence[8]
+        a9 = self.sequence1.nt_sequence[9]
+        t10 = self.sequence1.nt_sequence[10]
+        c11 = self.sequence1.nt_sequence[11]
+        g12 = self.sequence1.nt_sequence[12]
+        a13 = self.sequence1.nt_sequence[13]
+        t14 = self.sequence1.nt_sequence[14]
+        g15 = self.sequence1.nt_sequence[15]
+        c16 = self.sequence1.nt_sequence[16]
+        t17 = self.sequence1.nt_sequence[17]
+        a18 = self.sequence1.nt_sequence[18]
+        g19 = self.sequence1.nt_sequence[19]
+        c20 = self.sequence1.nt_sequence[20]
+
+        exp_event_tree = {'to_nt': {'A': {'from_nt': {'A': None,
+                                                      'C': {'category': {'mu1': {((0, 0, 0, 1),): [c11],
+                                                                                 ((0, 1, 0, 0),): [c16]},
+                                                                         'mu2': {},
+                                                                         'mu3': {},
+                                                                         'mu4': {},
+                                                                         'mu5': {((0, 0, 0, 1),): [c3]},
+                                                                         'mu6': {((0, 1, 0, 0),): [c20]}}},
+                                                      'G': {'category': {'mu1': {((0, 1, 0, 0),): [g15]},
+                                                                         'mu2': {},
+                                                                         'mu3': {((0, 0, 1, 0),): [g12,
+                                                                                                   g19],
+                                                                                 ((1, 0, 0, 0),): [g0]},
+                                                                         'mu4': {((0, 0, 0, 1),): [g8]},
+                                                                         'mu5': {((0, 0, 1, 0),): [g4]},
+                                                                         'mu6': {}}},
+                                                      'T': {'category': {'mu1': {((0, 0, 0, 1),): [t17]},
+                                                                         'mu2': {},
+                                                                         'mu3': {},
+                                                                         'mu4': {((0, 0, 1, 0),): [t6]},
+                                                                         'mu5': {((0, 0, 1, 0),): [t1,
+                                                                                                   t10]},
+                                                                         'mu6': {((0, 0, 1, 0),): [t14]}}}}},
+                                    'C': {'from_nt': {'A': {'category': {'mu1': {((0, 0, 1, 0),): [a18]},
+                                                                         'mu2': {((0, 0, 0, 1),): [a5],
+                                                                                 ((0, 1, 0, 0),): [a9]},
+                                                                         'mu3': {((0, 0, 0, 1),): [a2]},
+                                                                         'mu4': {},
+                                                                         'mu5': {((1, 0, 0, 0),): [a13]},
+                                                                         'mu6': {}}},
+                                                      'C': None,
+                                                      'G': {'category': {'mu1': {((0, 1, 0, 0),): [g0]},
+                                                                         'mu2': {},
+                                                                         'mu3': {},
+                                                                         'mu4': {((0, 1, 0, 0),): [g19],
+                                                                                 ((1, 0, 0, 0),): [g12]},
+                                                                         'mu5': {((0, 0, 0, 1),): [g8],
+                                                                                 ((1, 0, 0, 0),): [g4]},
+                                                                         'mu6': {((0, 0, 1, 0),): [g15]}}},
+                                                      'T': {'category': {'mu1': {((0, 0, 1, 0),): [t1]},
+                                                                         'mu2': {((0, 0, 0, 1),): [t17],
+                                                                                 ((1, 0, 0, 0),): [t6]},
+                                                                         'mu3': {},
+                                                                         'mu4': {},
+                                                                         'mu5': {},
+                                                                         'mu6': {((0, 0, 0, 1),): [t14],
+                                                                                 ((1, 0, 0, 0),): [t10]}}}}},
+                                    'G': {'from_nt': {'A': {'category': {'mu1': {},
+                                                                         'mu2': {},
+                                                                         'mu3': {},
+                                                                         'mu4': {((0, 1, 0, 0),): [a9]},
+                                                                         'mu5': {((0, 0, 0, 1),): [a2,
+                                                                                                   a5],
+                                                                                 ((1, 0, 0, 0),): [a18]},
+                                                                         'mu6': {((0, 0, 1, 0),): [a13]}}},
+                                                      'C': {'category': {'mu1': {},
+                                                                         'mu2': {((0, 0, 1, 0),): [c20],
+                                                                                 ((1, 0, 0, 0),): [c7]},
+                                                                         'mu3': {((0, 0, 1, 0),): [c3]},
+                                                                         'mu4': {((0, 1, 0, 0),): [c16]},
+                                                                         'mu5': {((0, 1, 0, 0),): [c11]},
+                                                                         'mu6': {}}},
+                                                      'G': None,
+                                                      'T': {'category': {'mu1': {},
+                                                                         'mu2': {((0, 1, 0, 0),): [t6]},
+                                                                         'mu3': {((0, 1, 0, 0),): [t14]},
+                                                                         'mu4': {((0, 0, 0, 1),): [t17]},
+                                                                         'mu5': {},
+                                                                         'mu6': {((0, 0, 1, 0),): [t1],
+                                                                                 ((1, 0, 0, 0),): [t10]}}}}},
+                                    'T': {'from_nt': {'A': {'category': {'mu1': {},
+                                                                         'mu2': {((1, 0, 0, 0),): [a18]},
+                                                                         'mu3': {((1, 0, 0, 0),): [a13]},
+                                                                         'mu4': {((0, 0, 0, 1),): [a5],
+                                                                                 ((1, 0, 0, 0),): [a9]},
+                                                                         'mu5': {},
+                                                                         'mu6': {((0, 0, 0, 1),): [a2]}}},
+                                                      'C': {'category': {'mu1': {},
+                                                                         'mu2': {},
+                                                                         'mu3': {((0, 0, 0, 1),): [c20]},
+                                                                         'mu4': {((0, 0, 1, 0),): [c16]},
+                                                                         'mu5': {},
+                                                                         'mu6': {((0, 0, 0, 1),): [c11],
+                                                                                 ((0, 1, 0, 0),): [c7]}}},
+                                                      'G': {'category': {'mu1': {},
+                                                                         'mu2': {},
+                                                                         'mu3': {((0, 0, 1, 0),): [g0,
+                                                                                                   g12,
+                                                                                                   g15]},
+                                                                         'mu4': {},
+                                                                         'mu5': {((0, 0, 0, 1),): [g8],
+                                                                                 ((1, 0, 0, 0),): [g19]},
+                                                                         'mu6': {((0, 1, 0, 0),): [g4]}}},
+                                                      'T': None}}}}
+
+        res_omega_key = self.sequence1.nt_in_event_tree(g0)
+        self.assertEqual(exp_event_tree, self.sequence1.event_tree)
+
+        # No new omega keys are created initially
+        self.assertEqual({}, res_omega_key)
+
+    def testCountNtsOnEventTree(self):
+        exp_count = 61
+        res_count = self.sequence1.count_nts_on_event_tree()
+        self.assertEqual(exp_count, res_count)
+
+    def testGetMutationRate(self):
+        nt = Nucleotide('A', 10)
+        nt.rates = {'A': None, 'C': 0.3132846693781597, 'G': 1.0442822312605322, 'T': 0.05572713744568437}
+        nt.get_mutation_rate()
+        exp_mutation_rate = 1.4132940380843764
+        self.assertEqual(exp_mutation_rate, nt.mutation_rate)
+
+    def testCheckMutationRates(self):
+        exp_sub_rates = [
+            {'A': 6.640901570929766e-06, 'C': 1.082033797048673e-06, 'G': None, 'T': 1.3389485626674619e-05},
+            {'A': 2.6629007650064053e-05, 'C': 7.1245101429805794e-06, 'G': 5.065369013827426e-05, 'T': None},
+            {'A': None, 'C': 9.651256435350337e-06, 'G': 7.73108495336449e-05, 'T': 4.4118202240945026e-05},
+            {'A': 2.3193254860093468e-05, 'C': None, 'G': 1.1080953622075548e-05, 'T': 0.0},
+            {'A': 0.00010725572525720243, 'C': 4.787691333261464e-06, 'G': None, 'T': 2.5643402645651533e-05},
+            {'A': None, 'C': 5.46517972935242e-06, 'G': 7.73108495336449e-05, 'T': 1.5070521255236873e-05},
+            {'A': 1.730300590481841e-05, 'C': 3.112152579112792e-06, 'G': 2.628908902158698e-06, 'T': None},
+            {'A': 0.0, 'C': None, 'G': 9.336457737338375e-07, 'T': 7.074042109145251e-05},
+            {'A': 6.070071061137074e-05, 'C': 2.8025182955946275e-05, 'G': None, 'T': 2.8025182955946275e-05},
+            {'A': None, 'C': 2.628908902158698e-06, 'G': 2.4164516356328888e-05, 'T': 2.574577447535311e-06},
+            {'A': 2.6629007650064053e-05, 'C': 2.512315855827235e-05, 'G': 7.536947567481705e-06, 'T': None},
+            {'A': 1.8615854748053904e-06, 'C': None, 'G': 1.1156623787551084e-05, 'T': 0.00014706067413648342},
+            {'A': 4.463161875558207e-05, 'C': 3.1109477491051676e-06, 'G': None, 'T': 1.3389485626674619e-05},
+            {'A': None, 'C': 3.96222731028535e-06, 'G': 0.00016884563379424754, 'T': 1.648775562437735e-06},
+            {'A': 5.065369013827426e-05, 'C': 0.00014706067413648342, 'G': 4.642532399005903e-06, 'T': None},
+            {'A': 3.606779323495576e-06, 'C': 6.120654225041473e-05, 'G': None, 'T': 1.3389485626674619e-05},
+            {'A': 8.954762458333844e-07, 'C': None, 'G': 7.2493549068986665e-06, 'T': 5.7676686349394705e-05},
+            {'A': 1.8615854748053904e-06, 'C': 1.8217265764508066e-05, 'G': 1.5070521255236873e-05, 'T': None},
+            {'A': None, 'C': 2.137353042894174e-06, 'G': 1.3207424367617833e-05, 'T': 9.336457737338375e-07},
+            {'A': 4.463161875558207e-05, 'C': 8.759637179169221e-06, 'G': None, 'T': 4.787691333261464e-06},
+            {'A': 2.1222126327435754e-05, 'C': None, 'G': 6.274768836878727e-06, 'T': 3.217085478450112e-05},
+        ]
+
+        exp_total_rates = [2.1112420994653056e-05,
+                           8.440720793131888e-05,
+                           0.00013108030820994026,
+                           3.427420848216902e-05,
+                           0.00013768681923611542,
+                           9.78465505182342e-05,
+                           2.30440673860899e-05,
+                           7.167406686518635e-05,
+                           0.00011675107652326329,
+                           2.9368002706022896e-05,
+                           5.928911377581811e-05,
+                           0.00016007888339883989,
+                           6.113205213136186e-05,
+                           0.00017445663666697063,
+                           0.00020235689667376356,
+                           7.820280720058493e-05,
+                           6.582151750212676e-05,
+                           3.5149372494550326e-05,
+                           1.6278423184245844e-05,
+                           5.817894726801275e-05,
+                           5.96677499488156e-05]
+
+        for pos, nt in enumerate(self.sequence1.nt_sequence):
+            self.assertEqual(exp_sub_rates[pos], nt.rates)
+            self.assertEqual(exp_total_rates[pos], nt.mutation_rate)
+
+    def testNtInPos(self):
+        codon = self.seq1_codons[0]     # GTA
+        nt = self.sequence1.nt_sequence[1]  # T
+        expected = 1
+        result = codon.nt_in_pos(nt)
+        self.assertEqual(expected, result)
+
+    def testMutateCodon(self):
+        exp_codon = ['G', 'T', 'A']
+        exp_mutated = ['G', 'T', 'C']
+        res_codon, res_mutated = self.seq1_codons[0].mutate_codon(2, 'C')
+        self.assertEqual(exp_codon, res_codon)
+        self.assertEqual(exp_mutated, res_mutated)
+
+        exp_codon = ['G', 'A', 'T']
+        exp_mutated = ['T', 'A', 'T']
+        res_codon, res_mutated = self.seq1_codons[4].mutate_codon(0, 'T')
+        self.assertEqual(exp_codon, res_codon)
+        self.assertEqual(exp_mutated, res_mutated)
+
+    def testIsNonSyn(self):
+        codon = self.seq1_codons[0]          # GTA = Valine
+
+        # Mutation at wobble position
+        expected = False                     # Synonymous
+        result = codon.is_nonsyn(2, 'C')     # GTC = Valine
+        self.assertEqual(expected, result)
+
+        # Mutation at first position
+        expected = True                     # Non-synonymous
+        result = codon.is_nonsyn(0, 'C')    # CTA = Leucine
+        self.assertEqual(expected, result)
+
+    def testIsStop(self):
+        codon = self.seq1_codons[2]   # TCG = Serine
+
+        # T to G mutation at first position (GCG = Alanine)
+        expected = False
+        result = codon.creates_stop(0, 'G')
+        self.assertEqual(expected, result)
+
+        # C to A mutation in middle position (TAG = STOP)
+        expected = True
+        result = codon.creates_stop(1, 'A')
+        self.assertEqual(expected, result)
+
+    def testIsStart(self):
+        codon = self.seq1_codons[0]               # GTA = Valine
+        expected = False
+        result = codon.is_start()
+        self.assertEqual(expected, result)
+
+    def testCreatesStop(self):
+        codon = self.seq1_codons[2]     # TCG
+        expected = True
+        result = codon.creates_stop(1, 'A')     # TCG --> TAG
+        self.assertEqual(expected, result)
+
+        result = codon.creates_stop(1, 'G')     # TCG -> TGG
+        expected = False
+        self.assertEqual(expected, result)
 
 
 class TestSequence2(unittest.TestCase):
@@ -714,84 +1191,84 @@ class TestSequenceInfo(unittest.TestCase):
         result = self.sequence4.create_event_tree()
         expected = {'to_nt': {'A': {'from_nt': {'A': None,
                                                 'C': {'is_nonsyn': {
-                                                        'dN': {},
-                                                        'dS': {}},
-                                                      'is_syn': [],
-                                                      'is_trv': True,
-                                                      'kappa': 0.3},
+                                                    'dN': {},
+                                                    'dS': {}},
+                                                    'is_syn': [],
+                                                    'is_trv': True,
+                                                    'kappa': 0.3},
                                                 'G': {'is_nonsyn': {
-                                                        'dN': {},
-                                                        'dS': {}},
-                                                      'is_syn': [],
-                                                      'is_trv': False,
-                                                      'kappa': 1},
+                                                    'dN': {},
+                                                    'dS': {}},
+                                                    'is_syn': [],
+                                                    'is_trv': False,
+                                                    'kappa': 1},
                                                 'T': {'is_nonsyn': {
-                                                        'dN': {},
-                                                        'dS': {}},
-                                                      'is_syn': [],
-                                                      'is_trv': True,
-                                                      'kappa': 0.3}},
+                                                    'dN': {},
+                                                    'dS': {}},
+                                                    'is_syn': [],
+                                                    'is_trv': True,
+                                                    'kappa': 0.3}},
                                     'stationary_frequency': 0.25},
                               'C': {'from_nt': {'A': {'is_nonsyn': {
-                                                        'dN': {},
-                                                        'dS': {}},
-                                                      'is_syn': [],
-                                                      'is_trv': True,
-                                                      'kappa': 0.3},
-                                                'C': None,
-                                                'G': {'is_nonsyn': {
-                                                        'dN': {},
-                                                        'dS': {}},
-                                                      'is_syn': [],
-                                                      'is_trv': True,
-                                                      'kappa': 0.3},
-                                                'T': {'is_nonsyn': {
-                                                        'dN': {},
-                                                        'dS': {}},
-                                                      'is_syn': [],
-                                                      'is_trv': False,
-                                                      'kappa': 1}},
-                                    'stationary_frequency': 0.08},
+                                  'dN': {},
+                                  'dS': {}},
+                                  'is_syn': [],
+                                  'is_trv': True,
+                                  'kappa': 0.3},
+                                  'C': None,
+                                  'G': {'is_nonsyn': {
+                                      'dN': {},
+                                      'dS': {}},
+                                      'is_syn': [],
+                                      'is_trv': True,
+                                      'kappa': 0.3},
+                                  'T': {'is_nonsyn': {
+                                      'dN': {},
+                                      'dS': {}},
+                                      'is_syn': [],
+                                      'is_trv': False,
+                                      'kappa': 1}},
+                                  'stationary_frequency': 0.08},
                               'G': {'from_nt': {'A': {'is_nonsyn': {
-                                                        'dN': {},
-                                                        'dS': {}},
-                                                      'is_syn': [],
-                                                      'is_trv': False,
-                                                      'kappa': 1},
-                                                'C': {'is_nonsyn': {
-                                                        'dN': {},
-                                                        'dS': {}},
-                                                      'is_syn': [],
-                                                      'is_trv': True,
-                                                      'kappa': 0.3},
-                                                'G': None,
-                                                'T': {'is_nonsyn': {
-                                                        'dN': {},
-                                                        'dS': {}},
-                                                      'is_syn': [],
-                                                      'is_trv': True,
-                                                      'kappa': 0.3}},
-                                    'stationary_frequency': 0.42},
+                                  'dN': {},
+                                  'dS': {}},
+                                  'is_syn': [],
+                                  'is_trv': False,
+                                  'kappa': 1},
+                                  'C': {'is_nonsyn': {
+                                      'dN': {},
+                                      'dS': {}},
+                                      'is_syn': [],
+                                      'is_trv': True,
+                                      'kappa': 0.3},
+                                  'G': None,
+                                  'T': {'is_nonsyn': {
+                                      'dN': {},
+                                      'dS': {}},
+                                      'is_syn': [],
+                                      'is_trv': True,
+                                      'kappa': 0.3}},
+                                  'stationary_frequency': 0.42},
                               'T': {'from_nt': {'A': {'is_nonsyn': {
-                                                        'dN': {},
-                                                        'dS': {}},
-                                                      'is_syn': [],
-                                                      'is_trv': True,
-                                                      'kappa': 0.3},
-                                                'C': {'is_nonsyn': {
-                                                        'dN': {},
-                                                        'dS': {}},
-                                                      'is_syn': [],
-                                                      'is_trv': False,
-                                                      'kappa': 1},
-                                                'G': {'is_nonsyn': {
-                                                        'dN': {},
-                                                        'dS': {}},
-                                                      'is_syn': [],
-                                                      'is_trv': True,
-                                                      'kappa': 0.3},
-                                                'T': None},
-                                    'stationary_frequency': 0.25}}}
+                                  'dN': {},
+                                  'dS': {}},
+                                  'is_syn': [],
+                                  'is_trv': True,
+                                  'kappa': 0.3},
+                                  'C': {'is_nonsyn': {
+                                      'dN': {},
+                                      'dS': {}},
+                                      'is_syn': [],
+                                      'is_trv': False,
+                                      'kappa': 1},
+                                  'G': {'is_nonsyn': {
+                                      'dN': {},
+                                      'dS': {}},
+                                      'is_syn': [],
+                                      'is_trv': True,
+                                      'kappa': 0.3},
+                                  'T': None},
+                                  'stationary_frequency': 0.25}}}
         self.assertEqual(expected, result)
 
     def testNtsOnTips(self):

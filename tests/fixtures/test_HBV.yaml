@@ -48,7 +48,7 @@ orfs:
   1902,2454:
     omega_classes: 5
     omega_shape: 2.5
-    omega_dist = gamma
+    omega_dist: gamma
 
 
 mu:

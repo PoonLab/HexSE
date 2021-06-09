@@ -392,7 +392,7 @@ class Sequence:
                 # Randomly select one of the mu Values
                 selected_cat = random.choice(list(self.cat_values))
                 sub_rates[to_nt] *= self.cat_values[selected_cat]
-                chosen_omegas = tuple(chosen_omegas)        # Tuple of lists
+                chosen_omegas = tuple(tuple(t) for t in chosen_omegas)  # Tuple of tuples
                 my_omega_keys[to_nt] = chosen_omegas  # Store omega keys used in the substitution
 
                 my_cat_keys[to_nt] = selected_cat
@@ -414,31 +414,20 @@ class Sequence:
         """
 
         # Number of codons a nucleotide is part of is the same as the number of ORFS (and number of omega values)
-        for codon_idx in range(len(codons) + 1):
-
+        for codon_idx in range(len(codons)):
             # Exclude last position (synonymous)
             nonsyn_values = chosen_omegas[codon_idx][:len(chosen_omegas[codon_idx]) - 1]
 
             if any(nonsyn_values):
-                if nonsyn_values not in self.total_omegas:
+                if tuple(nonsyn_values) not in self.total_omegas:
                     value = 1
                     for pos, omega_index in enumerate(nonsyn_values):
                         if omega_index != 0:
                             # Access the omega value associated with the correct ORF
                             value *= codons[codon_idx].orf['omega_values'][pos] ** omega_index
+
                     # Store key of combined omegas, and their multiplied value
                     self.total_omegas[chosen_omegas] = value
-
-        # nonsyn_values = chosen_omegas[:len(chosen_omegas) - 1]  # Exclude last position (synonymous)
-        # if any(nonsyn_values):
-        #     # If key is not in total omegas dict, create it
-        #     if nonsyn_values not in self.total_omegas:
-        #         value = 1
-        #         for pos, omega_index in enumerate(nonsyn_values):
-        #             if omega_index != 0:
-        #                 value *= self.omega_values[pos] ** omega_index
-        #         # Store key of combined omegas, and their multiplied value
-        #         self.total_omegas[chosen_omegas] = value
 
     @staticmethod
     def is_start_stop_codon(nt, to_nt):
@@ -524,17 +513,19 @@ class Sequence:
             yield my_orf[i:i + 3]
             i += 3
 
-    def find_codons(self, frame, orf_coords):
+    def find_codons(self, frame, orf):
         """
         Gets the Codon sequence
         :param frame: the frame of the ORF
-        :param orf_coords: tuple containing the coordinates of the ORF
+        :param orf: dictionary containing the coordinates of the ORF, and the assoiciated omega values
         :return: a list of Codon objects for the specified ORF
         """
         codons = []
         cds = []
-        for coord in orf_coords:
-            cds.extend(self.nt_sequence[coord[0]: coord[1]])
+        for coord_list in orf['coords']:
+            # Handle spliced ORFs
+            for coord in coord_list:
+                cds.extend(self.nt_sequence[coord[0]: coord[1]])
 
         # Reverse strand orf
         if frame.startswith('-'):
@@ -543,7 +534,7 @@ class Sequence:
         # Iterate over list by threes and create Codons
         for i in range(3, len(cds) + 1, 3):
             cdn = cds[i - 3: i]
-            codon = Codon(frame, orf_coords, cdn)
+            codon = Codon(frame, orf, cdn)
             codons.append(codon)
 
         return codons
