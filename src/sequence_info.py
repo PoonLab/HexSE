@@ -129,27 +129,29 @@ class Sequence:
                             # Bring Omega keys on the Event Tree
                             omegas = self.event_tree['to_nt'][to_nt]['from_nt'][from_nt]['category'][mu_cat].keys()
 
-                            # Calculate omega probability for omegas on the tree
-                            for omega in omegas:
-                                denominator = 1 + sum(self.total_omegas.values())
-                                nonsyn_values = omega[:-1]
+                            omega_p = 1
+                            nonsyn_values = []
+                            for orf_omega in omegas:
+                                for omega in orf_omega:
+                                    denominator = 1 + sum(self.total_omegas.values())
+                                    nonsyn_values.append(omega[:-1])
 
-                                # If the nucleotide is not part of a codon, treat it as synonymous
-                                if not any(omega):
-                                    omega_p = (1 / denominator)
+                                    if not any(omega):
+                                        omega_p = (1 / denominator)
 
-                                # Non-synonymous
-                                elif any(nonsyn_values):
-                                    omega_p = (self.total_omegas[omega] / denominator)
-                                    # Multiply probabilities if nucleotide is part of synonymous and non-synonymous
-                                    if omega[-1] >= 1:
-                                        omega_p *= (1 / denominator)
+                                    # Non-synonymous
+                                    elif any(nonsyn_values):
+                                        # Multiply probabilities if nucleotide is part of synonymous and non-synonymous
+                                        omega_p *= (self.total_omegas[orf_omega] / denominator)
+                                        if omega[-1] > 1:
+                                            omega_p *= (1 / denominator)
 
-                                # Synonymous
-                                else:
-                                    omega_p = (1 / denominator)
+                                    # Synonymous
+                                    else:
+                                        omega_p = (1 / denominator)
 
-                                current_branch['cat'][mu_cat]['omega'][omega] = {'prob': omega_p, 'number_of_events': 0}
+                                current_branch['cat'][mu_cat]['omega'][orf_omega] = {'prob': omega_p,
+                                                                                     'number_of_events': 0}
 
         return prob_tree
 
@@ -517,7 +519,7 @@ class Sequence:
         """
         Gets the Codon sequence
         :param frame: the frame of the ORF
-        :param orf: dictionary containing the coordinates of the ORF, and the assoiciated omega values
+        :param orf: dictionary containing the coordinates of the ORF, and the associated omega values
         :return: a list of Codon objects for the specified ORF
         """
         codons = []
@@ -726,10 +728,10 @@ class Codon:
         """
         codon = ''.join(str(nt) for nt in self.nts_in_codon)  # Cast all Nucleotides in the Codon to strings
         if self.frame.startswith('+'):
-            return codon == 'ATG' and self.nts_in_codon[0].pos_in_seq == self.orf[0][0]
+            return codon == 'ATG' and self.nts_in_codon[0].pos_in_seq == self.orf['coords'][0][0][0]
         else:
             # +1 to account for non-inclusive indexing
-            return codon == 'ATG' and self.nts_in_codon[0].pos_in_seq + 1 == self.orf[0][1]
+            return codon == 'ATG' and self.nts_in_codon[0].pos_in_seq + 1 == self.orf['coords'][0][0][1]
 
     def is_stop(self):
         """
