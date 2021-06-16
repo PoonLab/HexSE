@@ -141,10 +141,13 @@ class Sequence:
 
                                     # Non-synonymous
                                     elif any(nonsyn_values):
-                                        # Multiply probabilities if nucleotide is part of synonymous and non-synonymous
-                                        omega_p *= (self.total_omegas[orf_omega] / denominator)
-                                        if omega[-1] > 1:
-                                            omega_p *= (1 / denominator)
+                                        for nonsyn_val in nonsyn_values:
+                                            # Check last position in omega tuple to avoid counting syn ORFs twice
+                                            if any(nonsyn_val) and omega[-1] == 0:
+                                                # Multiply probabilities if nucleotide is part of synonymous and non-synonymous
+                                                omega_p *= (self.total_omegas[orf_omega] / denominator)
+                                            if omega[-1] > 1:
+                                                omega_p *= (1 / denominator)
 
                                     # Synonymous
                                     else:
@@ -154,6 +157,12 @@ class Sequence:
                                                                                      'number_of_events': 0}
 
         return prob_tree
+
+    def all_syn_values(self, nonsyn_values):
+        for nonsyn_val in nonsyn_values:
+            if any(nonsyn_val):
+                return True
+        return False
 
     def populate_prob_tree_with_events(self):
         """

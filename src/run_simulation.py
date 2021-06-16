@@ -289,9 +289,9 @@ def discretize(alpha, ncat, dist):
     """
 
     # Handle if distribution was specified from input file (parsed as a string)
-    if dist == 'ss.gamma':
+    if dist == 'ss.gamma' or dist == 'gamma':
         dist = ss.gamma
-    elif dist == 'ss.lognorm':
+    elif dist == 'ss.lognorm' or dist == 'lognorm':
         dist = ss.lognorm
 
     if dist == ss.gamma:
@@ -539,7 +539,7 @@ def count_internal_stop_codons(seq, strand, orf):
     Look for stop codons inside the CDS
     :param seq: the input sequence
     :param strand: the strand (1 or -1)
-    :param orf: dictionary containing the coordinates of the ORF and the dN and dS values
+    :param orf: dictionary containing the coordinates of the ORF and the omega values
     :return: the number of stop codons in the coding sequence
     """
     pat = '(TAA|TGA|TAG)'
@@ -606,19 +606,19 @@ def get_global_rate(global_rate, settings):
 
 def get_mu_classes(mu_classes, settings):
     if settings:
-        mu_classes = settings['mu_classes']
+        mu_classes = settings['mu']['mu_classes']
     return mu_classes
 
 
 def get_mu_shape(mu_shape, settings):
     if settings:
-        mu_shape = settings['mu_shape']
+        mu_shape = settings['mu']['mu_shape']
     return mu_shape
 
 
 def get_mu_dist(mu_dist, settings):
     if settings:
-        mu_dist = settings['mu_dist']
+        mu_dist = settings['mu']['mu_dist']
     return mu_dist
 
 
