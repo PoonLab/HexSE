@@ -23,7 +23,7 @@ class TestSequence1(unittest.TestCase):
         self.maxDiff = MAX_DIFF
         random.seed(9001)     # Set seed for pseudo-random number generator
 
-        orfs = {'+0': [{'coords': [[(0, 21)]],
+        orfs = {'+0': [{'coords': [[0, 21]],
                         'omega_classes': 3, 'omega_shape': 1.5,
                         'omega_values': [0.1708353283825978, 0.4810288100937172, 1.1481358615121404]}],
                 '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}

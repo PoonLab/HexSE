@@ -465,17 +465,13 @@ class TestHandleStopCodons(unittest.TestCase):
     def test_no_internal_stop_codons(self):
         expected = 0
         seq = 'ATGGGAGAACGGGCTAGAGCTAGCA'
-        orf = {'coords': (0, 18)}
-        result = count_internal_stop_codons(seq, '+', orf)
+        result = count_internal_stop_codons(seq, '+', (0, 18))
         self.assertEqual(expected, result)
 
     def test_internal_stop_codon(self):
         seq = "ATGTGATAA"
-        orf = {'coords': [0, 9],
-               'dN_values': [1.42, 0.67, 1.22, 0.74],
-               'dS_values': [1.42, 0.67, 1.22, 0.74]}
         exp = 1
-        res = count_internal_stop_codons(seq, '+', orf)
+        res = count_internal_stop_codons(seq, '+', (0, 9))
         self.assertEqual(exp, res)
 
 

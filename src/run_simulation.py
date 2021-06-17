@@ -352,14 +352,16 @@ def parse_genbank_orfs(in_seq):
         cds = [feat for feat in rec.features if feat.type == "CDS"]
         # Record the first occurrence of the ORFs
         for cd in cds:
-            orf = {}
+            orf = {'coords': []}
             strand = ''
+
             for loc in cd.location.parts:
+                # Get the strand
                 if loc.strand > 0:
                     strand = '+'
                 else:
                     strand = '-'
-                orf['coords'] = (int(loc.start), int(loc.end))
+                orf['coords'].append((int(loc.start), int(loc.end)))
 
             orf_locations[strand].append(orf)
 
@@ -572,8 +574,7 @@ def get_pi(pi, settings, s):
     :return: the value of pi
     """
     keys = ['A', 'T', 'G', 'C']
-
-    if settings is not None:
+    if settings != {}:
         pi = list(settings['pi'].values())
         return dict(zip(keys, pi))
 
@@ -699,7 +700,7 @@ def main():
         omega_values = list(discretize(args.omega_shape, args.omega_classes, args.omega_dist))
 
         # Read ORFs from GenBank file
-        if args.seq.lower.endswith('.gb') or args.seq.lower.endswith('genbank'):
+        if args.seq.lower().endswith('.gb') or args.seq.lower().endswith('genbank'):
             orfs = parse_genbank_orfs(args.seq)
 
         # Read in ORFs from .csv file
@@ -737,7 +738,7 @@ def main():
                 # CDS has more than one stop codon (the final one)
                 if stop_count > 1:
                     orf_locations[strand].remove(orf_coords)
-                    print(f"Omitted orf: {orf_coords} has {stop_count} STOP codons")
+                    print(f"Omitted orf: {orf_coords['coords']} has {stop_count} STOP codons")
 
     # Since ORFs are valid, sort the ORFs by reading frame
     orfs = sort_orfs(orf_locations)
