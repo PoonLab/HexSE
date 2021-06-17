@@ -547,7 +547,7 @@ def count_internal_stop_codons(seq, strand, orf):
     stop_count, cds = 0, ""
 
     # Get CDS
-    cds += seq[orf['coords'][0]: orf['coords'][1]]
+    cds += seq[orf[0]: orf[1]]
 
     if strand == '-':    # Reverse strand
         cds = cds[::-1]
@@ -557,7 +557,7 @@ def count_internal_stop_codons(seq, strand, orf):
     for match in stop_matches:
         stop_start = match.span()[0]
         stop_end = match.span()[1]
-        if stop_start % 3 == orf['coords'][0] % 3 and stop_end < orf['coords'][1]:
+        if stop_start % 3 == orf[0] % 3 and stop_end < orf[1]:
             stop_count += 1
 
     return stop_count
@@ -728,15 +728,16 @@ def main():
     for strand in orf_locations:
         orfs = orf_locations[strand]
         for orf_coords in orfs:
-            if strand == '-':       # Reverse strand
-                stop_count = count_internal_stop_codons(Sequence.complement(s), strand, orf_coords)
-            else:                   # Forward strand
-                stop_count = count_internal_stop_codons(s, strand, orf_coords)
+            for orf_coord in orf_coords['coords']:
+                if strand == '-':       # Reverse strand
+                    stop_count = count_internal_stop_codons(Sequence.complement(s), strand, orf_coord)
+                else:                   # Forward strand
+                    stop_count = count_internal_stop_codons(s, strand, orf_coord)
 
-            # CDS has more than one stop codon (the final one)
-            if stop_count > 1:
-                orf_locations[strand].remove(orf_coords)
-                print(f"Omitted orf: {orf_coords} has {stop_count} STOP codons")
+                # CDS has more than one stop codon (the final one)
+                if stop_count > 1:
+                    orf_locations[strand].remove(orf_coords)
+                    print(f"Omitted orf: {orf_coords} has {stop_count} STOP codons")
 
     # Since ORFs are valid, sort the ORFs by reading frame
     orfs = sort_orfs(orf_locations)

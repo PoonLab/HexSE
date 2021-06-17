@@ -535,8 +535,7 @@ class Sequence:
         cds = []
         for coord_list in orf['coords']:
             # Handle spliced ORFs
-            for coord in coord_list:
-                cds.extend(self.nt_sequence[coord[0]: coord[1]])
+            cds.extend(self.nt_sequence[coord_list[0]: coord_list[1]])
 
         # Reverse strand orf
         if frame.startswith('-'):
@@ -737,10 +736,10 @@ class Codon:
         """
         codon = ''.join(str(nt) for nt in self.nts_in_codon)  # Cast all Nucleotides in the Codon to strings
         if self.frame.startswith('+'):
-            return codon == 'ATG' and self.nts_in_codon[0].pos_in_seq == self.orf['coords'][0][0][0]
+            return codon == 'ATG' and self.nts_in_codon[0].pos_in_seq == self.orf['coords'][0][0]
         else:
             # +1 to account for non-inclusive indexing
-            return codon == 'ATG' and self.nts_in_codon[0].pos_in_seq + 1 == self.orf['coords'][0][0][1]
+            return codon == 'ATG' and self.nts_in_codon[0].pos_in_seq + 1 == self.orf['coords'][0][1]
 
     def is_stop(self):
         """
