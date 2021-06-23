@@ -1,34 +1,34 @@
 # Simulating evolution in Overlapping Reading Frames (OvRFs)
+Python module to simulate mutations on a nucleotide sequence along a phylogenetic tree taking into account the coding context of the nucleotide in the sequence.
 
-OvRFs is a bioinformatic pipeline to simulate evolution within Overlapping Reading Frames. The purpose of this pipeline is to account for effects of mutations in overlapping nucleotides when simulating evolution.
-
-1. [Usage](https://github.com/PoonLab/ovrf#usage)
-2. [How it works]
-3. [Outputs]
 
 ## Usage
-You can run the simulation as a module using the following:
+The minimum requirenments for the pipeline are:
+
+**Nucleotide sequence** The sequence to evolve can be either in `fasta` of `genbank` format.
+
+**Phylogenetic tree** expected on `newick` format
+
+**Open reading frames**
+If the input file is on `genbank` format, the program will retrieve the ORFs from the genome annotation. If the input sequence is a `fasta` file, you have two options:
+1. Specify the ORFs with the first and last nucleotide of the CDs as an csv file
+2. Let the program search for CDSs by recognizing start and stop codons
+
+**Optional parameters**
+Other substitution biases can be specified in a [YAML](https://en.wikipedia.org/wiki/YAML) file.
+
+The pipeline can be run as a Python module from the terminal as following:
+
 ```console
-$ python3 -m src.run_simulation --help
-usage: run_simulation.py [-h] [--outfile OUTFILE] [--orfs ORFS]
-[--mu MU][--kappa KAPPA] [--pi PI] [--omega OMEGA]
+$ python3 -m src.run_simulation sars-cov.fa phylo_tree.newick subs_rates.yaml
 ```
-### Input options
-**Nucleotide sequence:** The sequence to evolve can be either in `fasta` of `genbank` format.
 
-**Phylogenetic tree:** expect on `newick` format
+## Installation
 
-**Open reading frames:**
-- If the input sequence is a `fasta` file, you have two options:
-1. Specify the ORFs as a list of tuples with the first and last nucleotide of the CDs `[(0, 8), (2,10)]`
-2. Let the program to recognize an start and stop codon as a CDs.
-
-- If the input file is on `genbank` format, the program will retrieve the ORFs from the annotation of the CDs.
-
-**Note** that in order to be valid, the ORFs must be in the range of the genome length and be multiple of three (we are simulating evolution in nucleotides according to their position in the codon, so it is important for this information to be precise).  
 
 ## Unittest
 To check that `ovrf` has been properly installed and that you have all the required dependencies, you can enter de `ovrf` folder and type:
+
 ```python
 $python3 -m unittest
 ```
