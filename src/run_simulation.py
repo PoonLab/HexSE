@@ -382,10 +382,9 @@ def parse_orfs_from_csv(in_orfs, omega_values):
         for line in orf_handle:
             line = line.strip()
             line = line.split(',')
-
             for partial_coord in line:
                 if ':' in partial_coord:
-                    orf = {}
+                    orf = {'coords': []}
                     partial_coord = partial_coord.split(':')
 
                     # Check if strand is specified
@@ -395,20 +394,20 @@ def parse_orfs_from_csv(in_orfs, omega_values):
                         else:
                             strand = '-'
 
-                    orf['coords'] = (int(partial_coord[0]), int(partial_coord[1]))
+                    orf['coords'].append((int(partial_coord[0]), int(partial_coord[1])))
                     orf['omega_values'] = omega_values
 
                     orf_locations[strand].append(orf)
                     continue
 
                 else:
-                    orf = {}
+                    orf = {'coords': []}
                     if int(line[1]) > 0:
                         strand = '+'
                     else:
                         strand = '-'
 
-                    orf['coords'] = (int(line[0]), int(line[1]))
+                    orf['coords'].append((int(line[0]), int(line[1])))
                     orf['omega_values'] = omega_values
 
             if orf not in orf_locations[strand]:
@@ -574,7 +573,7 @@ def get_pi(pi, settings, s):
     :return: the value of pi
     """
     keys = ['A', 'T', 'G', 'C']
-    if settings != {}:
+    if settings:
         pi = list(settings['pi'].values())
         return dict(zip(keys, pi))
 

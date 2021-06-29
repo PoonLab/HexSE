@@ -374,14 +374,14 @@ class TestReadOrfs(unittest.TestCase):
 
     def test_genbank_format(self):
         in_orfs = os.path.join(CURR_ABSPATH, 'fixtures/NC_003977.2_HBV.gb')
-        exp_orfs = {'+': [{'coords': (0, 1625)},
-                          {'coords': (0, 837)},
-                          {'coords': (0, 837)},
-                          {'coords': (156, 837)},
-                          {'coords': (1375, 1840)},
-                          {'coords': (1815, 2454)},
-                          {'coords': (1853, 1922)},
-                          {'coords': (1902, 2454)}],
+        exp_orfs = {'+': [{'coords': [(2308, 3182), (0, 1625)]},
+                          {'coords': [(2849, 3182), (0, 837)]},
+                          {'coords': [(3173, 3182), (0, 837)]},
+                          {'coords': [(156, 837)]},
+                          {'coords': [(1375, 1840)]},
+                          {'coords': [(1815, 2454)]},
+                          {'coords': [(1853, 1922)]},
+                          {'coords': [(1902, 2454)]}],
                     '-': []}
         res_orfs = parse_genbank_orfs(in_orfs)
         self.assertEqual(exp_orfs, res_orfs)
@@ -389,25 +389,25 @@ class TestReadOrfs(unittest.TestCase):
     def test_csv_format(self):
         in_orfs = os.path.join(CURR_ABSPATH, 'fixtures/test_HBV_orfs.csv')
         omega_values = {'omega1': 0.56, 'omega2': 0.89, 'omega3': 1.13}
-        exp_orfs = {'+': [{'coords': (2849, 3182),
+        exp_orfs = {'+': [{'coords': [(2849, 3182)],
                            'omega_values': {'omega1': 0.56, 'omega2': 0.89, 'omega3': 1.13}},
-                          {'coords': (0, 837),
+                          {'coords': [(0, 837)],
                            'omega_values': {'omega1': 0.56, 'omega2': 0.89, 'omega3': 1.13}},
-                          {'coords': (3173, 3182),
+                          {'coords': [(3173, 3182)],
                            'omega_values': {'omega1': 0.56, 'omega2': 0.89, 'omega3': 1.13}},
-                          {'coords': (156, 837),
+                          {'coords': [(156, 837)],
                            'omega_values': {'omega1': 0.56, 'omega2': 0.89, 'omega3': 1.13}},
-                          {'coords': (1375, 1840),
+                          {'coords': [(1375, 1840)],
                            'omega_values': {'omega1': 0.56, 'omega2': 0.89, 'omega3': 1.13}},
-                          {'coords': (1815, 2454),
+                          {'coords': [(1815, 2454)],
                            'omega_values': {'omega1': 0.56, 'omega2': 0.89, 'omega3': 1.13}},
-                          {'coords': (1853, 1922),
+                          {'coords': [(1853, 1922)],
                            'omega_values': {'omega1': 0.56, 'omega2': 0.89, 'omega3': 1.13}},
-                          {'coords': (1902, 2454),
+                          {'coords': [(1902, 2454)],
                            'omega_values': {'omega1': 0.56, 'omega2': 0.89, 'omega3': 1.13}},
-                          {'coords': (8312, 10228),
+                          {'coords': [(8312, 10228)],
                            'omega_values': {'omega1': 0.56, 'omega2': 0.89, 'omega3': 1.13}},
-                          {'coords': (13340, 13348),
+                          {'coords': [(13340, 13348)],
                            'omega_values': {'omega1': 0.56, 'omega2': 0.89, 'omega3': 1.13}}],
                     '-': []}
         res_orfs = parse_orfs_from_csv(in_orfs, omega_values)
@@ -480,7 +480,7 @@ class TestGetParameters(unittest.TestCase):
     def test_get_pi_from_seq(self):
         expected = {'A': 0.44, 'C': 0.0, 'G': 0.22, 'T': 0.33}
         s = 'ATGTGATAA'
-        settings = None
+        settings = {}
         pi = [None, None, None, None]
         result = get_pi(pi, settings, s)
         self.assertEqual(expected, result)

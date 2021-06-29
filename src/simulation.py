@@ -51,16 +51,15 @@ class SimulateOnBranch:
         # Select: mu category
         def possible_cats():
             cat_tree = copy.copy(self.sequence.probability_tree['to_nt'][to_mutation]['from_nt'][from_mutation]['cat'])
-            for i in list(cat_tree.keys()):
+            for _ in list(cat_tree.keys()):
                 selected_cat = self.select_key(cat_tree)
                 cat_tree.pop(selected_cat)  # Remove empty key
-
                 yield selected_cat
 
         # Select omega branch
         def possible_nts(selected_cat):
             omega_dict = copy.copy(self.sequence.probability_tree['to_nt'][to_mutation]['from_nt'][from_mutation]['cat'][selected_cat]['omega'])
-            # Create a dictionary contaning only omega tuples and probability value
+            # Create a dictionary containing only omega tuples and probability value
             omega_weights = {omega: omega_dict[omega]['prob']*omega_dict[omega]['number_of_events'] for omega in omega_dict.keys()}
             nt_dict = self.sequence.event_tree['to_nt'][to_mutation]['from_nt'][from_mutation]['category'][selected_cat]
 
@@ -69,7 +68,7 @@ class SimulateOnBranch:
                 pass
 
             else:
-                for i in range(1, len(omega_dict.keys())):
+                for _ in omega_dict.keys():
                     selected_omega = self.weighted_random_choice(omega_weights, sum(omega_weights.values()))
                     # Select nucleotide
                     nt_list = self.sequence.event_tree['to_nt'][to_mutation]['from_nt'][from_mutation]['category'][selected_cat][selected_omega]
@@ -78,7 +77,7 @@ class SimulateOnBranch:
                     yield nt_list
 
         for selected_cat in possible_cats():
-            for nt_list in possible_nts(selected_cat): # Check if nt list is empty
+            for nt_list in possible_nts(selected_cat):  # Check if nt list is empty
                 if nt_list:
                     from_nucleotide = random.choice(nt_list)
                     return from_nucleotide, to_mutation
@@ -95,7 +94,7 @@ class SimulateOnBranch:
             if value:
                 temp_dict[key] = value['prob'] * value['number_of_events']
         selected_key = self.weighted_random_choice(temp_dict, sum(temp_dict.values()))
-        return (selected_key)
+        return selected_key
 
     @staticmethod
     def weighted_random_choice(dictionary, sum_values):
@@ -210,7 +209,7 @@ class SimulateOnBranch:
         nt.set_state(to_state)
         # Change complementary state given the mutation
         nt.set_complement_state()
-        # RESET All vallues
+        # RESET All values
         # Rates
         nt.set_rates({})
         # Omega keys
@@ -226,8 +225,9 @@ class SimulateOnBranch:
         self.sequence.set_substitution_rates(nt)
         new_omega = self.sequence.nt_in_event_tree(nt)  # Update nucleotide on the Event Tree and return new key if created
 
-        if new_omega: # If new omeka key is created in the event tree, update the probability tree
+        if new_omega:  # If new omega key is created in the event tree, update the probability tree
             self.sequence.probability_tree = self.sequence.create_probability_tree()
+
 
 class SimulateOnTree:
     """

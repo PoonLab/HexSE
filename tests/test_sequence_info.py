@@ -31,7 +31,7 @@ class TestSequence1(unittest.TestCase):
         s1 = 'GTACGATCGATCGATGCTAGC'
         pi1 = Sequence.get_frequency_rates(s1)
         self.sequence1 = Sequence(s1, orfs, KAPPA, GLOBAL_RATE, pi1, CAT_VALUES)
-        orf = {'coords': [[(0, 21)]],
+        orf = {'coords': [[0, 21]],
                'omega_classes': 3, 'omega_shape': 1.5,
                'omega_values': [0.1708353283825978, 0.4810288100937172, 1.1481358615121404]}
         self.seq1_codons = self.sequence1.find_codons('+0', orf)
@@ -219,7 +219,7 @@ class TestSequence1(unittest.TestCase):
     def testFindCodons(self):
         # Test forward strand ORF
         expected = ['GTA', 'CGA', 'TCG', 'ATC', 'GAT', 'GCT', 'AGC']
-        orf = {'coords': [[(0, 21)]],
+        orf = {'coords': [[0, 21]],
                'omega_classes': 3, 'omega_shape': 1.5,
                'omega_values': [0.1708353283825978, 0.4810288100937172, 1.1481358615121404]}
         result = self.sequence1.find_codons('+0', orf)
@@ -584,21 +584,21 @@ class TestSequence2(unittest.TestCase):
         self.maxDiff = MAX_DIFF
         random.seed(4001)
 
-        orfs = {'+0': [{'coords': [[(0, 21)]],
+        orfs = {'+0': [{'coords': [[0, 21]],
                         'omega_classes': 3, 'omega_shape': 1.5,
                         'omega_values': [0.1708353283825978, 0.4810288100937172, 1.1481358615121404]}],
                 '+1': [], '+2': [], '-0': [], '-1': [],
-                '-2': [{'coords': [[(3, 15)]],
+                '-2': [{'coords': [[3, 15]],
                         'omega_classes': 4, 'omega_shape': 1.25,
                         'omega_values': [0.09199853806558903, 0.27043066909631136,
                                          0.5158061369385518, 1.1217646558655263]}]}
         s2 = 'ATGAATAAACCCGTATGA'
         pi2 = Sequence.get_frequency_rates(s2)
         self.sequence2 = Sequence(s2, orfs, KAPPA, GLOBAL_RATE, pi2, CAT_VALUES)
-        plus_orf = {'coords': [[(0, 21)]],
+        plus_orf = {'coords': [[0, 21]],
                     'omega_classes': 3, 'omega_shape': 1.5,
                     'omega_values': [0.1708353283825978, 0.4810288100937172, 1.1481358615121404]}
-        minus_orf = {'coords': [[(3, 15)]],
+        minus_orf = {'coords': [[3, 15]],
                      'omega_classes': 4, 'omega_shape': 1.25,
                      'omega_values': [0.09199853806558903, 0.27043066909631136,
                                       0.5158061369385518, 1.1217646558655263]}
@@ -867,7 +867,7 @@ class TestSequence2(unittest.TestCase):
 
         # Test forward strand ORF
         expected = ['ATG', 'AAT', 'AAA', 'CCC', 'GTA', 'TGA']
-        result = self.sequence2.find_codons('+0', {'coords': [[(0, 21)]],
+        result = self.sequence2.find_codons('+0', {'coords': [[0, 21]],
                                                    'omega_classes': 3, 'omega_shape': 1.5,
                                                    'omega_values': [0.1708353283825978, 0.4810288100937172, 1.1481358615121404]})
         self.assertEqual(len(expected), len(result))
@@ -878,7 +878,7 @@ class TestSequence2(unittest.TestCase):
 
         # Test reverse strand ORF
         expected = ['ATG', 'CCC', 'AAA', 'TAA']
-        result = self.sequence2.find_codons('-2', {'coords': [[(3, 15)]],
+        result = self.sequence2.find_codons('-2', {'coords': [[3, 15]],
                                                    'omega_classes': 4, 'omega_shape': 1.25,
                                                    'omega_values': [0.09199853806558903, 0.27043066909631136,
                                                                     0.5158061369385518, 1.1217646558655263]})
@@ -1226,13 +1226,13 @@ class TestSequence3(unittest.TestCase):
         random.seed(555)
 
         s3 = 'ATGACGTGGTGA'
-        sorted_orfs = {'+0': [{'coords': [[(0, 12)]],
+        sorted_orfs = {'+0': [{'coords': [[0, 12]],
                                'omega_classes': 3, 'omega_shape': 1.5,
                                'omega_values': [0.1708353283825978, 0.4810288100937172, 1.1481358615121404]}],
                        '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
         pi3 = Sequence.get_frequency_rates(s3)
         self.sequence3 = Sequence(s3, sorted_orfs, KAPPA, GLOBAL_RATE, pi3, CAT_VALUES)
-        self.seq3_codons = self.sequence3.find_codons('+0', {'coords': [[(0, 12)]],
+        self.seq3_codons = self.sequence3.find_codons('+0', {'coords': [[0, 12]],
                                                              'omega_classes': 3, 'omega_shape': 1.5,
                                                              'omega_values': [0.1708353283825978, 0.4810288100937172, 1.1481358615121404]})
 
@@ -1443,7 +1443,7 @@ class TestSequence3(unittest.TestCase):
 
     def testFindCodons(self):
         expected = ['ATG', 'ACG', 'TGG', 'TGA']
-        result = self.sequence3.find_codons('+0', {'coords': [[(0, 12)]],
+        result = self.sequence3.find_codons('+0', {'coords': [[0, 12]],
                                                    'omega_classes': 3, 'omega_shape': 1.5,
                                                    'omega_values': [0.1708353283825978, 0.4810288100937172, 1.1481358615121404]})
         self.assertEqual(len(expected), len(result))
@@ -1763,14 +1763,14 @@ class TestSequence4(unittest.TestCase):
         random.seed(5001)
 
         s4 = 'ATGATGCCCTAA'
-        sorted_orfs = {'+0': [{'coords': [[(0, 12)]],
+        sorted_orfs = {'+0': [{'coords': [[0, 12]],
                                'omega_classes': 3, 'omega_shape': 1.5,
                                'omega_values': [0.1708353283825978, 0.4810288100937172, 1.1481358615121404]}],
                        '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
         pi4 = Sequence.get_frequency_rates(s4)
         random.seed(4000)
         self.sequence4 = Sequence(s4, sorted_orfs, KAPPA, GLOBAL_RATE, pi4, CAT_VALUES)
-        self.seq4_codons = self.sequence4.find_codons('+0', {'coords': [[(0, 12)]],
+        self.seq4_codons = self.sequence4.find_codons('+0', {'coords': [[0, 12]],
                                                              'omega_classes': 3, 'omega_shape': 1.5,
                                                              'omega_values': [0.1708353283825978, 0.4810288100937172, 1.1481358615121404]})
 
@@ -1966,7 +1966,7 @@ class TestSequence4(unittest.TestCase):
 
     def testFindCodons(self):
         expected = ['ATG', 'ATG', 'CCC', 'TAA']
-        result = self.sequence4.find_codons('+0', {'coords': [[(0, 12)]],
+        result = self.sequence4.find_codons('+0', {'coords': [[0, 12]],
                                                    'omega_classes': 3, 'omega_shape': 1.5,
                                                    'omega_values': [0.1708353283825978, 0.4810288100937172, 1.1481358615121404]})
         self.assertEqual(len(expected), len(result))
@@ -2282,10 +2282,10 @@ class TestSequence5(unittest.TestCase):
         random.seed(9991)
 
         s5 = 'ATGAATGCCTGACTAA'
-        sorted_orfs = {'+0': [{'coords': [[(0, 12)]],
+        sorted_orfs = {'+0': [{'coords': [[0, 12]],
                                'omega_classes': 3, 'omega_shape': 1.5,
                                'omega_values': [0.1708353283825978, 0.4810288100937172, 1.1481358615121404]}],
-                       '+1': [{'coords': [[(4, 16)]],
+                       '+1': [{'coords': [[4, 16]],
                                'omega_classes': 4, 'omega_shape': 1.25,
                                'omega_values': [0.09199853806558903, 0.27043066909631136,
                                                 0.5158061369385518, 1.1217646558655263]}],
@@ -2293,10 +2293,10 @@ class TestSequence5(unittest.TestCase):
         pi5 = Sequence.get_frequency_rates(s5)
         self.sequence5 = Sequence(s5, sorted_orfs, KAPPA, GLOBAL_RATE, pi5, CAT_VALUES)
 
-        self.plus_0_codons = self.sequence5.find_codons('+0', {'coords': [[(0, 12)]],
+        self.plus_0_codons = self.sequence5.find_codons('+0', {'coords': [[0, 12]],
                                                                'omega_classes': 3, 'omega_shape': 1.5,
                                                                'omega_values': [0.1708353283825978, 0.4810288100937172, 1.1481358615121404]})
-        self.plus_1_codons = self.sequence5.find_codons('+1', {'coords': [[(4, 16)]],
+        self.plus_1_codons = self.sequence5.find_codons('+1', {'coords': [[4, 16]],
                                                                'omega_classes': 4, 'omega_shape': 1.25,
                                                                'omega_values': [0.09199853806558903, 0.27043066909631136,
                                                                                 0.5158061369385518, 1.1217646558655263]})
@@ -2588,7 +2588,7 @@ class TestSequence5(unittest.TestCase):
     def testFindCodons(self):
         # Check codons in +0 frame
         expected = ['ATG', 'AAT', 'GCC', 'TGA']
-        result = self.sequence5.find_codons('+0', {'coords': [[(0, 12)]],
+        result = self.sequence5.find_codons('+0', {'coords': [[0, 12]],
                                                    'omega_classes': 3, 'omega_shape': 1.5,
                                                    'omega_values': [0.1708353283825978, 0.4810288100937172, 1.1481358615121404]})
         self.assertEqual(len(expected), len(result))
@@ -2599,7 +2599,7 @@ class TestSequence5(unittest.TestCase):
 
         # Check Codons in +1 frame
         expected = ['ATG', 'CCT', 'GAC', 'TAA']
-        result = self.sequence5.find_codons('+1', {'coords': [[(4, 16)]],
+        result = self.sequence5.find_codons('+1', {'coords': [[4, 16]],
                                                    'omega_classes': 4, 'omega_shape': 1.25,
                                                    'omega_values': [0.09199853806558903, 0.27043066909631136,
                                                                     0.5158061369385518, 1.1217646558655263]})
@@ -2941,13 +2941,13 @@ class TestSequence6(unittest.TestCase):
         random.seed(4000)
 
         s6 = 'ATGATGGCCCTAA'
-        sorted_orfs = {'+0': [{'coords': [[(0, 5), (6, 13)]],
+        sorted_orfs = {'+0': [{'coords': [(0, 5), (6, 13)],
                                'omega_classes': 3, 'omega_shape': 1.5,
                                'omega_values': [0.1708353283825978, 0.4810288100937172, 1.1481358615121404]}],
                        '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
         pi6 = Sequence.get_frequency_rates(s6)
         self.sequence6 = Sequence(s6, sorted_orfs, KAPPA, GLOBAL_RATE, pi6, CAT_VALUES)
-        self.seq6_codons = self.sequence6.find_codons('+0', {'coords': [[(0, 5), (6, 13)]],
+        self.seq6_codons = self.sequence6.find_codons('+0', {'coords': [(0, 5), (6, 13)],
                                                              'omega_classes': 3, 'omega_shape': 1.5,
                                                              'omega_values': [0.1708353283825978, 0.4810288100937172, 1.1481358615121404]})
 
@@ -3144,7 +3144,7 @@ class TestSequence6(unittest.TestCase):
 
     def testFindCodons(self):
         expected = ['ATG', 'ATG', 'CCC', 'TAA']
-        result = self.sequence6.find_codons('+0', {'coords': [[(0, 5), (6, 13)]],
+        result = self.sequence6.find_codons('+0', {'coords': [(0, 5), (6, 13)],
                                                    'omega_classes': 3, 'omega_shape': 1.5,
                                                    'omega_values': [0.1708353283825978, 0.4810288100937172, 1.1481358615121404]})
         self.assertEqual(len(expected), len(result))
