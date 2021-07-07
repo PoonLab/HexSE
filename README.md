@@ -1,4 +1,4 @@
-# Simulating evolution in Overlapping Reading Frames (OvRFs)
+# HexSE: Simulating evolution in overlapping reading frames
 Python module to simulate mutations on a nucleotide sequence along a phylogenetic tree taking into account the coding context of the nucleotide in the sequence.
 
 
