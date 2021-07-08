@@ -1,0 +1,59 @@
+---
+global_rate: 0.0005
+
+kappa: 0.3
+
+pi: 
+  pi_A: 0.25
+  pi_T: 0.25
+  pi_G: 0.25
+  pi_C: 0.25
+
+orfs: 
+  2849,3182:
+    omega_classes: 3
+    omega_shape: 1.5
+    omega_dist: gamma
+  
+  0,837:
+    omega_classes: 4
+    omega_shape: 1.7
+    omega_dist: gamma
+  
+  3173,3182:
+    omega_classes: 5
+    omega_shape: 1.9
+    omega_dist: gamma
+  
+  156,837:
+    omega_classes: 6
+    omega_shape: 1.2
+    omega_dist: gamma
+  
+  1375,1840:
+    omega_classes: 7
+    omega_shape: 1.30
+    omega_dist: gamma
+  
+  1815,2454:
+    omega_classes: 3
+    omega_shape: 1.25
+    omega_dist: gamma
+  
+  1853,1922:
+    omega_classes: 4
+    omega_shape: 1.87
+    omega_dist: gamma
+  
+  1902,2454:
+    omega_classes: 5
+    omega_shape: 2.5
+    omega_dist: gamma
+
+
+mu:
+  mu_classes: 4
+  mu_shape: 1.0
+  mu_dist: lognorm
+
+circular: false
