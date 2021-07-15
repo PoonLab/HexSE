@@ -15,7 +15,13 @@ setup(
     install_requires=[
         'scipy',
         'numpy',
-        'biopython'
+        'biopython',
+        'yaml',
+        'datetime',
+        'random',
+        'copy',
+        'sys'
     ],
+    
     python_requires='>=3.6'
 )
