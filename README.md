@@ -25,6 +25,9 @@ $ python3 -m src.run_simulation sars-cov.fa phylo_tree.newick subs_rates.yaml
 
 ## Installation
 
+```console
+python3 -m pip install -e git+https://github.com/PoonLab/HexSE#egg=HexSE
+```
 
 ## Unittest
 To check that `ovrf` has been properly installed and that you have all the required dependencies, you can enter de `ovrf` folder and type:
