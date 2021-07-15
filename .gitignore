@@ -1,3 +1,6 @@
 __pycache__
 .DS_Store
 *.pyc
+temp/
+*.log
+dist/

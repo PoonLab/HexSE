@@ -4,8 +4,9 @@ from setuptools.command.install import install
 
 
 setup(
-    name='ovrf',
-    description='Simulation of molecular evolution with overlapping reading frames',
+    name='HexSE',
+    version="0.0.1",
+    description='Simulating evolution in overlapping reading frames',
     packages=['src'],
     classifiers=[
         'Programming Language :: Python :: 3',
