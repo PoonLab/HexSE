@@ -7,7 +7,7 @@ setup(
     name='HexSE',
     version="0.0.1",
     description='Simulating evolution in overlapping reading frames',
-    packages=['src'],
+    packages=['hexse'],
     classifiers=[
         'Programming Language :: Python :: 3',
         'Operating System :: OS Independent'
