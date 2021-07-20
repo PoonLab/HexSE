@@ -20,18 +20,40 @@ Other substitution biases can be specified in a [YAML](https://en.wikipedia.org/
 The pipeline can be run as a Python module from the terminal as following:
 
 ```console
-$ python3 -m src.run_simulation sars-cov.fa phylo_tree.newick subs_rates.yaml
+$ python3 -m hexse.run_simulation sars-cov.fa phylo_tree.newick subs_rates.yaml
 ```
 
 ## Installation
+`HexSE` is a Python package developed under the version 3.6. The following dependencies are required (as listed in the `setup.py` file):
+- `scipy`
+- `numpy`
+- `biopython`
+- `pyyaml`
 
+To install `HexSE`, there are three options. To install using the cloned repository:
 ```console
-python3 -m pip install -e git+https://github.com/PoonLab/HexSE#egg=HexSE
+$ git clone https://github.com/PoonLab/HexSE
+$ cd HexSE
+$ sudo python3 setup.py install
+```
+
+Ideally, consider using a virtual environment to ensure the right versions for the dependencies:
+```console
+$ git clone https://github.com/PoonLab/HexSE
+$ cd HexSE 
+$ python3 -m venv venv
+$ source ./venv/bin/activate
+$ python3 setup.py install
+```
+
+To install without cloning (Using `pip`):
+```console
+$ python3 -m pip install --upgrade git+https://github.com/PoonLab/HexSE
 ```
 
 ## Unittest
-To check that `ovrf` has been properly installed and that you have all the required dependencies, you can enter de `ovrf` folder and type:
+To check that `HexSE` has been properly installed and that you have all the required dependencies, use:
 
 ```python
-$python3 -m unittest
+$ python3 -m unittest
 ```
