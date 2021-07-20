@@ -11,9 +11,9 @@ from Bio import SeqIO
 from datetime import datetime
 import yaml
 
-from src.sequence_info import NUCLEOTIDES
-from src.sequence_info import Sequence
-from src.simulation import SimulateOnTree
+from .sequence_info import NUCLEOTIDES
+from .sequence_info import Sequence
+from .simulation import SimulateOnTree
 
 
 def get_args(parser):
