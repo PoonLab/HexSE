@@ -1,7 +1,7 @@
 import random
 import unittest
 
-from src.sequence_info import Sequence, Nucleotide
+from hexse.sequence_info import Sequence, Nucleotide
 
 MAX_DIFF = None
 CAT_VALUES = {'mu1': 0.051710707633483066, 'mu2': 0.15181054803756722, 'mu3': 0.26809045653750935,
