@@ -9,11 +9,11 @@ import scipy.stats as ss
 from Bio import Phylo
 from Bio import SeqIO
 from datetime import datetime
-import yaml
 
 from .sequence_info import NUCLEOTIDES
 from .sequence_info import Sequence
 from .simulation import SimulateOnTree
+from .settings import get_settings
 
 
 def get_args(parser):
@@ -656,26 +656,21 @@ def main():
     logging.basicConfig(filename=LOG_FILENAME, level=logging.INFO)
     logging.info(f"\nSimulation started at: {start_time}")
 
+    # Assign settings
+    settings = get_settings(args)
+
     # Read in sequence
     s = read_sequence(args.seq)
 
-    # Parse configuration file (if it exists)
-    if args.config:
-        with open(args.config, 'r') as stream:
-            try:
-                settings = yaml.safe_load(stream)
-            except yaml.YAMLError as e:
-                print(e)
-    else:
-        settings = {}
-
     # Get parameters for run
-    pi = get_pi(args.pi, settings, s)
-    global_rate = get_global_rate(args.global_rate, settings)
-    kappa = get_kappa(args.kappa, settings)
-    mu_classes = get_mu_classes(args.mu_classes, settings)
-    mu_shape = get_mu_shape(args.mu_shape, settings)
-    mu_dist = get_mu_dist(args.mu_dist, settings)
+    #TODO: Remove unncesary parameters
+
+    pi = get_pi(settings['pi'], settings, s)  
+    global_rate = get_global_rate(settings.global_rate, settings)
+    kappa = get_kappa(settings.kappa, settings)
+    mu_classes = get_mu_classes(settings.mu_classes, settings)
+    mu_shape = get_mu_shape(settings.mu_shape, settings)
+    mu_dist = get_mu_dist(settings.mu_dist, settings)
 
     # Create classes to classify nucleotides on the Event Tree
     mu_values = create_values_dict(mu_shape, mu_classes, "mu", mu_dist)
@@ -691,22 +686,22 @@ def main():
                  f"Rates classification values: {mu_values}")
 
     # Use a different omega distribution for each ORF
-    if args.config:
+    if settings.config:
         orf_locations = parse_orfs_from_yaml(settings)
 
     # Use the same omega distribution for all ORFs
     else:
-        omega_values = list(discretize(args.omega_shape, args.omega_classes, args.omega_dist))
+        omega_values = list(discretize(settings.omega_shape, settings.omega_classes, settings.omega_dist))
 
         # Read ORFs from GenBank file
-        if args.seq.lower().endswith('.gb') or args.seq.lower().endswith('genbank'):
-            orfs = parse_genbank_orfs(args.seq)
+        if settings.seq.lower().endswith('.gb') or settings.seq.lower().endswith('genbank'):
+            orfs = parse_genbank_orfs(settings.seq)
 
         # Read in ORFs from .csv file
-        if args.orfs:
-            orfs = parse_orfs_from_csv(args.orfs, omega_values)
+        if settings.orfs:
+            orfs = parse_orfs_from_csv(settings.orfs, omega_values)
 
-        orf_locations = set_global_omega_values(orfs, omega_values, args.omega_shape, args.omega_classes)
+        orf_locations = set_global_omega_values(orfs, omega_values, settings.omega_shape, settings.omega_classes)
 
     # Check if the ORFs are valid
     invalid_orfs = valid_orfs(orf_locations, len(s))
@@ -757,7 +752,7 @@ def main():
                 coords = ','.join(map(str, c))
 
     # Read in the tree
-    phylo_tree = Phylo.read(args.tree, 'newick', rooted=True)
+    phylo_tree = Phylo.read(settings.tree, 'newick', rooted=True)
     # logging.info("Phylogenetic tree: {}".format(args.tree))
 
     # # Make Sequence object
