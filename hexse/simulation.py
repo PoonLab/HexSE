@@ -70,6 +70,8 @@ class SimulateOnBranch:
             else:
                 for _ in omega_dict.keys():
                     selected_omega = self.weighted_random_choice(omega_weights, sum(omega_weights.values()))
+                    if selected_omega == None:
+                        print(omega_dict.keys()) 
                     # Select nucleotide
                     nt_list = self.sequence.event_tree['to_nt'][to_mutation]['from_nt'][from_mutation]['category'][selected_cat][selected_omega]
                     omega_weights.pop(selected_omega)  # Remove empty key
@@ -266,7 +268,7 @@ class SimulateOnTree:
             parent_sequence = copy.deepcopy(parent.sequence)
 
             # Mutate sequence and store it on clade
-            print("Simulating on Branch", clade)
+            # print("Simulating on Branch", clade)
             simulation = SimulateOnBranch(parent_sequence, clade.branch_length)
             clade.sequence = simulation.mutate_on_branch()
 

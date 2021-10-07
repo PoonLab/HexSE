@@ -3,6 +3,7 @@ from ..discretize import discretize
 import yaml
 from Bio import SeqIO
 import scipy.stats as ss
+from functools import reduce
 
 class Settings:
     """
@@ -19,25 +20,31 @@ class Settings:
         self.tree = args.tree
         self.omega_values = ''
         self.orfs = self.get_orfs()
-        self.pi = args.pi
-        self.kappa = self.get_kappa()
-        self.mu_values = ''
-        self.mu_classes = ''
-        self.mu_shape = ''
-        self.dist = ''
-        self.global_rate = 1
+        self.pi = self.get_pi()
+        self.kappa = self.from_yaml('kappa', 0.3)
+        self.mu_classes = self.from_yaml('mu.classes', 4)
+        self.mu_shape = self.from_yaml('mu.shape', 1.0)
+        self.mu_dist = self.from_yaml('mu.dist', 'lognorm')
+        self.global_rate = self.from_yaml('global_rate', 0.5)
 
-        # Find orfs
+        print(self.orfs)
 
-    @property
-    def pi(self):
-        pi = self.pi
+    def get_pi(self):
         if 'pi' in self.yaml.keys():
-            pi = self.yaml['pi']        
+            pi = self.yaml['pi']
+            print(pi)        
         else:
             pi = self.calculate_pi(self.seq)
 
         return pi
+    
+    def from_yaml(self, key, default):
+        value = reduce(dict.get, key.split("."), self.yaml)
+        if value is None:
+            value = default
+
+        return value        
+
     
     def get_orfs(self):
         orfs = {}
@@ -166,37 +173,37 @@ class Settings:
 
         for raw_coord in raw_coords:
             # Spliced ORF
-            if ':' in raw_coord:
+            if ';' in raw_coord:
                 orf = {}
-                raw_coord = raw_coord.split(':')
+                complete_orf = raw_coord
+                raw_coord = raw_coord.split(';')
 
                 # Read in partial ORFs
                 strand = ''
+                orf['coords'] = []
                 for coords in raw_coord:
                     coords = coords.split(',')
-                    if len(coords) == 3:
-                        if int(coords[2]) > 0:
-                            strand = '+'
-                        else:
-                            strand = '-'
-                    orf['coords'] = [(int(coords[0]), int(coords[1]))]
+                    coords = list(map(int, coords))  # Convert string to integer
+                    orf['coords'].append(coords)
+
+                    if coords[0] > coords[1]:
+                        strand = '+'
+                    else:
+                        strand = '-'
 
                     # Get omega values based on the full ORF
-                    orf['omega_shape'] = yaml['orfs'][raw_coord]['omega_shape']
-                    orf['omega_classes'] = yaml['orfs'][raw_coords]['omega_classes']
-                    dist = yaml['orfs'][raw_coord]['omega_dist']
+                    orf['omega_shape'] = yaml['orfs'][complete_orf]['omega_shape']
+                    orf['omega_classes'] = yaml['orfs'][complete_orf]['omega_classes']
+                    dist = yaml['orfs'][complete_orf]['omega_dist']
                     dist = '%s%s' % ('ss.', dist)
-                    orf['omega_values'] = list(discretize(yaml['orfs'][raw_coord]['omega_shape'],
-                                                            yaml['orfs'][raw_coord]['omega_classes'], dist))
-
-                    orf_locations[strand].append(orf)
+                    orf['omega_values'] = list(discretize(yaml['orfs'][complete_orf]['omega_shape'],
+                                                            yaml['orfs'][complete_orf]['omega_classes'], dist))
+            
+                orf_locations[strand].append(orf)
 
             else:
                 orf = {}
                 coords = raw_coord.split(',')
-                print(">>Coord", coords, raw_coords, "\n")
-                print(list(yaml['orfs'].keys()))
-
                 coords = list(map(int, coords))  # Convert string to integer
 
                 orf['coords'] = [coords]
