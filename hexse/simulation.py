@@ -71,7 +71,12 @@ class SimulateOnBranch:
                 for _ in omega_dict.keys():
                     selected_omega = self.weighted_random_choice(omega_weights, sum(omega_weights.values()))
                     # Select nucleotide
-                    nt_list = self.sequence.event_tree['to_nt'][to_mutation]['from_nt'][from_mutation]['category'][selected_cat][selected_omega]
+                    try:
+                        nt_list = self.sequence.event_tree['to_nt'][to_mutation]['from_nt'][from_mutation]['category'][selected_cat][selected_omega]
+                    except KeyError:
+                        print(to_mutation, from_mutation, selected_cat, selected_omega)
+                        print(self.sequence.event_tree)
+                        raise
                     omega_weights.pop(selected_omega)  # Remove empty key
 
                     yield nt_list
