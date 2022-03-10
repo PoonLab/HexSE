@@ -3,6 +3,7 @@
 import random
 import copy
 import sys
+from tkinter import EXCEPTION
 
 TRANSITIONS_DICT = {'A': 'G', 'G': 'A', 'T': 'C', 'C': 'T'}
 
@@ -356,6 +357,7 @@ class Sequence:
             else:
                 # Apply global substitution rate and stationary nucleotide frequency
                 sub_rates[to_nt] = self.global_rate * self.pi[current_nt]
+                # Apply kappa when transversion
                 if self.is_transv(current_nt, to_nt):
                     sub_rates[to_nt] *= self.kappa
 

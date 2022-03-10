@@ -1,13 +1,14 @@
 ---
-global_rate: 0.0005
+global_rate: 0.05
 
 kappa: 0.3
 
 pi: 
-  pi_A: 0.25
-  pi_T: 0.25
-  pi_G: 0.25
-  pi_C: 0.25
+# Note that keys for pi values HAVE to be the exact nucleotides
+  A: 0.25
+  T: 0.25
+  G: 0.25
+  C: 0.25
 
 orfs: 
   2849,3182:
