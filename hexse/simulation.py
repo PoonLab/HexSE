@@ -32,6 +32,12 @@ class SimulateOnBranch:
         self.sequence = sequence  # Sequence object
         self.branch_length = branch_length
 
+    @staticmethod
+    def test_omega_tree(omega_tree):
+        for keys in omega_tree.keys():
+            if None in keys:
+                print(keys)
+
     def get_substitution(self):
         """
         Select a substitution by moving over the event_tree according to the generation of random numbers
@@ -59,6 +65,7 @@ class SimulateOnBranch:
         # Select omega branch
         def possible_nts(selected_cat):
             omega_dict = copy.copy(self.sequence.probability_tree['to_nt'][to_mutation]['from_nt'][from_mutation]['cat'][selected_cat]['omega'])
+            
             # Create a dictionary containing only omega tuples and probability value
             omega_weights = {omega: omega_dict[omega]['prob']*omega_dict[omega]['number_of_events'] for omega in omega_dict.keys()}
             nt_dict = self.sequence.event_tree['to_nt'][to_mutation]['from_nt'][from_mutation]['category'][selected_cat]
@@ -71,7 +78,9 @@ class SimulateOnBranch:
                 for _ in omega_dict.keys():
                     selected_omega = self.weighted_random_choice(omega_weights, sum(omega_weights.values()))
                     if selected_omega == None:
-                        print(omega_dict.keys()) 
+                        # element = list(omega_weights.keys())[0][0]
+                        print(omega_weights)
+                    self.test_omega_tree(omega_dict) 
                     # Select nucleotide
                     nt_list = self.sequence.event_tree['to_nt'][to_mutation]['from_nt'][from_mutation]['category'][selected_cat][selected_omega]
                     omega_weights.pop(selected_omega)  # Remove empty key

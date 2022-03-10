@@ -53,8 +53,8 @@ orfs:
 
 
 mu:
-  mu_classes: 4
-  mu_shape: 1.0
-  mu_dist: lognorm
+  classes: 4
+  shape: 1.0
+  dist: lognorm
 
 circular: false
