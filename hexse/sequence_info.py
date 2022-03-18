@@ -43,9 +43,23 @@ class Sequence:
         """
         Creates a list of nucleotides, locates open reading frames, and creates a list of codons.
         :param orfs: A dictionary of ORFs, sorted by reading frame where:
-                        - the keys are the reading frames (+0, +1, +2, -0, -1, -2)
-                        - the values are a list of tuples containing the start and end positions of the ORFs.
-                        - Ex: {'+0': [(0, 8), (3, 15)], '+1': [(1, 9)], '+2': [], '-0': [], '-1': [], '-2': []}
+                        - the keys are the reading frames (+0, +1, +2, -0, -1, or -2)
+                        - the values are lists of dictioaries with keys: 'coords, 'omega_shape', 'omega_classes', 'omega values' 
+                        - Ex:  {
+                                '+0': [{
+                                    'coords': [[2849, 3182]], 
+                                    'omega_shape': 1.5, 
+                                    'omega_classes': 3, 
+                                    'omega_values': [0.1708353283825978, 0.4810288100937172, 1.1481358615121404]
+                                    },
+                                    {
+                                    'coords': [[3173, 3182]], 
+                                    'omega_shape': 1.9, 
+                                    'omega_classes': 5, 
+                                    'omega_values': [0.1846759438880899, 0.4079605248732454, 0.6343987842679637, 0.9365407795137214, 1.636423967437797]
+                                    }]
+                                }
+
         :param kappa: transition/ transversion rate ratio
         :param global_rate: The global rate (substitutions/site/unit time)
         :param pi: Frequency of nucleotides in a given sequence, with nucleotide as keys
@@ -54,6 +68,7 @@ class Sequence:
         :param circular: True if the genome is circular, false if the genome is linear (default: linear)
         """
         self.orfs = orfs  # Dictionary of of ORFs sorted by reading frame
+        #print("HERE ARE THE ORFS\n", self.orfs)
         self.kappa = kappa  # Transition/ transversion rate ratio
         self.global_rate = global_rate  # The global rate (substitutions/site/unit time)
         self.pi = pi  # Frequency of nucleotides, with nucleotide as keys
@@ -129,6 +144,8 @@ class Sequence:
                             current_branch['cat'].update([(mu_cat, {'prob': prob, 'omega': {}, 'number_of_events': 0})])
                             # Bring Omega keys on the Event Tree
                             omegas = self.event_tree['to_nt'][to_nt]['from_nt'][from_nt]['category'][mu_cat].keys()
+                            if prob <= 0.0000001:
+                                print("\n>>>>LOW PROBABILITY HAPPENING\n")
 
                             omega_p = 1
                             nonsyn_values = []
@@ -366,15 +383,16 @@ class Sequence:
                 chosen_omegas = []
                 for codon in nt.codons:
                     omega_values = codon.orf['omega_values']
+                    #print(">>>OMEGA VALUES\n", omega_values, nt, nt.codons, nt.pos_in_seq, to_nt)
                     num_omegas = len(omega_values)
                     chosen_omegas.append([0 for _ in range(num_omegas + 1)])
+                    #print("---Chosen omegas:", chosen_omegas)
 
                 # If nucleotide belongs to a codon
                 if nt.codons:
 
                     # If mutation does not introduce a STOP and nucleotide is not part of a START codon
                     if not self.is_start_stop_codon(nt, to_nt):
-
                         # Iterate over codons to initialize the list to store chosen omegas
                         chosen_omegas = []
                         for codon in nt.codons:
@@ -412,6 +430,7 @@ class Sequence:
 
                 # If key is not in total omegas dict, create it
                 self.set_total_omegas(chosen_omegas, nt.codons)
+                
 
         # Set substitution rates and key values for the nucleotide object
         nt.set_rates(sub_rates)

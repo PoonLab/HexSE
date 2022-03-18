@@ -306,23 +306,6 @@ def parse_genbank_orfs(in_seq):
     return orf_locations
 
 
-def set_global_omega_values(orf_locations, omega_values, omega_shape, omega_classes):
-    """
-    Sets the dN and dS values for each the reading frames
-    :param orf_locations: dictionary of ORFs sorted by the strand
-    :param omega_values: list of omega values, derived from the discretized gamma distribution
-    return: orf_locations updated to contains dN and dS values for each ORF
-    """
-    for strand in orf_locations:
-        orf_list = orf_locations[strand]
-        for orf in orf_list:
-            orf['omega_values'] = omega_values
-            orf['omega_shape'] = omega_shape
-            orf['omega_classes'] = omega_classes
-
-    return orf_locations
-
-
 def create_log_file(input_file_name):
     """
     Create a log file with information for the run
@@ -428,7 +411,6 @@ def main():
 
     # Create classes to classify nucleotides on the Event Tree
     mu_values = create_values_dict(mu_shape, mu_classes, "mu", mu_dist)
-    print(f"Categories: {mu_values}")
 
     # Log global parameters
     logging.info(f"Parameters for the run: \n"
@@ -439,7 +421,9 @@ def main():
                  f"Nucleotide classification shape parameter: {mu_shape}\n"
                  f"Rates classification values: {mu_values}")
 
+    # Parse orfs on setings/__init__.py to get sorted orfs with omega values assign from discretize() function
     orf_locations = settings.orfs
+    # values for omega have been Asigned!
     # Check if the ORFs are valid
     invalid_orfs = valid_orfs(orf_locations, len(s))
 
@@ -457,10 +441,8 @@ def main():
             logging.warning(f"Omitted orfs: {invalid_orf_msg}")
 
     # Check if the CDSs have stop codons inside them
-    print("\nORF LOCATIONS")
     print(orf_locations)
     for strand in orf_locations:
-        print(strand)
         orfs = orf_locations[strand]
         for orf in orfs:
             orf_index = orfs.index(orf)
@@ -506,7 +488,6 @@ def main():
     root_sequence = Sequence(s, orfs, kappa, global_rate, pi, mu_values, args.circular)
 
     # Run simulation
-    print(f"\nFinal ORFS: {orfs}")
     simulation = SimulateOnTree(root_sequence, phylo_tree, args.outfile)
     simulation.get_alignment(args.outfile)
 

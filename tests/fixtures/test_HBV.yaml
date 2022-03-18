@@ -53,7 +53,7 @@ orfs:
 
 
 mu:
-  classes: 4
+  classes: 2
   shape: 1.0
   dist: lognorm
 

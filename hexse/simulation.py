@@ -36,14 +36,15 @@ class SimulateOnBranch:
     def test_omega_tree(omega_tree):
         for keys in omega_tree.keys():
             if None in keys:
-                print(keys)
+                print("KEYS FROM OMEGA TREE\n",keys)
 
     def get_substitution(self):
         """
         Select a substitution by moving over the event_tree according to the generation of random numbers
         """
         # Select: to nucleotide
-
+        #print(">>>>>>>>>>>>>>>>>>>>> Probability tree\n", self.sequence.probability_tree)
+        #print(">>>>>>>>>>>>>>>>>>>>>EVENT TREE\n", self.sequence.event_tree)
         to_dict = {
                     to_nt: self.sequence.pi[to_nt]*self.sequence.probability_tree['to_nt'][to_nt]['number_of_events']
                     for to_nt in self.sequence.pi.keys()
@@ -55,7 +56,7 @@ class SimulateOnBranch:
         from_mutation = self.select_key(from_tree)
 
         # Select: mu category
-        def possible_cats():
+        def possible_cats():  # categories
             cat_tree = copy.copy(self.sequence.probability_tree['to_nt'][to_mutation]['from_nt'][from_mutation]['cat'])
             for _ in list(cat_tree.keys()):
                 selected_cat = self.select_key(cat_tree)
@@ -84,7 +85,6 @@ class SimulateOnBranch:
                     # Select nucleotide
                     nt_list = self.sequence.event_tree['to_nt'][to_mutation]['from_nt'][from_mutation]['category'][selected_cat][selected_omega]
                     omega_weights.pop(selected_omega)  # Remove empty key
-
                     yield nt_list
 
         for selected_cat in possible_cats():
@@ -94,7 +94,7 @@ class SimulateOnBranch:
                     return from_nucleotide, to_mutation
 
         print("\n>>>> OH NO!!")
-        print(self.sequence.event_tree['to_nt'][to_mutation]['from_nt'][from_mutation])
+        #print(self.sequence.event_tree['to_nt'][to_mutation]['from_nt'][from_mutation])
 
     def select_key(self, dictionary):
         """
@@ -211,6 +211,7 @@ class SimulateOnBranch:
                     my_branch = self.sequence.event_tree['to_nt'][to_nt]['from_nt'][nt.state]['category'][cat_key][omega_key]
                     my_branch.remove(nt)
 
+
     def update_nucleotide(self, nt, to_state):
         """
         Update parameters on the mutated nucleotide
@@ -277,7 +278,7 @@ class SimulateOnTree:
             parent_sequence = copy.deepcopy(parent.sequence)
 
             # Mutate sequence and store it on clade
-            # print("Simulating on Branch", clade)
+            print("Simulating on Branch", clade)
             simulation = SimulateOnBranch(parent_sequence, clade.branch_length)
             clade.sequence = simulation.mutate_on_branch()
 
