@@ -5,16 +5,19 @@ import copy
 import sys
 from tkinter import EXCEPTION
 
+# identify transitions between nucleotides
 TRANSITIONS_DICT = {'A': 'G', 'G': 'A', 'T': 'C', 'C': 'T'}
 
 NUCLEOTIDES = ['A', 'C', 'G', 'T']
 
+# calculate reverse-complement of a sequence
 COMPLEMENT_DICT = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A',
                    'W': 'W', 'R': 'Y', 'K': 'M', 'Y': 'R',
                    'S': 'S', 'M': 'K', 'B': 'V', 'D': 'H',
                    'H': 'D', 'V': 'B', '*': '*', 'N': 'N',
                    '-': '-'}
 
+# map codon to amino acid (universal genetic code)
 CODON_DICT = {'TTT': 'F', 'TTC': 'F', 'TTA': 'L', 'TTG': 'L',
               'TCT': 'S', 'TCC': 'S', 'TCA': 'S', 'TCG': 'S',
               'TAT': 'Y', 'TAC': 'Y', 'TAA': '*', 'TAG': '*',
@@ -42,6 +45,7 @@ class Sequence:
     def __init__(self, str_sequence, orfs, kappa, global_rate, pi, cat_values, circular=False):
         """
         Creates a list of nucleotides, locates open reading frames, and creates a list of codons.
+        :param str_sequence:  str, nucleotide sequence as a string object
         :param orfs: A dictionary of ORFs, sorted by reading frame where:
                         - the keys are the reading frames (+0, +1, +2, -0, -1, or -2)
                         - the values are lists of dictioaries with keys: 'coords, 'omega_shape', 'omega_classes', 'omega values' 
@@ -59,23 +63,22 @@ class Sequence:
                                     'omega_values': [0.1846759438880899, 0.4079605248732454, 0.6343987842679637, 0.9365407795137214, 1.636423967437797]
                                     }]
                                 }
-
-        :param kappa: transition/ transversion rate ratio
-        :param global_rate: The global rate (substitutions/site/unit time)
-        :param pi: Frequency of nucleotides in a given sequence, with nucleotide as keys
-        :param cat_values: Values drawn from a gamma distribution to categorize nucleotides
-                            according to their mutation rates
-        :param circular: True if the genome is circular, false if the genome is linear (default: linear)
+        :param kappa:  float, transition/ transversion rate ratio
+        :param global_rate:  float, the global substitution rate (/site/unit time)
+        :param pi:  float, stationary frequencies of nucleotides, with nucleotide as keys
+        :param cat_values:  dict, values drawn from a gamma distribution modeling rate variation among nucleotides, keyed by 'mu1', etc.
+        :param circular:  bool, true if the genome is circular, false if the genome is linear (default: false)
         """
         self.orfs = orfs  # Dictionary of of ORFs sorted by reading frame
         #print("HERE ARE THE ORFS\n", self.orfs)
         self.kappa = kappa  # Transition/ transversion rate ratio
         self.global_rate = global_rate  # The global rate (substitutions/site/unit time)
         self.pi = pi  # Frequency of nucleotides, with nucleotide as keys
+        self.cat_values = cat_values
+        self.is_circular = circular  # True if the genome is circular, False otherwise
+        
         self.__codons = []  # Store references to all codons
         self.nt_sequence = []  # List of Nucleotide objects
-        self.is_circular = circular  # True if the genome is circular, False otherwise
-        self.cat_values = cat_values  # Values drawn from a gamma distribution to categorize nucleotides according to their mutation rates
         self.total_omegas = {}  # Dictionary of every possible combination of omegas present on the event tree
 
         # Create Nucleotides
@@ -84,14 +87,13 @@ class Sequence:
 
         # Set Codons based on the reading frames
         if self.orfs is not None:
-            for frame in self.orfs:
-                orf_list = self.orfs[frame]
-                for orf in orf_list:
-                    codons = self.find_codons(frame, orf)
+            for frame, orf_list in self.orfs.items():
+                for orf in orf_list:  # orf is a (start, stop) tuple
+                    codons = self.find_codons(frame, orf)  # retrieves a list of codons for this ORF
 
                     # Tell Nucleotide which Codon(s) it belongs to
                     for codon in codons:
-                        for i, nt in enumerate(codon.nts_in_codon):
+                        for nt in codon.nts_in_codon:
                             nt.codons.append(codon)
                         self.__codons.append(codon)
 
