@@ -306,6 +306,23 @@ def parse_genbank_orfs(in_seq):
     return orf_locations
 
 
+def set_global_omega_values(orf_locations, omega_values, omega_shape, omega_classes):
+    """
+    Sets the dN and dS values for each the reading frames
+    :param orf_locations: dictionary of ORFs sorted by the strand
+    :param omega_values: list of omega values, derived from the discretized gamma distribution
+    return: orf_locations updated to contains dN and dS values for each ORF
+    """
+    for strand in orf_locations:
+        orf_list = orf_locations[strand]
+        for orf in orf_list:
+            orf['omega_values'] = omega_values
+            orf['omega_shape'] = omega_shape
+            orf['omega_classes'] = omega_classes
+
+    return orf_locations
+
+
 def create_log_file(input_file_name):
     """
     Create a log file with information for the run
@@ -377,6 +394,18 @@ def count_internal_stop_codons(seq, strand, orf):
     return stop_count
 
 
+def retrieve_cds(seq, orf):
+    
+    cds = ""
+    if len(orf) > 1:  # If CDS comes from a spliced event
+        for orf_coord in orf['coords']:
+            cds += seq[orf_coord[0]: orf_coord[1]]
+
+    else:
+        cds += seq[orf[0]: orf[1]]
+
+    return cds
+
 def main():
     start_time = datetime.now()
     print("\nStarted at: ", datetime.now())
@@ -421,9 +450,7 @@ def main():
                  f"Nucleotide classification shape parameter: {mu_shape}\n"
                  f"Rates classification values: {mu_values}")
 
-    # Parse orfs on setings/__init__.py to get sorted orfs with omega values assign from discretize() function
     orf_locations = settings.orfs
-    # values for omega have been Asigned!
     # Check if the ORFs are valid
     invalid_orfs = valid_orfs(orf_locations, len(s))
 
@@ -439,27 +466,25 @@ def main():
         if invalid_orf_msg:
             print(f"\nOmitted orfs: {invalid_orf_msg}\n")
             logging.warning(f"Omitted orfs: {invalid_orf_msg}")
-
-    # Check if the CDSs have stop codons inside them
-    print(orf_locations)
+    
     for strand in orf_locations:
-        orfs = orf_locations[strand]
-        for orf in orfs:
-            orf_index = orfs.index(orf)
-            for orf_coord in orf['coords']:
-                if strand == '-':       # Reverse strand
-                    stop_count = count_internal_stop_codons(Sequence.complement(s), strand, orf_coord)
-                else:                   # Forward strand
-                    stop_count = count_internal_stop_codons(s, strand, orf_coord)
+            orfs = orf_locations[strand]
+            for orf in orfs:
+                orf_index = orfs.index(orf)
+                for orf_coord in orf['coords']:
+                    if strand == '-':       # Reverse strand
+                        stop_count = count_internal_stop_codons(Sequence.complement(s), strand, orf_coord)
+                    else:                   # Forward strand
+                        stop_count = count_internal_stop_codons(s, strand, orf_coord)
 
-                # CDS has more than one stop codon (the final one)
-                if stop_count > 1:
-                    orf_locations[strand][orfs.index(orf)]['coords'].remove(orf_coord)  # Remove from coords list
-                    print(f"Omitted orf: {orf_coord} in {orf['coords']}, has {stop_count} STOP codons")
+                    # CDS has more than one stop codon (the final one)
+                    if stop_count > 1:
+                        orf_locations[strand][orfs.index(orf)]['coords'].remove(orf_coord)  # Remove from coords list
+                        print(f"Omitted orf: {orf_coord} in {orf['coords']}, has {stop_count} STOP codons")
 
-            # Coordinates are empty due to removal for introduction of early STOPS codons
-            if not orf['coords']:
-                 orf_locations[strand].remove(orf)
+                # Coordinates are empty due to removal for introduction of early STOPS codons
+                if not orf['coords']:
+                    orf_locations[strand].remove(orf)
 
     
     # Since ORFs are valid, sort the ORFs by reading frame

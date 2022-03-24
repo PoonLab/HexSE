@@ -27,12 +27,10 @@ class Settings:
         self.mu_dist = self.from_yaml('mu.dist', 'lognorm')
         self.global_rate = self.from_yaml('global_rate', 0.5)
 
-        print(self.orfs)
-
     def get_pi(self):
         if 'pi' in self.yaml.keys():
             pi = self.yaml['pi']
-            print(pi)        
+     
         else:
             pi = self.calculate_pi(self.seq)
 

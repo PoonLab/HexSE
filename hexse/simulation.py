@@ -80,7 +80,7 @@ class SimulateOnBranch:
                     selected_omega = self.weighted_random_choice(omega_weights, sum(omega_weights.values()))
                     if selected_omega == None:
                         # element = list(omega_weights.keys())[0][0]
-                        print(omega_weights)
+                        print("\n>>>>WHERE AM I\n",omega_weights)
                     self.test_omega_tree(omega_dict) 
                     # Select nucleotide
                     nt_list = self.sequence.event_tree['to_nt'][to_mutation]['from_nt'][from_mutation]['category'][selected_cat][selected_omega]
@@ -216,7 +216,6 @@ class SimulateOnBranch:
         """
         Update parameters on the mutated nucleotide
         """
-
         # Update the state of the nucleotide
         nt.set_state(to_state)
         # Change complementary state given the mutation

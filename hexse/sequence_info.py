@@ -3,21 +3,17 @@
 import random
 import copy
 import sys
-from tkinter import EXCEPTION
 
-# identify transitions between nucleotides
 TRANSITIONS_DICT = {'A': 'G', 'G': 'A', 'T': 'C', 'C': 'T'}
 
 NUCLEOTIDES = ['A', 'C', 'G', 'T']
 
-# calculate reverse-complement of a sequence
 COMPLEMENT_DICT = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A',
                    'W': 'W', 'R': 'Y', 'K': 'M', 'Y': 'R',
                    'S': 'S', 'M': 'K', 'B': 'V', 'D': 'H',
                    'H': 'D', 'V': 'B', '*': '*', 'N': 'N',
                    '-': '-'}
 
-# map codon to amino acid (universal genetic code)
 CODON_DICT = {'TTT': 'F', 'TTC': 'F', 'TTA': 'L', 'TTG': 'L',
               'TCT': 'S', 'TCC': 'S', 'TCA': 'S', 'TCG': 'S',
               'TAT': 'Y', 'TAC': 'Y', 'TAA': '*', 'TAG': '*',
@@ -46,23 +42,45 @@ class Sequence:
         """
         Creates a list of nucleotides, locates open reading frames, and creates a list of codons.
         :param str_sequence:  str, nucleotide sequence as a string object
-        :param orfs: A dictionary of ORFs, sorted by reading frame where:
-                        - the keys are the reading frames (+0, +1, +2, -0, -1, or -2)
-                        - the values are lists of dictioaries with keys: 'coords, 'omega_shape', 'omega_classes', 'omega values' 
-                        - Ex:  {
-                                '+0': [{
-                                    'coords': [[2849, 3182]], 
-                                    'omega_shape': 1.5, 
-                                    'omega_classes': 3, 
-                                    'omega_values': [0.1708353283825978, 0.4810288100937172, 1.1481358615121404]
-                                    },
+        :param orfs:  dict, A dictionary of open reading frames (ORFs) in the sequence, sorted by reading frame where:
+                        - the keys are the reading frames(+0, +1, +2, -0, -1, -2)
+                        - the values are a list containing the information for each ORF
+                        - Ex: 
+
+                        {
+                            '+0': [{
+                                        'coords': [[2849, 3182]], 
+                                        'omega_shape': 1.5, 
+                                        'omega_classes': 3, 
+                                        'omega_values': [0.17, 0.48, 1.14]
+                                    }, 
                                     {
-                                    'coords': [[3173, 3182]], 
-                                    'omega_shape': 1.9, 
-                                    'omega_classes': 5, 
-                                    'omega_values': [0.1846759438880899, 0.4079605248732454, 0.6343987842679637, 0.9365407795137214, 1.636423967437797]
-                                    }]
-                                }
+                                        'coords': [[3173, 3182]], 
+                                        'omega_shape': 1.9, 
+                                        'omega_classes': 5, 
+                                        'omega_values': [0.18, 0.40, 0.63, 0.93, 1.63]
+                                    }], 
+
+                            '+1': [],
+
+                            '+2': [{
+                                        'coords': [[0, 837]], 
+                                        'omega_shape': 1.7, 
+                                        'omega_classes': 4, 
+                                        'omega_values': [0.17, 0.42, 0.72, 1.40]
+                                    }, 
+                                    {
+                                        'coords': [[156, 837]], 
+                                        'omega_shape': 1.2, 
+                                        'omega_classes': 6, 
+                                        'omega_values': [0.05, 0.16, 0.28, 0.44, 0.67, 1.26]
+                                    }], 
+                            
+                            '-0': [], 
+                            '-1': [], 
+                            '-2': [],
+                        }
+
         :param kappa:  float, transition/ transversion rate ratio
         :param global_rate:  float, the global substitution rate (/site/unit time)
         :param pi:  float, stationary frequencies of nucleotides, with nucleotide as keys
@@ -70,15 +88,16 @@ class Sequence:
         :param circular:  bool, true if the genome is circular, false if the genome is linear (default: false)
         """
         self.orfs = orfs  # Dictionary of of ORFs sorted by reading frame
-        #print("HERE ARE THE ORFS\n", self.orfs)
         self.kappa = kappa  # Transition/ transversion rate ratio
         self.global_rate = global_rate  # The global rate (substitutions/site/unit time)
         self.pi = pi  # Frequency of nucleotides, with nucleotide as keys
         self.cat_values = cat_values
         self.is_circular = circular  # True if the genome is circular, False otherwise
-        
+
         self.__codons = []  # Store references to all codons
         self.nt_sequence = []  # List of Nucleotide objects
+        self.is_circular = circular  # True if the genome is circular, False otherwise
+        self.cat_values = cat_values  # Values drawn from a gamma distribution to categorize nucleotides according to their mutation rates
         self.total_omegas = {}  # Dictionary of every possible combination of omegas present on the event tree
 
         # Create Nucleotides
@@ -87,6 +106,10 @@ class Sequence:
 
         # Set Codons based on the reading frames
         if self.orfs is not None:
+            for frame in self.orfs:
+                orf_list = self.orfs[frame]
+                for orf in orf_list:
+                    codons = self.find_codons(frame, orf)
             for frame, orf_list in self.orfs.items():
                 for orf in orf_list:  # orf is a (start, stop) tuple
                     codons = self.find_codons(frame, orf)  # retrieves a list of codons for this ORF
@@ -96,6 +119,7 @@ class Sequence:
                         for nt in codon.nts_in_codon:
                             nt.codons.append(codon)
                         self.__codons.append(codon)
+
 
         # Create event tree containing all possible mutations
         self.event_tree = self.create_event_tree()  # Nested dict containing info about all possible mutation events
@@ -146,8 +170,6 @@ class Sequence:
                             current_branch['cat'].update([(mu_cat, {'prob': prob, 'omega': {}, 'number_of_events': 0})])
                             # Bring Omega keys on the Event Tree
                             omegas = self.event_tree['to_nt'][to_nt]['from_nt'][from_nt]['category'][mu_cat].keys()
-                            if prob <= 0.0000001:
-                                print("\n>>>>LOW PROBABILITY HAPPENING\n")
 
                             omega_p = 1
                             nonsyn_values = []
@@ -376,7 +398,6 @@ class Sequence:
             else:
                 # Apply global substitution rate and stationary nucleotide frequency
                 sub_rates[to_nt] = self.global_rate * self.pi[current_nt]
-                # Apply kappa when transversion
                 if self.is_transv(current_nt, to_nt):
                     sub_rates[to_nt] *= self.kappa
 
@@ -385,16 +406,15 @@ class Sequence:
                 chosen_omegas = []
                 for codon in nt.codons:
                     omega_values = codon.orf['omega_values']
-                    #print(">>>OMEGA VALUES\n", omega_values, nt, nt.codons, nt.pos_in_seq, to_nt)
                     num_omegas = len(omega_values)
                     chosen_omegas.append([0 for _ in range(num_omegas + 1)])
-                    #print("---Chosen omegas:", chosen_omegas)
 
                 # If nucleotide belongs to a codon
                 if nt.codons:
 
                     # If mutation does not introduce a STOP and nucleotide is not part of a START codon
                     if not self.is_start_stop_codon(nt, to_nt):
+
                         # Iterate over codons to initialize the list to store chosen omegas
                         chosen_omegas = []
                         for codon in nt.codons:
@@ -558,7 +578,7 @@ class Sequence:
         cds = []
         for coord_list in orf['coords']:
             # Handle spliced ORFs
-            cds.extend(self.nt_sequence[coord_list[0]: coord_list[1]])
+            cds.extend(self.nt_sequence[coord_list[0]: coord_list[1]])  # TODO: How do we create this coding sequences? 
 
         # Reverse strand orf
         if frame.startswith('-'):
