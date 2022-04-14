@@ -84,11 +84,11 @@ class Sequence:
         if self.orfs is not None:
             for frame, orf_list in self.orfs.items():
                 for orf in orf_list:  # orf is a dictionary
-                    codons = self.find_codons(frame, orf)  # a list of Codon objects for this ORF
+                    codons = self.find_codons(frame, orf)  # generates Codon objects
                     # tell Nucleotide which Codon(s) it belongs to
                     for codon in codons:
                         for nt in codon.nts_in_codon:
-                            nt.codons.append(codon)
+                            nt.codons.append(codon)  # FIXME: shouldn't Codon __init__ do this?
                         self.__codons.append(codon)
 
         # Create event tree containing all possible mutations
@@ -107,66 +107,54 @@ class Sequence:
         """
         Get the probabilities of transition and transversion for latter selection of the branch on the tree
         """
-        prob_tree = {'to_nt': {'A': {'number_of_events': 0},
-                               'T': {'number_of_events': 0},
-                               'C': {'number_of_events': 0},
-                               'G': {'number_of_events': 0}}}
-
+        prob_tree = {'to_nt': dict([(nuc, {'number_of_events': 0, 'from_nt': {}}) for nuc in NUCLEOTIDES])}
         for to_nt in NUCLEOTIDES:
-            if to_nt in prob_tree['to_nt'].keys():
-                # Update Probability tree
-                prob_tree['to_nt'][to_nt].update([('from_nt', {'A': {'prob': 0, 'cat': {}, 'number_of_events': 0},
-                                                               'T': {'prob': 0, 'cat': {}, 'number_of_events': 0},
-                                                               'C': {'prob': 0, 'cat': {}, 'number_of_events': 0},
-                                                               'G': {'prob': 0, 'cat': {}, 'number_of_events': 0}})])
+            # extend Probability tree
+            prob_tree['to_nt'][to_nt]['from_nt'].update(
+                dict([(nuc, {'prob': 0, 'cat': {}, 'number_of_events': 0}) for nuc in NUCLEOTIDES if nuc != to_nt])
+            )
+            prob_tree['to_nt'][to_nt]['from_nt'][to_nt] = None
 
-                # Nucleotide cannot change to itself
-                for from_nt in prob_tree['to_nt'][to_nt]['from_nt'].keys():
-                    if from_nt == to_nt:
-                        prob_tree['to_nt'][to_nt]['from_nt'][from_nt] = None
-                    else:
-                        current_branch = prob_tree['to_nt'][to_nt]['from_nt'][from_nt]
+            for from_nt, current_branch in prob_tree['to_nt'][to_nt]['from_nt'].items():
+                # Update transition-transversion probability value
+                if self.is_transv(from_nt, to_nt):  # Substitution is transversion
+                    current_branch['prob'] += (self.kappa / (1 + 2 * self.kappa))
+                else:  # Substitution is transition
+                    current_branch['prob'] += (1 / (1 + 2 * self.kappa))
 
-                        # Update transition-transversion probability value
-                        if self.is_transv(from_nt, to_nt):  # Substitution is transversion
-                            current_branch['prob'] += (self.kappa / (1 + 2 * self.kappa))
-                        else:  # Substitution is transition
-                            current_branch['prob'] += (1 / (1 + 2 * self.kappa))
+                # Update mu (base rate) classes
+                for mu_cat in self.cat_values.keys():
+                    prob = (self.cat_values[mu_cat] / sum(self.cat_values.values()))
+                    current_branch['cat'].update({mu_cat: {'prob': prob, 'omega': {}, 'number_of_events': 0}})
+                    # Bring Omega keys on the Event Tree
+                    omegas = self.event_tree['to_nt'][to_nt]['from_nt'][from_nt]['category'][mu_cat].keys()
 
-                        # Update mu classes
-                        for mu_cat in self.cat_values.keys():
-                            prob = (self.cat_values[mu_cat] / sum(self.cat_values.values()))
-                            # print(prob)
-                            current_branch['cat'].update([(mu_cat, {'prob': prob, 'omega': {}, 'number_of_events': 0})])
-                            # Bring Omega keys on the Event Tree
-                            omegas = self.event_tree['to_nt'][to_nt]['from_nt'][from_nt]['category'][mu_cat].keys()
+                    omega_p = 1
+                    nonsyn_values = []
+                    for orf_omega in omegas:
+                        for omega in orf_omega:
+                            denominator = 1 + sum(self.total_omegas.values())
+                            nonsyn_values.append(omega[:-1])
 
-                            omega_p = 1
-                            nonsyn_values = []
-                            for orf_omega in omegas:
-                                for omega in orf_omega:
-                                    denominator = 1 + sum(self.total_omegas.values())
-                                    nonsyn_values.append(omega[:-1])
+                            if not any(omega):
+                                omega_p = (1 / denominator)
 
-                                    if not any(omega):
-                                        omega_p = (1 / denominator)
+                            # Non-synonymous
+                            elif any(nonsyn_values):
+                                for nonsyn_val in nonsyn_values:
+                                    # Check last position in omega tuple to avoid counting syn ORFs twice
+                                    if any(nonsyn_val) and omega[-1] == 0:
+                                        # Multiply probabilities if nucleotide is part of synonymous and non-synonymous
+                                        omega_p *= (self.total_omegas[orf_omega] / denominator)
+                                    if omega[-1] > 1:
+                                        omega_p *= (1 / denominator)
 
-                                    # Non-synonymous
-                                    elif any(nonsyn_values):
-                                        for nonsyn_val in nonsyn_values:
-                                            # Check last position in omega tuple to avoid counting syn ORFs twice
-                                            if any(nonsyn_val) and omega[-1] == 0:
-                                                # Multiply probabilities if nucleotide is part of synonymous and non-synonymous
-                                                omega_p *= (self.total_omegas[orf_omega] / denominator)
-                                            if omega[-1] > 1:
-                                                omega_p *= (1 / denominator)
+                            # Synonymous
+                            else:
+                                omega_p = (1 / denominator)
 
-                                    # Synonymous
-                                    else:
-                                        omega_p = (1 / denominator)
-
-                                current_branch['cat'][mu_cat]['omega'][orf_omega] = {'prob': omega_p,
-                                                                                     'number_of_events': 0}
+                        current_branch['cat'][mu_cat]['omega'][orf_omega] = {'prob': omega_p,
+                                                                             'number_of_events': 0}
 
         return prob_tree
 
@@ -330,22 +318,16 @@ class Sequence:
         and information about whether a mutation is a transition or transversion.
         :return event tree: a nested dictionary containing information about the mutation event
         """
-        event_tree = {'to_nt': {'A': {}, 'T': {}, 'C': {}, 'G': {}}}
+        event_tree = {'to_nt': dict([(nuc, {'from_nt': {}}) for nuc in NUCLEOTIDES])}
         cat_dict = {cat: {} for cat in self.cat_values.keys()}
 
         for to_nt in NUCLEOTIDES:
-            if to_nt in event_tree['to_nt'].keys():
-                # Update nucleotides with possible mutations
-                event_tree['to_nt'][to_nt].update([('from_nt', {'A': {'category': copy.deepcopy(cat_dict)},
-                                                                'T': {'category': copy.deepcopy(cat_dict)},
-                                                                'C': {'category': copy.deepcopy(cat_dict)},
-                                                                'G': {'category': copy.deepcopy(cat_dict)}})])
-                # Nucleotide cannot change to itself, store all classes
-                for from_nt in event_tree['to_nt'][to_nt]['from_nt'].keys():
-                    if from_nt == to_nt:
-                        event_tree['to_nt'][to_nt]['from_nt'][from_nt] = None
-
-        # print(event_tree)
+            # Update nucleotides with possible mutations
+            for from_nt in NUCLEOTIDES:
+                if from_nt == to_nt:
+                    event_tree['to_nt'][to_nt]['from_nt'][from_nt] = None
+                else:
+                    event_tree['to_nt'][to_nt]['from_nt'][from_nt] = {'category': copy.deepcopy(cat_dict)}
         return event_tree
 
     def set_substitution_rates(self, nt):
@@ -581,11 +563,12 @@ class Nucleotide:
 
     def __init__(self, state, pos_in_seq):
         """
-        :param state: Nucleotide A, C, G or T
-        :param pos_in_seq: Position of the nucleotide in the sequence
+        :param state:  str, nucleotide A, C, G or T
+        :param pos_in_seq:  int, position of the nucleotide in the sequence
         """
-        self.state = state  # The nucleotide base (A, T, G, C)
-        self.pos_in_seq = pos_in_seq  # The nt's position relative to the start of the sequence
+        self.state = state
+        self.pos_in_seq = pos_in_seq
+
         self.codons = []  # A list of codon objects the Nucleotide is part of
         self.complement_state = COMPLEMENT_DICT[self.state]  # The complement state
         self.rates = {}  # A dictionary of mutation rates
@@ -681,13 +664,13 @@ class Codon:
     def __init__(self, frame, orf, nts_in_codon):
         """
         Create a Codon
-        :param frame: the reading frame (+0, +1, +2, -0, -1, -2)
-        :param orf: a tuple containing the reading frame and the coordinates of the orf
-        :param nts_in_codon: a list of pointers to the Nucleotides in the Codon
+        :param frame:  str, the reading frame (+0, +1, +2, -0, -1, -2)
+        :param orf:  tuple, containing the reading frame and the coordinates of the orf
+        :param nts_in_codon:  a list of pointers to the Nucleotides in the Codon
         """
-        self.frame = frame  # The reading frame
-        self.orf = orf  # Tuple containing the reading frame and the coordinates
-        self.nts_in_codon = nts_in_codon  # List of Nucleotides in the Codon
+        self.frame = frame
+        self.orf = orf
+        self.nts_in_codon = nts_in_codon  # list of Nucleotides in the Codon
 
     def __repr__(self):
         return ''.join(str(nt) for nt in self.nts_in_codon)
@@ -698,6 +681,7 @@ class Codon:
         :param query_nt: the Nucleotide of interest
         :return: the position of the Nucleotide in the Codon
         """
+        # FIXME: isn't this just self.nts_in_codon.index(query_nt) ?
         for idx, nt in enumerate(self.nts_in_codon):
             if query_nt is nt:
                 return idx
