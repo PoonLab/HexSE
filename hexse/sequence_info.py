@@ -116,6 +116,9 @@ class Sequence:
             prob_tree['to_nt'][to_nt]['from_nt'][to_nt] = None
 
             for from_nt, current_branch in prob_tree['to_nt'][to_nt]['from_nt'].items():
+                if from_nt == to_nt:
+                    continue
+
                 # Update transition-transversion probability value
                 if self.is_transv(from_nt, to_nt):  # Substitution is transversion
                     current_branch['prob'] += (self.kappa / (1 + 2 * self.kappa))

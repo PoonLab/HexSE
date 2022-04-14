@@ -35,6 +35,12 @@ class Settings:
             pi = self.calculate_pi(self.seq)
 
         return pi
+
+    def get_kappa(self):
+        return self.kappa
+
+    def get_global_rate(self):
+        return self.global_rate
     
     def from_yaml(self, key, default):
         value = reduce(dict.get, key.split("."), self.yaml)
