@@ -319,7 +319,7 @@ class Sequence:
         :return event tree: a nested dictionary containing information about the mutation event
         """
         event_tree = {'to_nt': dict([(nuc, {'from_nt': {}}) for nuc in NUCLEOTIDES])}
-        cat_dict = {cat: {} for cat in self.cat_values.keys()}
+        cat_dict = {cat: {} for cat in self.cat_values.keys()}  # base mutation rate categogries
 
         for to_nt in NUCLEOTIDES:
             # Update nucleotides with possible mutations
@@ -342,11 +342,9 @@ class Sequence:
         my_cat_keys = {}
 
         for to_nt in NUCLEOTIDES:
-
             if to_nt == current_nt:
                 sub_rates[to_nt] = None
                 my_omega_keys[to_nt] = None
-
             else:
                 # Apply global substitution rate and stationary nucleotide frequency
                 sub_rates[to_nt] = self.global_rate * self.pi[current_nt]
@@ -404,7 +402,6 @@ class Sequence:
 
                 # If key is not in total omegas dict, create it
                 self.set_total_omegas(chosen_omegas, nt.codons)
-                
 
         # Set substitution rates and key values for the nucleotide object
         nt.set_rates(sub_rates)
