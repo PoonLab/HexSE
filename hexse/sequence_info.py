@@ -84,7 +84,7 @@ class Sequence:
         if self.orfs is not None:
             for frame, orf_list in self.orfs.items():
                 for orf in orf_list:  # orf is a dictionary
-                    codons = self.find_codons(frame, orf)  # retrieves a list of codons for this ORF
+                    codons = self.find_codons(frame, orf)  # a list of Codon objects for this ORF
                     # tell Nucleotide which Codon(s) it belongs to
                     for codon in codons:
                         for nt in codon.nts_in_codon:
@@ -545,15 +545,15 @@ class Sequence:
         :return: a list of Codon objects for the specified ORF
         """
         # extract coding sequence
-        cds = ''
+        cds = []
         for start, stop in orf['coords']:
-            cds += self.nt_sequence[start:stop]  # concatenates spliced ORFs
+            cds.extend(self.nt_sequence[start:stop])  # concatenates spliced ORFs
         if frame.startswith('-'):
             cds = cds[::-1]  # negative strand ORF
 
         # Iterate over string by threes and create Codon objects
         codons = []
-        for i in range(3, len(cds) + 1, 3):
+        for i in range(3, len(cds)+1, 3):
             codons.append(Codon(frame, orf, cds[(i-3):i]))
         return codons
 
