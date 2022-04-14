@@ -82,20 +82,14 @@ class Sequence:
 
         # Set Codons based on the reading frames
         if self.orfs is not None:
-            for frame in self.orfs:
-                orf_list = self.orfs[frame]
-                for orf in orf_list:
-                    codons = self.find_codons(frame, orf)
             for frame, orf_list in self.orfs.items():
                 for orf in orf_list:  # orf is a (start, stop) tuple
                     codons = self.find_codons(frame, orf)  # retrieves a list of codons for this ORF
-
-                    # Tell Nucleotide which Codon(s) it belongs to
+                    # tell Nucleotide which Codon(s) it belongs to
                     for codon in codons:
                         for nt in codon.nts_in_codon:
                             nt.codons.append(codon)
                         self.__codons.append(codon)
-
 
         # Create event tree containing all possible mutations
         self.event_tree = self.create_event_tree()  # Nested dict containing info about all possible mutation events
