@@ -41,64 +41,40 @@ class Sequence:
     def __init__(self, str_sequence, orfs, kappa, global_rate, pi, cat_values, circular=False):
         """
         Creates a list of nucleotides, locates open reading frames, and creates a list of codons.
+
         :param str_sequence:  str, nucleotide sequence as a string object
         :param orfs:  dict, A dictionary of open reading frames (ORFs) in the sequence, sorted by reading frame where:
                         - the keys are the reading frames(+0, +1, +2, -0, -1, -2)
                         - the values are a list containing the information for each ORF
-                        - Ex: 
-
-                        {
-                            '+0': [{
-                                        'coords': [[2849, 3182]], 
-                                        'omega_shape': 1.5, 
-                                        'omega_classes': 3, 
-                                        'omega_values': [0.17, 0.48, 1.14]
-                                    }, 
-                                    {
-                                        'coords': [[3173, 3182]], 
-                                        'omega_shape': 1.9, 
-                                        'omega_classes': 5, 
-                                        'omega_values': [0.18, 0.40, 0.63, 0.93, 1.63]
-                                    }], 
-
-                            '+1': [],
-
-                            '+2': [{
-                                        'coords': [[0, 837]], 
-                                        'omega_shape': 1.7, 
-                                        'omega_classes': 4, 
-                                        'omega_values': [0.17, 0.42, 0.72, 1.40]
-                                    }, 
-                                    {
-                                        'coords': [[156, 837]], 
-                                        'omega_shape': 1.2, 
-                                        'omega_classes': 6, 
-                                        'omega_values': [0.05, 0.16, 0.28, 0.44, 0.67, 1.26]
-                                    }], 
-                            
-                            '-0': [], 
-                            '-1': [], 
-                            '-2': [],
-                        }
-
+                        - for example:
+            {'+0': [{'coords': [[2849, 3182]], 'omega_shape': 1.5, 'omega_classes': 3,
+                     'omega_values': [0.17, 0.48, 1.14]},
+                    {'coords': [[3173, 3182]], 'omega_shape': 1.9, 'omega_classes': 5,
+                     'omega_values': [0.18, 0.40, 0.63, 0.93, 1.63]}],
+             '+1': [],
+             '+2': [{'coords': [[0, 837]], 'omega_shape': 1.7, 'omega_classes': 4,
+                     'omega_values': [0.17, 0.42, 0.72, 1.40]},
+                    {'coords': [[156, 837]], 'omega_shape': 1.2, 'omega_classes': 6,
+                     'omega_values': [0.05, 0.16, 0.28, 0.44, 0.67, 1.26]}],
+             '-0': [],
+             '-1': [],
+             '-2': []}
         :param kappa:  float, transition/ transversion rate ratio
         :param global_rate:  float, the global substitution rate (/site/unit time)
         :param pi:  float, stationary frequencies of nucleotides, with nucleotide as keys
         :param cat_values:  dict, values drawn from a gamma distribution modeling rate variation among nucleotides, keyed by 'mu1', etc.
         :param circular:  bool, true if the genome is circular, false if the genome is linear (default: false)
         """
-        self.orfs = orfs  # Dictionary of of ORFs sorted by reading frame
-        self.kappa = kappa  # Transition/ transversion rate ratio
-        self.global_rate = global_rate  # The global rate (substitutions/site/unit time)
-        self.pi = pi  # Frequency of nucleotides, with nucleotide as keys
+        self.orfs = orfs
+        self.kappa = kappa
+        self.global_rate = global_rate
+        self.pi = pi
         self.cat_values = cat_values
-        self.is_circular = circular  # True if the genome is circular, False otherwise
+        self.is_circular = circular
 
+        self.nt_sequence = []
         self.__codons = []  # Store references to all codons
-        self.nt_sequence = []  # List of Nucleotide objects
-        self.is_circular = circular  # True if the genome is circular, False otherwise
-        self.cat_values = cat_values  # Values drawn from a gamma distribution to categorize nucleotides according to their mutation rates
-        self.total_omegas = {}  # Dictionary of every possible combination of omegas present on the event tree
+        self.total_omegas = {}  # every possible combination of omegas present on the event tree
 
         # Create Nucleotides
         for pos_in_seq, nt in enumerate(str_sequence):

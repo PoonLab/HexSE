@@ -5,9 +5,9 @@ import unittest
 import numpy as np
 from Bio import Phylo
 
-from src.sequence_info import Sequence
-from src.simulation import SimulateOnBranch
-from src.simulation import SimulateOnTree
+from hexse.sequence_info import Sequence
+from hexse.simulation import SimulateOnBranch
+from hexse.simulation import SimulateOnTree
 
 TEST_TREE = os.path.join(os.path.dirname(__file__), 'fixtures/test_tree.txt')
 

@@ -23,10 +23,10 @@ class SimulateOnBranch:
     """
     Simulate evolution within a sequence throughout a branch in a phylogeny
     """
-
     def __init__(self, sequence, branch_length):
         """
-        :param sequence: object of class Sequence (Double Linked list of Nucleotides)  in the parental node
+        :param sequence: object of class Sequence (Double Linked list of Nucleotides)
+                         in the parental node
         :param branch_length: length of the branch over which evolution is happening
         """
         self.sequence = sequence  # Sequence object
@@ -83,7 +83,12 @@ class SimulateOnBranch:
                         print("\n>>>>WHERE AM I\n",omega_weights)
                     self.test_omega_tree(omega_dict) 
                     # Select nucleotide
-                    nt_list = self.sequence.event_tree['to_nt'][to_mutation]['from_nt'][from_mutation]['category'][selected_cat][selected_omega]
+                    try:
+                        nt_list = self.sequence.event_tree['to_nt'][to_mutation]['from_nt'][from_mutation]['category'][selected_cat][selected_omega]
+                    except KeyError:
+                        print(to_mutation, from_mutation, selected_cat, selected_omega)
+                        print(self.sequence.event_tree)
+                        raise
                     omega_weights.pop(selected_omega)  # Remove empty key
                     yield nt_list
 

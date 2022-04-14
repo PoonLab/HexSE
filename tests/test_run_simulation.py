@@ -1,7 +1,7 @@
 import unittest
 import os
 
-from src.run_simulation import *
+from hexse.run_simulation import *
 
 CURR_ABSPATH = os.path.dirname(os.path.abspath(__file__))
 
