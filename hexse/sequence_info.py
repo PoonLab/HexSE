@@ -44,7 +44,7 @@ class Sequence:
 
         :param str_sequence:  str, nucleotide sequence as a string object
         :param orfs:  dict, A dictionary of open reading frames (ORFs) in the sequence, sorted by reading frame where:
-                        - the keys are the reading frames(+0, +1, +2, -0, -1, -2)
+                        - the keys are the reading frames (+0, +1, +2, -0, -1, -2)
                         - the values are a list containing the information for each ORF
                         - for example:
             {'+0': [{'coords': [[2849, 3182]], 'omega_shape': 1.5, 'omega_classes': 3,
@@ -83,7 +83,7 @@ class Sequence:
         # Set Codons based on the reading frames
         if self.orfs is not None:
             for frame, orf_list in self.orfs.items():
-                for orf in orf_list:  # orf is a (start, stop) tuple
+                for orf in orf_list:  # orf is a dictionary
                     codons = self.find_codons(frame, orf)  # retrieves a list of codons for this ORF
                     # tell Nucleotide which Codon(s) it belongs to
                     for codon in codons:
@@ -540,26 +540,21 @@ class Sequence:
     def find_codons(self, frame, orf):
         """
         Gets the Codon sequence
-        :param frame: the frame of the ORF
-        :param orf: dictionary containing the coordinates of the ORF, and the associated omega values
+        :param frame:  str, the frame of the ORF, e.g., "+1"
+        :param orf:  dict, containing the coordinates of the ORF, and the associated omega values
         :return: a list of Codon objects for the specified ORF
         """
-        codons = []
-        cds = []
-        for coord_list in orf['coords']:
-            # Handle spliced ORFs
-            cds.extend(self.nt_sequence[coord_list[0]: coord_list[1]])  # TODO: How do we create this coding sequences? 
-
-        # Reverse strand orf
+        # extract coding sequence
+        cds = ''
+        for start, stop in orf['coords']:
+            cds += self.nt_sequence[start:stop]  # concatenates spliced ORFs
         if frame.startswith('-'):
-            cds = cds[::-1]
+            cds = cds[::-1]  # negative strand ORF
 
-        # Iterate over list by threes and create Codons
+        # Iterate over string by threes and create Codon objects
+        codons = []
         for i in range(3, len(cds) + 1, 3):
-            cdn = cds[i - 3: i]
-            codon = Codon(frame, orf, cdn)
-            codons.append(codon)
-
+            codons.append(Codon(frame, orf, cds[(i-3):i]))
         return codons
 
     def check_event_tree(self):
