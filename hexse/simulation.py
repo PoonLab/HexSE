@@ -23,10 +23,10 @@ class SimulateOnBranch:
     """
     Simulate evolution within a sequence throughout a branch in a phylogeny
     """
-
     def __init__(self, sequence, branch_length):
         """
-        :param sequence: object of class Sequence (Double Linked list of Nucleotides)  in the parental node
+        :param sequence: object of class Sequence (Double Linked list of Nucleotides)
+                         in the parental node
         :param branch_length: length of the branch over which evolution is happening
         """
         self.sequence = sequence  # Sequence object

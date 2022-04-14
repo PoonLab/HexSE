@@ -41,26 +41,28 @@ class Sequence:
     def __init__(self, str_sequence, orfs, kappa, global_rate, pi, cat_values, circular=False):
         """
         Creates a list of nucleotides, locates open reading frames, and creates a list of codons.
-        :param orfs: A dictionary of ORFs, sorted by reading frame where:
+        :param str_sequence:  str,
+        :param orfs:  dict, a dictionary of ORFs sorted by reading frame where:
                         - the keys are the reading frames (+0, +1, +2, -0, -1, -2)
                         - the values are a list of tuples containing the start and end positions of the ORFs.
                         - Ex: {'+0': [(0, 8), (3, 15)], '+1': [(1, 9)], '+2': [], '-0': [], '-1': [], '-2': []}
-        :param kappa: transition/ transversion rate ratio
-        :param global_rate: The global rate (substitutions/site/unit time)
-        :param pi: Frequency of nucleotides in a given sequence, with nucleotide as keys
-        :param cat_values: Values drawn from a gamma distribution to categorize nucleotides
+        :param kappa:  float, transition/ transversion rate ratio
+        :param global_rate:  float, The global rate (substitutions/site/unit time)
+        :param pi:  list, frequencies of nucleotides in a given sequence, with nucleotide as keys
+        :param cat_values:  Values drawn from a gamma distribution to categorize nucleotides
                             according to their mutation rates
-        :param circular: True if the genome is circular, false if the genome is linear (default: linear)
+        :param circular:  bool, True if the genome is circular, False if the genome is linear (default)
         """
-        self.orfs = orfs  # Dictionary of of ORFs sorted by reading frame
-        self.kappa = kappa  # Transition/ transversion rate ratio
-        self.global_rate = global_rate  # The global rate (substitutions/site/unit time)
-        self.pi = pi  # Frequency of nucleotides, with nucleotide as keys
+        self.orfs = orfs
+        self.kappa = kappa
+        self.global_rate = global_rate
+        self.pi = pi
+        self.is_circular = circular
+        self.cat_values = cat_values
+
+        self.nt_sequence = []  # list of Nucleotide objects
         self.__codons = []  # Store references to all codons
-        self.nt_sequence = []  # List of Nucleotide objects
-        self.is_circular = circular  # True if the genome is circular, False otherwise
-        self.cat_values = cat_values  # Values drawn from a gamma distribution to categorize nucleotides according to their mutation rates
-        self.total_omegas = {}  # Dictionary of every possible combination of omegas present on the event tree
+        self.total_omegas = {}  # every possible combination of omegas present on the event tree
 
         # Create Nucleotides
         for pos_in_seq, nt in enumerate(str_sequence):
