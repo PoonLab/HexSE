@@ -101,6 +101,7 @@ class Sequence:
 
         # Create probability tree with the probabilities for each branch
         self.probability_tree = self.create_probability_tree()
+        print(self.probability_tree)
         self.populate_prob_tree_with_events()
 
     def create_probability_tree(self):
@@ -129,13 +130,20 @@ class Sequence:
                 for mu_cat in self.cat_values.keys():
                     prob = (self.cat_values[mu_cat] / sum(self.cat_values.values()))
                     current_branch['cat'].update({mu_cat: {'prob': prob, 'omega': {}, 'number_of_events': 0}})
-                    # Bring Omega keys on the Event Tree
-                    omegas = self.event_tree['to_nt'][to_nt]['from_nt'][from_nt]['category'][mu_cat].keys()
 
+                    # extract keys (one-hot tuples) for omega on this branch of event_tree
+                    combos = self.event_tree['to_nt'][to_nt]['from_nt'][from_nt]['category'][mu_cat].keys()
+                    print(self.total_omegas)
+                    sys.exit()
                     omega_p = 1
                     nonsyn_values = []
-                    for orf_omega in omegas:
-                        for omega in orf_omega:
+                    for combo in combos:
+                        # a combo is a tuple of length = maximum number of overlapping reading frames (?)
+                        # each member of the tuple is a one-hot encoding of non-synonymous or synonymous categories
+                        # (1, 0, 0) = non-synonymous, first omega of two categories
+                        # (0, 1, 0) = non-synonymous, second omega of two categories
+                        # (0, 0, 1) = synonymous (always last position)
+                        for omega in combo:
                             denominator = 1 + sum(self.total_omegas.values())
                             nonsyn_values.append(omega[:-1])
 
@@ -382,7 +390,6 @@ class Sequence:
 
                             # Apply omega when mutation is non-synonymous
                             if codon.is_nonsyn(pos_in_codon, to_nt):
-
                                 # Randomly select a key in the omega values dictionary
                                 omega_index = random.randrange(num_omegas)
                                 sub_rates[to_nt] *= omega_values[omega_index]
@@ -390,7 +397,7 @@ class Sequence:
 
                             # Record that mutation is synonymous
                             else:
-                                chosen_omegas[idx][num_omegas] += 1
+                                chosen_omegas[idx][num_omegas] += 1  # last position
 
                     else:  # Mutation introduces or destroys a STOP or nt is part of a START
                         sub_rates[to_nt] *= 0

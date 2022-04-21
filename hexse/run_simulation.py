@@ -18,6 +18,7 @@ from .discretize import discretize
 
 
 def get_args(parser):
+    # positional arguments (required)
     parser.add_argument(
         'seq',
         help='Path to the file containing the query sequence.'
@@ -27,19 +28,21 @@ def get_args(parser):
         help='Path to file containing phylogenetic tree in Newick format.'
     )
     parser.add_argument(
-        '--outfile', default=None, help='Path to the alignment file.'
+        'config',
+        help='Path to a YAML file that specifies parameters for the simulation. '
+             'Parameters include: mu, kappa, pi, ORF coordinates, and the shape(s) and number(s) '
+             'of gamma classes for each ORF as well as the dN and dS values'
+    )
+
+    # keyword arguments
+    parser.add_argument(
+        '--outfile', default=None, help='Path to the alignment file; defaults to stdout.'
     )
     parser.add_argument(
         '--orfs', default=None,
         help='Path to a csv file containing the start and end coordinates of the open reading frames. '
              'Format: start,end'
              'If no ORFS are specified, the program will find ORFs automatically'
-    )
-    parser.add_argument(
-        '--config', default=None,
-        help='Path to a YAML file that specifies parameters for the simulation. '
-             'Parameters include: mu, kappa, pi, ORF coordinates, and the shape(s) and number(s) '
-             'of gamma classes for each ORF as well as the dN and dS values'
     )
     parser.add_argument(
         '--global_rate', type=float, default=1,
