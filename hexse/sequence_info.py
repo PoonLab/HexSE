@@ -101,7 +101,6 @@ class Sequence:
 
         # Create probability tree with the probabilities for each branch
         self.probability_tree = self.create_probability_tree()
-        print(self.probability_tree)
         self.populate_prob_tree_with_events()
 
     def create_probability_tree(self):
@@ -133,8 +132,6 @@ class Sequence:
 
                     # extract keys (one-hot tuples) for omega on this branch of event_tree
                     combos = self.event_tree['to_nt'][to_nt]['from_nt'][from_nt]['category'][mu_cat].keys()
-                    print(self.total_omegas)
-                    sys.exit()
                     omega_p = 1
                     nonsyn_values = []
                     for combo in combos:
@@ -156,7 +153,7 @@ class Sequence:
                                     # Check last position in omega tuple to avoid counting syn ORFs twice
                                     if any(nonsyn_val) and omega[-1] == 0:
                                         # Multiply probabilities if nucleotide is part of synonymous and non-synonymous
-                                        omega_p *= (self.total_omegas[orf_omega] / denominator)
+                                        omega_p *= (self.total_omegas[combo] / denominator)
                                     if omega[-1] > 1:
                                         omega_p *= (1 / denominator)
 
@@ -164,7 +161,7 @@ class Sequence:
                             else:
                                 omega_p = (1 / denominator)
 
-                        current_branch['cat'][mu_cat]['omega'][orf_omega] = {'prob': omega_p,
+                        current_branch['cat'][mu_cat]['omega'][combo] = {'prob': omega_p,
                                                                              'number_of_events': 0}
 
         return prob_tree
