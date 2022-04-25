@@ -132,14 +132,19 @@ class Sequence:
 
                     # extract keys (one-hot tuples) for omega on this branch of event_tree
                     combos = self.event_tree['to_nt'][to_nt]['from_nt'][from_nt]['category'][mu_cat].keys()
-                    omega_p = 1
-                    nonsyn_values = []
+                    # nonsyn_values = []
+                    # omega_p = 1
+
                     for combo in combos:
                         # a combo is a tuple of length = maximum number of overlapping reading frames (?)
                         # each member of the tuple is a one-hot encoding of non-synonymous or synonymous categories
                         # (1, 0, 0) = non-synonymous, first omega of two categories
                         # (0, 1, 0) = non-synonymous, second omega of two categories
                         # (0, 0, 1) = synonymous (always last position)
+
+                        nonsyn_values = []
+                        omega_p = 1
+                        
                         for omega in combo:
                             denominator = 1 + sum(self.total_omegas.values())
                             nonsyn_values.append(omega[:-1])
