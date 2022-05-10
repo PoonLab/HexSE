@@ -194,8 +194,8 @@ class SimulateOnBranch:
                                 instant_rate = instant_rate + adj_nt.mutation_rate
                                 break
 
-            # Update number of events in probability Tree
-            self.sequence.populate_prob_tree_with_events()
+            # Update number of events in the Tree
+            self.sequence.populate_tree_with_events()
 
         return self.sequence
 
@@ -241,9 +241,8 @@ class SimulateOnBranch:
         self.sequence.set_substitution_rates(nt)
         new_omega = self.sequence.nt_in_event_tree(nt)  # Update nucleotide on the Event Tree and return new key if created
 
-        if new_omega:  # If new omega key is created in the event tree, update the probability tree
-            # self.sequence.event_tree = self.sequence.create_probability_tree()
-            self.sequence.create_probability_tree()
+        if new_omega:  # If new omega key is created in the event tree, update the tree
+            self.sequence.compute_probability()
 
 
 class SimulateOnTree:

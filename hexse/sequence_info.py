@@ -99,79 +99,17 @@ class Sequence:
             self.set_substitution_rates(nt)  # Get substitution rates for the nucleotide
             self.nt_in_event_tree(nt)  # Locate nucleotide in the event tree
 
-        # Create probability tree with the probabilities for each branch
-        self.create_probability_tree()
-        self.populate_prob_tree_with_events()
+        self.compute_probability()
+        self.populate_tree_with_events()
 
-    def create_probability_tree(self):
+    def compute_probability(self):
         """
         Get the probabilities of transition and transversion for latter selection of the branch on the tree
         """
-        # prob_tree = {'to_nt': dict([(nuc, {'number_of_events': 0, 'from_nt': {}}) for nuc in NUCLEOTIDES])}
         for to_nt in NUCLEOTIDES:
             for nuc in NUCLEOTIDES:
                 if nuc != to_nt:
                     self.event_tree['to_nt'][to_nt]['from_nt'][nuc].update({'prob': 0, 'number_of_events': 0})
-
-            # # extend Probability tree
-            # prob_tree['to_nt'][to_nt]['from_nt'].update(
-            #     dict([(nuc, {'prob': 0, 'cat': {}, 'number_of_events': 0}) for nuc in NUCLEOTIDES if nuc != to_nt])
-            # )
-            # prob_tree['to_nt'][to_nt]['from_nt'][to_nt] = None
-            #
-            # for from_nt, current_branch in prob_tree['to_nt'][to_nt]['from_nt'].items():
-            #     if from_nt == to_nt:
-            #         continue
-            #
-            #     # Update transition-transversion probability value
-            #     if self.is_transv(from_nt, to_nt):  # Substitution is transversion
-            #         current_branch['prob'] += (self.kappa / (1 + 2 * self.kappa))
-            #     else:  # Substitution is transition
-            #         current_branch['prob'] += (1 / (1 + 2 * self.kappa))
-            #
-            #     # Update mu (base rate) classes
-            #     for mu_cat in self.cat_values.keys():
-            #         prob = (self.cat_values[mu_cat] / sum(self.cat_values.values()))
-            #         current_branch['cat'].update({mu_cat: {'prob': prob, 'omega': {}, 'number_of_events': 0}})
-            #
-            #         # extract keys (one-hot tuples) for omega on this branch of event_tree
-            #         combos = self.event_tree['to_nt'][to_nt]['from_nt'][from_nt]['category'][mu_cat]['omega'].keys()
-            #         # nonsyn_values = []
-            #         # omega_p = 1
-            #
-            #         for combo in combos:
-            #             # a combo is a tuple of length = maximum number of overlapping reading frames (?)
-            #             # each member of the tuple is a one-hot encoding of non-synonymous or synonymous categories
-            #             # (1, 0, 0) = non-synonymous, first omega of two categories
-            #             # (0, 1, 0) = non-synonymous, second omega of two categories
-            #             # (0, 0, 1) = synonymous (always last position)
-            #
-            #             nonsyn_values = []
-            #             omega_p = 1
-            #
-            #             for omega in combo:
-            #                 denominator = 1 + sum(self.total_omegas.values())
-            #                 nonsyn_values.append(omega[:-1])
-            #
-            #                 if not any(omega):
-            #                     omega_p = (1 / denominator)
-            #
-            #                 # Non-synonymous
-            #                 elif any(nonsyn_values):
-            #                     for nonsyn_val in nonsyn_values:
-            #                         # Check last position in omega tuple to avoid counting syn ORFs twice
-            #                         if any(nonsyn_val) and omega[-1] == 0:
-            #                             # Multiply probabilities if nucleotide is part of synonymous and non-synonymous
-            #                             omega_p *= (self.total_omegas[combo] / denominator)
-            #                         if omega[-1] > 1:
-            #                             omega_p *= (1 / denominator)
-            #
-            #                 # Synonymous
-            #                 else:
-            #                     omega_p = (1 / denominator)
-            #
-            #             current_branch['cat'][mu_cat]['omega'][combo] = {'prob': omega_p,
-            #                                                              'number_of_events': 0}
 
             for from_nt, current_branch in self.event_tree['to_nt'][to_nt]['from_nt'].items():
                 if from_nt == to_nt:
@@ -229,17 +167,15 @@ class Sequence:
 
 
 
-        # return prob_tree
-
     def all_syn_values(self, nonsyn_values):
         for nonsyn_val in nonsyn_values:
             if any(nonsyn_val):
                 return True
         return False
 
-    def populate_prob_tree_with_events(self):
+    def populate_tree_with_events(self):
         """
-        Traverse the Probability tree and find the number of events in each branch according to the Event Tree
+        Find the number of events in each branch according to the Event Tree
         """
 
         for to_nt in NUCLEOTIDES:
@@ -258,20 +194,15 @@ class Sequence:
                             nt_list = branch_cat[omega_tuple]['nt']
                             events = len(nt_list)
                             self.event_tree['to_nt'][to_nt]['from_nt'][from_nt]['category'][cat]['omega'][omega_tuple]['number_of_events'] = events
-                            # self.probability_tree['to_nt'][to_nt]['from_nt'][from_nt]['cat'][cat]['omega'][omega_tuple]['number_of_events'] = events
-
                             cat_events += events
 
                         self.event_tree['to_nt'][to_nt]['from_nt'][from_nt]['category'][cat]['number_of_events'] = cat_events
-                        # self.probability_tree['to_nt'][to_nt]['from_nt'][from_nt]['cat'][cat]['number_of_events'] = cat_events
                         from_events += cat_events
 
                     self.event_tree['to_nt'][to_nt]['from_nt'][from_nt]['number_of_events'] = from_events
-                    # self.probability_tree['to_nt'][to_nt]['from_nt'][from_nt]['number_of_events'] = from_events
                     to_events += from_events
 
             self.event_tree['to_nt'][to_nt]['number_of_events'] = to_events
-            # self.probability_tree['to_nt'][to_nt]['number_of_events'] = to_events
 
     def count_nts_on_event_tree(self):
         """
@@ -352,9 +283,6 @@ class Sequence:
 
     def get_event_tree(self):
         return self.event_tree
-
-    def get_probability_tree(self):
-        return self.probability_tree
 
     @staticmethod
     def complement(seq, rev=False):
@@ -552,7 +480,6 @@ class Sequence:
 
                         else:  # Create the new omega class
                             cat_branch.update({omega_cat: {'nt': [nt]}})
-                            # cat_branch[omega_cat] = [nt]
                             new_omega_key[to_nt] = {'cat': category, 'new_omega': omega_cat}
 
         # Set omega keys on nucleotide according to its path on the Event tree
