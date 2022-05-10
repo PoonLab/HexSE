@@ -43,7 +43,6 @@ class SimulateOnBranch:
         Select a substitution by moving over the event_tree according to the generation of random numbers
         """
         # Select: to nucleotide
-        #print(">>>>>>>>>>>>>>>>>>>>> Probability tree\n", self.sequence.probability_tree)
         #print(">>>>>>>>>>>>>>>>>>>>>EVENT TREE\n", self.sequence.event_tree)
         to_dict = {
                     to_nt: self.sequence.pi[to_nt]*self.sequence.event_tree['to_nt'][to_nt]['number_of_events']
@@ -195,7 +194,7 @@ class SimulateOnBranch:
                                 break
 
             # Update number of events in the Tree
-            self.sequence.populate_tree_with_events()
+            self.sequence.count_events_per_layer()
 
         return self.sequence
 

@@ -4,6 +4,8 @@ import random
 import copy
 import sys
 
+import pprint
+
 TRANSITIONS_DICT = {'A': 'G', 'G': 'A', 'T': 'C', 'C': 'T'}
 
 NUCLEOTIDES = ['A', 'C', 'G', 'T']
@@ -100,7 +102,10 @@ class Sequence:
             self.nt_in_event_tree(nt)  # Locate nucleotide in the event tree
 
         self.compute_probability()
-        self.populate_tree_with_events()
+        self.count_events_per_layer()
+
+        # pp = pprint.PrettyPrinter(indent=4)
+        # pp.pprint(self.event_tree)
 
     def compute_probability(self):
         """
@@ -162,7 +167,7 @@ class Sequence:
                             else:
                                 omega_p = (1 / denominator)
 
-                        current_branch['category'][mu_cat]['omega'][combo].update({'prob': omega_p,
+                        current_branch['category'][mu_cat]['omega'][combo].update({'prob': omega_p,  # prob for the 'omega branch' actually represents dN/dS
                                                                          'number_of_events': 0})
 
 
@@ -173,9 +178,10 @@ class Sequence:
                 return True
         return False
 
-    def populate_tree_with_events(self):
+    def count_events_per_layer(self):
         """
-        Find the number of events in each branch according to the Event Tree
+        Traverse Event Tree to calculate and store the number of events in every branch, layer by layer
+        Number of events are required to select a branch using weighter_random_choice
         """
 
         for to_nt in NUCLEOTIDES:
@@ -401,7 +407,6 @@ class Sequence:
                 sub_rates[to_nt] *= self.cat_values[selected_cat]
                 chosen_omegas = tuple(tuple(t) for t in chosen_omegas)  # Tuple of tuples
                 my_omega_keys[to_nt] = chosen_omegas  # Store omega keys used in the substitution
-
                 my_cat_keys[to_nt] = selected_cat
 
                 # If key is not in total omegas dict, create it
@@ -415,12 +420,13 @@ class Sequence:
 
     def set_total_omegas(self, chosen_omegas, codons):
         """
-        Adds unique combinations of omega values to total_omegas
-        Synonymous mutations are represented as tuples containing all zeroes
-        :param chosen_omegas: tuple of lists of values representing the indices of the selected omega values
+        Find if the omega keys (one-hot tuples) of a nucleotide are stored in self.total_omegas.
+        If not, store it. 
+        :param chosen_omegas: tuple of tuples, representing the indices of the selected omega values
+        :param codons: list, codons that a given nucleotide is part of
         """
 
-        # Number of codons a nucleotide is part of is the same as the number of ORFS (and number of omega values)
+        # Number of codons a nucleotide is part of is the same as the number of ORFS
         for codon_idx in range(len(codons)):
             # Exclude last position (synonymous)
             nonsyn_values = chosen_omegas[codon_idx][:len(chosen_omegas[codon_idx]) - 1]
