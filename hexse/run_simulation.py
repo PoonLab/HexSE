@@ -38,53 +38,6 @@ def get_args(parser):
     parser.add_argument(
         '--outfile', default=None, help='Path to the alignment file; defaults to stdout.'
     )
-    parser.add_argument(
-        '--orfs', default=None,
-        help='Path to a csv file containing the start and end coordinates of the open reading frames. '
-             'Format: start,end'
-             'If no ORFS are specified, the program will find ORFs automatically'
-    )
-    parser.add_argument(
-        '--global_rate', type=float, default=1,
-        help='Global substitution rate per site per unit time'
-    )
-    parser.add_argument(
-        '--kappa', type=float, default=0.3,
-        help='Transversion/ transition rate assuming time reversibility.'
-    )
-    parser.add_argument(
-        '--pi', type=float, default=[None, None, None, None], #TODO: make it consistent (float or array of floats?)
-        help='Vector of stationary nucleotide frequencies. If no value is specified, '
-             'the program will use the empirical frequencies in the sequence. Format: [A, T, G, C]'
-    )
-    parser.add_argument(
-        '--omega_classes', type=int, default=4,
-        help='The number of omega classes'
-    )
-    parser.add_argument(
-        '--omega_shape', type=float, default=2.0,
-        help='The shape parameter of the gamma distribution, from which omega values are drawn'
-    )
-    parser.add_argument(
-        '--omega_dist', type=str, default=ss.gamma,
-        help='The distribution type from which, from which the omega values are drawn'
-    )
-    parser.add_argument(
-        '--mu_classes', type=int, default=4,
-        help='Number of nucleotide classes: The number of classes in which we are going to classify nucleotides on the Event Tree'
-    )
-    parser.add_argument(
-        '--mu_shape', type=float, default=1,
-        help='The shape parameter of the mu distribution (log normal or gamma)'
-    )
-    parser.add_argument(
-        '--mu_dist', type=str, default=ss.lognorm,  # ss.lognorm
-        help='The distribution type from which get numbers for the mu classes'
-    )
-    parser.add_argument(
-        '--circular', action='store_true',
-        help='True for circular genomes. By default, false for linear genomes'
-    )
 
     return parser.parse_args()
 
@@ -280,33 +233,6 @@ def create_values_dict(alpha, ncat, string, dist):
         nt_categories_dict[cat] = item
 
     return nt_categories_dict
-
-def parse_genbank_orfs(in_seq):
-    """
-    Extract ORFs from the GenBank file
-    """
-    orf_locations = {'+': [], '-': []}  # ORF locations sorted by strand
-
-    # Loop through records
-    for rec in SeqIO.parse(in_seq, format="genbank"):
-        # Read ORFs from GenBank file
-        cds = [feat for feat in rec.features if feat.type == "CDS"]
-        # Record the first occurrence of the ORFs
-        for cd in cds:
-            orf = {'coords': []}
-            strand = ''
-
-            for loc in cd.location.parts:
-                # Get the strand
-                if loc.strand > 0:
-                    strand = '+'
-                else:
-                    strand = '-'
-                orf['coords'].append((int(loc.start), int(loc.end)))
-
-            orf_locations[strand].append(orf)
-
-    return orf_locations
 
 
 def set_global_omega_values(orf_locations, omega_values, omega_shape, omega_classes):
