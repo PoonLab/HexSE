@@ -366,6 +366,7 @@ def main():
     mu_classes = settings.mu_classes
     mu_shape = settings.mu_shape
     mu_dist = settings.mu_dist
+    circular = settings.circular
 
     # Create classes to classify nucleotides on the Event Tree
     mu_values = create_values_dict(mu_shape, mu_classes, "mu", mu_dist)
@@ -399,7 +400,7 @@ def main():
     for strand in orf_locations:
             orfs = orf_locations[strand]
             for orf in orfs:
-                orf_index = orfs.index(orf)
+                #orf_index = orfs.index(orf)
                 for orf_coord in orf['coords']:
                     if strand == '-':       # Reverse strand
                         stop_count = count_internal_stop_codons(Sequence.complement(s), strand, orf_coord)
@@ -437,9 +438,9 @@ def main():
     phylo_tree = Phylo.read(settings.tree, 'newick', rooted=True)
     # logging.info("Phylogenetic tree: {}".format(args.tree))
 
-    # # Make Sequence object
+    # Make Sequence object
     print("\nCreating root sequence")
-    root_sequence = Sequence(s, orfs, kappa, global_rate, pi, mu_values, args.circular)
+    root_sequence = Sequence(s, orfs, kappa, global_rate, pi, mu_values, circular)
 
     # Run simulation
     simulation = SimulateOnTree(root_sequence, phylo_tree, args.outfile)

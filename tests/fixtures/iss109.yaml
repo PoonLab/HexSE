@@ -24,4 +24,4 @@ mu:
   shape: 1.0
   dist: lognorm
 
-circular: false
+circular: True

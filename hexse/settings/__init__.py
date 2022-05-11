@@ -4,6 +4,8 @@ import yaml
 from Bio import SeqIO
 import scipy.stats as ss
 from functools import reduce
+import pprint
+import numpy as np
 
 class Settings:
     """
@@ -26,6 +28,7 @@ class Settings:
         self.mu_shape = self.from_yaml('mu.shape', 1.0)
         self.mu_dist = self.from_yaml('mu.dist', 'lognorm')
         self.global_rate = self.from_yaml('global_rate', 0.5)
+        self.circular = self.from_yaml('circular', False)
 
     def get_pi(self):
         if 'pi' in self.yaml.keys():
@@ -49,6 +52,8 @@ class Settings:
 
         return value        
 
+    def get_circular(self):
+        return self.circular
     
     def get_orfs(self):
         orfs = {}
@@ -185,10 +190,15 @@ class Settings:
                 # Read in partial ORFs
                 strand = ''
                 orf['coords'] = []
+
+                # Define position of the orf in a list with as many possitions as orfs in seq
+                # e.g. [0,1,0] for the second orf in a sequence with three orfs
+                orf['orf_map'] = np.isin(raw_coords, raw_coord).astype(int)
+
                 for coords in raw_coord:
                     coords = coords.split(',')
                     coords = list(map(int, coords))  # Convert string to integer
-                    orf['coords'].append(coords)
+                    orf['coords'].append(coords)          
 
                     if coords[0] > coords[1]:
                         strand = '+'
@@ -207,6 +217,7 @@ class Settings:
 
             else:
                 orf = {}
+                orf['orf_map'] = np.isin(raw_coords, raw_coord).astype(int)
                 coords = raw_coord.split(',')
                 coords = list(map(int, coords))  # Convert string to integer
 
@@ -224,6 +235,10 @@ class Settings:
                                                         yaml['orfs'][raw_coord]['omega_classes'], dist))
 
                 orf_locations[strand].append(orf)
+        
+        #print(">> RUNING FROM SETTINGS")
+        pp = pprint.PrettyPrinter(indent=4)
+        pp.pprint(orf_locations)
 
         return orf_locations    
 
