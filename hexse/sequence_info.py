@@ -104,8 +104,68 @@ class Sequence:
         self.compute_probability()
         self.count_events_per_layer()
 
-        # pp = pprint.PrettyPrinter(indent=4)
-        # pp.pprint(self.event_tree)
+        pp = pprint.PrettyPrinter(indent=4)
+        #pp.pprint(self.orfs)
+        pp.pprint(self.create_orf_map())
+        pp.pprint(self.get_sorted_coords())
+
+        # Find overlapping genes and place them on the orf_map
+        
+
+    def create_orf_map(self):
+        """
+        Create a dictionary with orf coordinates as keys and binary set of orf_map as value 
+        (e.g, { '[[0, 837]]': [0, 1, 0, 0], '[[156, 837]]': [0, 0, 1, 0]})
+        """
+        orf_map = {}
+
+        for rf, orf_list in self.orfs.items():
+            for orf_info in orf_list:
+                coord = str([item for sublist in orf_info['coords'] for item in sublist])
+                map = list(orf_info['orf_map'])
+                orf_map[coord] = map
+
+        return orf_map
+
+    def compare(self):
+        """
+        Compare orfs
+        Store in orf_map if overlaps
+        Assign new map value by summing the two orf_maps
+        """
+
+
+
+
+    def find_intersection(orf1,orf2):
+        """
+        Find positions with overlapping nucleotides
+        orf: tuple?, start and end positions
+        """
+        orf1=range(orf1)
+        orf2=range(orf2)
+        set_orf1=set(orf1)
+        
+        return set_orf1.intersection(orf2)
+
+    def get_sorted_coords(self):
+        """
+        Sort reading frames according to their position on the genome
+        orf_list: list of tuples with start and end position for each open reading frame     
+        """
+        coords = []
+        # Get list of orfs
+        for rf, orf_list in self.orfs.items():
+            for orf_info in orf_list:
+
+                # Coords are a list of list (e.g, [[156, 837], [836,106]]) used to account for spliced orfs
+                # Note: most orfs are a list of only one list (no splicing)
+                # TODO: how to do this for spliced orfs?
+                flat_coords = [item for sublist in orf_info['coords'] for item in sublist] 
+                coords.append(flat_coords)
+        
+        return (sorted(coords, key=min))
+
 
     def compute_probability(self):
         """

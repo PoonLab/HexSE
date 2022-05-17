@@ -1,11 +1,14 @@
 from ..sequence_info import Sequence
 from ..discretize import discretize
-import yaml
 from Bio import SeqIO
-import scipy.stats as ss
 from functools import reduce
-import pprint
+
+import scipy.stats as ss
 import numpy as np
+
+import itertools
+import yaml
+import pprint
 
 class Settings:
     """
@@ -66,7 +69,7 @@ class Settings:
 
     def clean_file_paths(self, file_paths):
         return [i for i in file_paths if i]
-
+        
     @staticmethod
     def parse_genbank_orfs(seq_path): #TODO: change name of input
         """
@@ -181,7 +184,9 @@ class Settings:
         raw_coords = list(yaml['orfs'].keys())
 
         for raw_coord in raw_coords:
+            
             # Spliced ORF
+            # TODO: Find how to deal with orf_map on spliced orfs
             if ';' in raw_coord:
                 orf = {}
                 complete_orf = raw_coord
@@ -191,7 +196,8 @@ class Settings:
                 strand = ''
                 orf['coords'] = []
 
-                # Define position of the orf in a list with as many possitions as orfs in seq
+                # Array of one's and cero's used to define position of the orf in a list with as many possitions as orfs in seq
+                # It would be latter used as binary code to map a number for the branches on the event tree
                 # e.g. [0,1,0] for the second orf in a sequence with three orfs
                 orf['orf_map'] = np.isin(raw_coords, raw_coord).astype(int)
 
@@ -237,8 +243,8 @@ class Settings:
                 orf_locations[strand].append(orf)
         
         #print(">> RUNING FROM SETTINGS")
-        pp = pprint.PrettyPrinter(indent=4)
-        pp.pprint(orf_locations)
+        # pp = pprint.PrettyPrinter(indent=4)
+        # pp.pprint(orf_locations)
 
-        return orf_locations    
+        return orf_locations
 
