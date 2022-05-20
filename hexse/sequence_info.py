@@ -78,6 +78,7 @@ class Sequence:
         self.__codons = []  # Store references to all codons
         self.total_omegas = {}  # every possible combination of omegas present on the event tree
 
+        pp = pprint.PrettyPrinter(indent=2)
         # Create Nucleotides
         for pos_in_seq, nt in enumerate(str_sequence):
             self.nt_sequence.append(Nucleotide(nt, pos_in_seq))
@@ -94,7 +95,10 @@ class Sequence:
                         self.__codons.append(codon)
 
         # Create event tree containing all possible mutations
+        self.orf_map = self.create_orf_map()  # Orf coordinates and the binary code assigned to them
         self.event_tree = self.create_event_tree()  # Nested dict containing info about all possible mutation events
+        
+        #pp.pprint(self.event_tree)
 
         # Calculate mutation rates for each nucleotide in sequence, populate the event tree which each nucleotide
         for nt in self.nt_sequence:
@@ -104,13 +108,7 @@ class Sequence:
         self.compute_probability()
         self.count_events_per_layer()
 
-        pp = pprint.PrettyPrinter(indent=4)
-        #pp.pprint(self.orfs)
-        pp.pprint(self.create_orf_map())
-        pp.pprint(self.get_sorted_coords())
 
-        # Find overlapping genes and place them on the orf_map
-        
 
     def create_orf_map(self):
         """
@@ -124,7 +122,6 @@ class Sequence:
                 coord = str([item for sublist in orf_info['coords'] for item in sublist])
                 map = list(orf_info['orf_map'])
                 orf_map[coord] = map
-
         return orf_map
 
     def compare(self):
@@ -133,9 +130,6 @@ class Sequence:
         Store in orf_map if overlaps
         Assign new map value by summing the two orf_maps
         """
-
-
-
 
     def find_intersection(orf1,orf2):
         """
@@ -390,15 +384,23 @@ class Sequence:
         :return event tree: a nested dictionary containing information about the mutation event
         """
         event_tree = {'to_nt': dict([(nuc, {'from_nt': {}}) for nuc in NUCLEOTIDES])}
-        cat_dict = {cat: {'omega': {}} for cat in self.cat_values.keys()}  # base mutation rate categogries
+        # dictionary keyed by binary tuples indicating combination of orfs (e.g., {(1, 0): {}, (0, 1): {} })
+        bin_orf_layer = {bin_code : {'omega':{}} for bin_code in [tuple(value) for  value in self.orf_map.values()]}
+        # Add tuple key with all ceros for nucleotides that don't belong to any reading frame
+        non_orf_tuple = tuple([0]*len(bin_orf_layer))
+        bin_orf_layer[non_orf_tuple] =  {'nts': []}  # On the branch with no orfs there are no further layers, just the nucleotide list
+
+        # dictionary keyed by mutation rate categories
+        # (e.g., {'mu1': {(1, 0): {}, (0, 1): {}}, 'mu2': {(1, 0): {}, (0, 1): {}}})
+        cat_dict = {cat : bin_orf_layer for cat in self.cat_values.keys()}
 
         for to_nt in NUCLEOTIDES:
             # Update nucleotides with possible mutations
             for from_nt in NUCLEOTIDES:
                 if from_nt == to_nt:
                     event_tree['to_nt'][to_nt]['from_nt'][from_nt] = None
-                else:
-                    event_tree['to_nt'][to_nt]['from_nt'][from_nt] = {'category': copy.deepcopy(cat_dict)}
+                else: 
+                    event_tree['to_nt'][to_nt]['from_nt'][from_nt] = cat_dict
         return event_tree
 
     def set_substitution_rates(self, nt):
@@ -409,73 +411,88 @@ class Sequence:
         """
         current_nt = nt.state
         sub_rates = {}
-        my_omega_keys = {}
+        selected_omega = {}
         my_cat_keys = {}
 
         for to_nt in NUCLEOTIDES:
             if to_nt == current_nt:
                 sub_rates[to_nt] = None
-                my_omega_keys[to_nt] = None
+                selected_omega[to_nt] = None
             else:
                 # Apply global substitution rate and stationary nucleotide frequency
                 sub_rates[to_nt] = self.global_rate * self.pi[current_nt]
                 if self.is_transv(current_nt, to_nt):
                     sub_rates[to_nt] *= self.kappa
 
-                # Keep track of the omega values using a list of lists that is num_codons long
-                # The inner list is 1 + number of omega classes
-                chosen_omegas = []
-                for codon in nt.codons:
-                    omega_values = codon.orf['omega_values']
-                    num_omegas = len(omega_values)
-                    chosen_omegas.append([0 for _ in range(num_omegas + 1)])
 
-                # If nucleotide belongs to a codon
                 if nt.codons:
+                # For each orf that the nucleotide is part of, select one omega value if non-syn or 'None' if syn
+                # E.g., {(0, 1, 0, 0, 0): 1, (0, 0, 1, 0, 0): 3} for a nucleotide with non-syn in two reading frames
+                    chosen_omegas = {}
+ 
+                    for codon in nt.codons:
+                        #chosen_omegas.append([0 for _ in range(num_omegas + 1)])
 
-                    # If mutation does not introduce a STOP and nucleotide is not part of a START codon
-                    if not self.is_start_stop_codon(nt, to_nt):
 
-                        # Iterate over codons to initialize the list to store chosen omegas
-                        chosen_omegas = []
-                        for codon in nt.codons:
-                            num_omegas = len(codon.orf['omega_values'])
-                            chosen_omegas.append([0 for _ in range(num_omegas + 1)])
-
-                        # Loop through codons again to process the codons
-                        for idx, codon in enumerate(nt.codons):
-                            omega_values = codon.orf['omega_values']
+                        # If mutation does not introduce a STOP and nucleotide is not part of a START codon
+                        if not self.is_start_stop_codon(nt, to_nt):
                             pos_in_codon = codon.nt_in_pos(nt)
-                            num_omegas = len(codon.orf['omega_values'])
-
-                            # Apply omega when mutation is non-synonymous
+                            
+                            # If mutation is non-synonymous, select one omega index to an omega_values for the orf
                             if codon.is_nonsyn(pos_in_codon, to_nt):
-                                # Randomly select a key in the omega values dictionary
-                                omega_index = random.randrange(num_omegas)
-                                sub_rates[to_nt] *= omega_values[omega_index]
-                                chosen_omegas[idx][omega_index] += 1
+            
+                                omega_values = codon.orf['omega_values']
+                                #Randomly select one of the omegas
+                                omega_index = random.randrange(len(omega_values))
+                                chosen_omegas[tuple(codon.orf['orf_map'])] = omega_index
 
-                            # Record that mutation is synonymous
+                            # Is mutation is synonymous, no omega needs to be applyed
                             else:
-                                chosen_omegas[idx][num_omegas] += 1  # last position
+                                chosen_omegas[codon.orf['orf_map']] = None
 
-                    else:  # Mutation introduces or destroys a STOP or nt is part of a START
-                        sub_rates[to_nt] *= 0
+                            # Iterate over codons to initialize the list to store chosen omegas
+                            # chosen_omegas = []
+                            # for codon in nt.codons:
+                            #     print(codon)
+                            #     print(codon.orf)
 
-                # Randomly select one of the mu Values
+                            #     num_omegas = len(codon.orf['omega_values'])
+                            #     chosen_omegas.append([0 for _ in range(num_omegas + 1)])
+
+                            # # Loop through codons again to process the codons
+                            # for idx, codon in enumerate(nt.codons):
+                            #     omega_values = codon.orf['omega_values']
+                            #     pos_in_codon = codon.nt_in_pos(nt)
+                            #     num_omegas = len(codon.orf['omega_values'])
+
+                            #     # Apply omega when mutation is non-synonymous
+                            #     if codon.is_nonsyn(pos_in_codon, to_nt):
+                            #         # Randomly select a key in the omega values dictionary
+                            #         omega_index = random.randrange(num_omegas)
+                            #         sub_rates[to_nt] *= omega_values[omega_index]
+                            #         chosen_omegas[idx][omega_index] += 1
+
+                            #     # Record that mutation is synonymous
+                            #     else:
+                            #         chosen_omegas[idx][num_omegas] += 1  # last position
+
+                        # Mutation introduces or destroys a STOP or nt is part of a START
+                        else: 
+                            chosen_omegas[codon.orf['orf_map']] = 'Stop_start'
+
+                selected_omega[to_nt] = chosen_omegas  # Store omega keys used in the substitution
+                # Randomly select one of the mu values (mutation rate) 
                 selected_cat = random.choice(list(self.cat_values))
                 sub_rates[to_nt] *= self.cat_values[selected_cat]
-                chosen_omegas = tuple(tuple(t) for t in chosen_omegas)  # Tuple of tuples
-                my_omega_keys[to_nt] = chosen_omegas  # Store omega keys used in the substitution
                 my_cat_keys[to_nt] = selected_cat
 
                 # If key is not in total omegas dict, create it
-                self.set_total_omegas(chosen_omegas, nt.codons)
+                #self.set_total_omegas(chosen_omegas, nt.codons)
 
         # Set substitution rates and key values for the nucleotide object
         nt.set_rates(sub_rates)
         nt.set_categories(my_cat_keys)
-        nt.set_omega(my_omega_keys)
+        nt.set_omega(selected_omega)
         nt.get_mutation_rate()
 
     def set_total_omegas(self, chosen_omegas, codons):
