@@ -398,24 +398,21 @@ def main():
             logging.warning(f"Omitted orfs: {invalid_orf_msg}")
     
     for strand in orf_locations:
-            orfs = orf_locations[strand]
-            for orf in orfs:
-                #orf_index = orfs.index(orf)
-                for orf_coord in orf['coords']:
-                    if strand == '-':       # Reverse strand
-                        stop_count = count_internal_stop_codons(Sequence.complement(s), strand, orf_coord)
-                    else:                   # Forward strand
-                        stop_count = count_internal_stop_codons(s, strand, orf_coord)
+        orfs = orf_locations[strand]
+        for idx, orf in enumerate(orfs):
+            for orf_coord in orf['coords']:
+                if strand == '-':       # Reverse strand
+                    stop_count = count_internal_stop_codons(Sequence.complement(s), strand, orf_coord)
+                else:                   # Forward strand
+                    stop_count = count_internal_stop_codons(s, strand, orf_coord)
 
-                    # CDS has more than one stop codon (the final one)
-                    if stop_count > 1:
-                        orf_locations[strand][orfs.index(orf)]['coords'].remove(orf_coord)  # Remove from coords list
-                        print(f"Omitted orf: {orf_coord} in {orf['coords']}, has {stop_count} STOP codons")
+                # CDS has more than one stop codon (the final one)
+                if stop_count > 1:
+                    orf_locations[strand][idx]['coords'].remove(orf_coord)  # Remove from coords list
+                    print(f"Omitted orf: {orf_coord} in {orf['coords']}, has {stop_count} STOP codons")
 
-                # Coordinates are empty due to removal for introduction of early STOPS codons
-                if not orf['coords']:
-                    orf_locations[strand].remove(orf)
-
+        # Coordinates are empty due to removal for introduction of early STOPS codons
+        orf_locations[strand][:] = [orf for orf in orfs if orf['coords']]
     
     # Since ORFs are valid, sort the ORFs by reading frame
     orfs = sort_orfs(orf_locations)
