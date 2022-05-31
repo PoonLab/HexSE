@@ -182,6 +182,7 @@ class Settings:
         orf_locations = {'+': [], '-': []}
 
         raw_coords = list(yaml['orfs'].keys())
+        raw_coords = sorted(raw_coords, key=lambda x : min(x.split(';')) if ';' in x else  min(x.split(',')))
 
         for raw_coord in raw_coords:
             

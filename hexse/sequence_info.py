@@ -94,6 +94,28 @@ class Sequence:
                             nt.codons.append(codon)  # FIXME: shouldn't Codon __init__ do this?
                         self.__codons.append(codon)
 
+        all_maps = {}
+        non_orf = True
+        for nt in self.nt_sequence:
+            if not nt.codons:
+                orf_map = [0,0,0,0]
+            else:
+                non_orf = False
+                orf_map = sum([codon.orf['orf_map'] for codon in nt.codons])
+
+            orf_map_key = tuple(orf_map)
+
+            if orf_map_key not in all_maps:
+                all_maps.update({orf_map_key: [[nt.pos_in_seq, nt.pos_in_seq]]})
+                if not nt.codons and non_orf is False:
+                    non_orf = True
+            else:
+                if not nt.codons and non_orf is False:
+                    all_maps[orf_map_key].append([nt.pos_in_seq, nt.pos_in_seq])
+                    non_orf = True
+                all_maps[orf_map_key][-1][1] = nt.pos_in_seq
+
+
         # Create event tree containing all possible mutations
         self.orf_map = self.create_orf_map()  # Orf coordinates and the binary code assigned to them
         self.event_tree = self.create_event_tree()  # Nested dict containing info about all possible mutation events
