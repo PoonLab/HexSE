@@ -5,6 +5,7 @@ import copy
 import sys
 
 import pprint
+import numpy as np
 
 TRANSITIONS_DICT = {'A': 'G', 'G': 'A', 'T': 'C', 'C': 'T'}
 
@@ -77,6 +78,7 @@ class Sequence:
         self.nt_sequence = []
         self.__codons = []  # Store references to all codons
         self.total_omegas = {}  # every possible combination of omegas present on the event tree
+        self.number_orfs = []  # List of "None"s with lenght equal to number of ORFs in sequence 
 
         pp = pprint.PrettyPrinter(indent=2)
         # Create Nucleotides
@@ -88,23 +90,29 @@ class Sequence:
             for frame, orf_list in self.orfs.items():
                 for orf in orf_list:  # orf is a dictionary
                     codons = self.find_codons(frame, orf)  # generates Codon objects
+                    self.number_orfs.append(None)  
+
                     # tell Nucleotide which Codon(s) it belongs to
                     for codon in codons:
                         for nt in codon.nts_in_codon:
                             nt.codons.append(codon)  # FIXME: shouldn't Codon __init__ do this?
                         self.__codons.append(codon)
-
+  
         all_maps = {}
         non_orf = True
+ 
         for nt in self.nt_sequence:
-            if not nt.codons:
-                orf_map = [0,0,0,0]
-            else:
+            if not nt.codons:  # If nt not in a coding region
+                orf_map = [0]*len(self.number_orfs)
+            
+            else:  # Get the orf map for the nucleotide including overlapping regions (E.g. ((0,1,1,0))
                 non_orf = False
                 orf_map = sum([codon.orf['orf_map'] for codon in nt.codons])
 
             orf_map_key = tuple(orf_map)
+            nt.set_orf_map_key(orf_map_key)  # Store the map key on the nt object
 
+            # Save map key into all maps dict
             if orf_map_key not in all_maps:
                 all_maps.update({orf_map_key: [[nt.pos_in_seq, nt.pos_in_seq]]})
                 if not nt.codons and non_orf is False:
@@ -115,21 +123,18 @@ class Sequence:
                     non_orf = True
                 all_maps[orf_map_key][-1][1] = nt.pos_in_seq
 
-
-        # Create event tree containing all possible mutations
-        self.orf_map = self.create_orf_map()  # Orf coordinates and the binary code assigned to them
-        self.event_tree = self.create_event_tree()  # Nested dict containing info about all possible mutation events
+        self.event_tree = self.create_event_tree(all_maps)  # Nested dict containing info about all possible mutation events
         
-        #pp.pprint(self.event_tree)
 
         # Calculate mutation rates for each nucleotide in sequence, populate the event tree which each nucleotide
         for nt in self.nt_sequence:
             self.set_substitution_rates(nt)  # Get substitution rates for the nucleotide
             self.nt_in_event_tree(nt)  # Locate nucleotide in the event tree
 
+        pp.pprint(self.event_tree)
+        sys.exit()
         self.compute_probability()
         self.count_events_per_layer()
-
 
 
     def create_orf_map(self):
@@ -399,19 +404,17 @@ class Sequence:
 
         return frequencies
 
-    def create_event_tree(self):
+    def create_event_tree(self, all_maps):
         """
         Create an event tree (nested dictionaries) that stores pi, kappa, mu,
         and information about whether a mutation is a transition or transversion.
         :return event tree: a nested dictionary containing information about the mutation event
         """
         event_tree = {'to_nt': dict([(nuc, {'from_nt': {}}) for nuc in NUCLEOTIDES])}
-        # dictionary keyed by binary tuples indicating combination of orfs (e.g., {(1, 0): {}, (0, 1): {} })
-        bin_orf_layer = {bin_code : {'omega':{}} for bin_code in [tuple(value) for  value in self.orf_map.values()]}
-        # Add tuple key with all ceros for nucleotides that don't belong to any reading frame
-        non_orf_tuple = tuple([0]*len(bin_orf_layer))
-        bin_orf_layer[non_orf_tuple] =  {'nts': []}  # On the branch with no orfs there are no further layers, just the nucleotide list
-
+        
+        # dictionary keyed by binary tuples indicating combination of orfs (e.g., {(1, 0): {}, (0, 1): {} , (1, 1): {}})
+        bin_orf_layer = {bin_code : {} for bin_code in [key for  key in all_maps.keys()]}
+        
         # dictionary keyed by mutation rate categories
         # (e.g., {'mu1': {(1, 0): {}, (0, 1): {}}, 'mu2': {(1, 0): {}, (0, 1): {}}})
         cat_dict = {cat : bin_orf_layer for cat in self.cat_values.keys()}
@@ -433,88 +436,60 @@ class Sequence:
         """
         current_nt = nt.state
         sub_rates = {}
-        selected_omega = {}
+        selected_omegas = {}
         my_cat_keys = {}
 
+        
         for to_nt in NUCLEOTIDES:
+            
+            
             if to_nt == current_nt:
                 sub_rates[to_nt] = None
-                selected_omega[to_nt] = None
+                selected_omegas[to_nt] = None
             else:
                 # Apply global substitution rate and stationary nucleotide frequency
                 sub_rates[to_nt] = self.global_rate * self.pi[current_nt]
                 if self.is_transv(current_nt, to_nt):
                     sub_rates[to_nt] *= self.kappa
 
-
+                chosen_omegas = list(self.number_orfs)  # Initialize chosen omegas as list of "None"s with len equal to number of ORFs
+                
+                # If nucleotide is part of at least one ORF, select omegas if mutation is non-syn or use "None" if it's syn
                 if nt.codons:
-                # For each orf that the nucleotide is part of, select one omega value if non-syn or 'None' if syn
-                # E.g., {(0, 1, 0, 0, 0): 1, (0, 0, 1, 0, 0): 3} for a nucleotide with non-syn in two reading frames
-                    chosen_omegas = {}
- 
+                # For each codon, find the combination of omegas that will affect it according to the codons it is part of
+                # E.g.: [2, 3, None, None, None] represent a nucleotide in two reading frames where both mutations are non-syn. 
+                # Note: "None" means that nt is not part of that ORF
+
                     for codon in nt.codons:
-                        #chosen_omegas.append([0 for _ in range(num_omegas + 1)])
 
-
-                        # If mutation does not introduce a STOP and nucleotide is not part of a START codon
-                        if not self.is_start_stop_codon(nt, to_nt):
-                            pos_in_codon = codon.nt_in_pos(nt)
+                        codon_orf = codon.orf['orf_map']  # tuple of 1s and 0s Eg., (1, 0, 0)
+                        orf_index = np.where(codon_orf==1)[0][0]  # The position with a 1 indicates the ORF for the codon
+                        pos_in_codon = codon.nt_in_pos(nt)
+                        
+                        # If mutation is non-synonymous, select one omega index to an omega_values for the orf
+                        if codon.is_nonsyn(pos_in_codon, to_nt):
+        
+                            omega_values = codon.orf['omega_values']
                             
-                            # If mutation is non-synonymous, select one omega index to an omega_values for the orf
-                            if codon.is_nonsyn(pos_in_codon, to_nt):
-            
-                                omega_values = codon.orf['omega_values']
-                                #Randomly select one of the omegas
-                                omega_index = random.randrange(len(omega_values))
-                                chosen_omegas[tuple(codon.orf['orf_map'])] = omega_index
+                            #Randomly select one of the omegas
+                            omega_index = random.randrange(len(omega_values))
+                            chosen_omegas[orf_index] = omega_index
 
-                            # Is mutation is synonymous, no omega needs to be applyed
-                            else:
-                                chosen_omegas[codon.orf['orf_map']] = None
+                        # If mutation is synonymous, use a -1 to indicate that no omegas are selected
+                        else:
+                            chosen_omegas[orf_index] = -1
 
-                            # Iterate over codons to initialize the list to store chosen omegas
-                            # chosen_omegas = []
-                            # for codon in nt.codons:
-                            #     print(codon)
-                            #     print(codon.orf)
+                
+                selected_omegas[to_nt] = tuple(chosen_omegas)  # Store omega keys used to describe the substitution
 
-                            #     num_omegas = len(codon.orf['omega_values'])
-                            #     chosen_omegas.append([0 for _ in range(num_omegas + 1)])
-
-                            # # Loop through codons again to process the codons
-                            # for idx, codon in enumerate(nt.codons):
-                            #     omega_values = codon.orf['omega_values']
-                            #     pos_in_codon = codon.nt_in_pos(nt)
-                            #     num_omegas = len(codon.orf['omega_values'])
-
-                            #     # Apply omega when mutation is non-synonymous
-                            #     if codon.is_nonsyn(pos_in_codon, to_nt):
-                            #         # Randomly select a key in the omega values dictionary
-                            #         omega_index = random.randrange(num_omegas)
-                            #         sub_rates[to_nt] *= omega_values[omega_index]
-                            #         chosen_omegas[idx][omega_index] += 1
-
-                            #     # Record that mutation is synonymous
-                            #     else:
-                            #         chosen_omegas[idx][num_omegas] += 1  # last position
-
-                        # Mutation introduces or destroys a STOP or nt is part of a START
-                        else: 
-                            chosen_omegas[codon.orf['orf_map']] = 'Stop_start'
-
-                selected_omega[to_nt] = chosen_omegas  # Store omega keys used in the substitution
-                # Randomly select one of the mu values (mutation rate) 
-                selected_cat = random.choice(list(self.cat_values))
+                selected_cat = random.choice(list(self.cat_values))  # Randomly select one of the mu values (mutation rate) 
                 sub_rates[to_nt] *= self.cat_values[selected_cat]
                 my_cat_keys[to_nt] = selected_cat
-
-                # If key is not in total omegas dict, create it
-                #self.set_total_omegas(chosen_omegas, nt.codons)
 
         # Set substitution rates and key values for the nucleotide object
         nt.set_rates(sub_rates)
         nt.set_categories(my_cat_keys)
-        nt.set_omega(selected_omega)
+        nt.set_omega(selected_omegas)
         nt.get_mutation_rate()
 
     def set_total_omegas(self, chosen_omegas, codons):
@@ -562,34 +537,44 @@ class Sequence:
         :return: the new omega key
         """
         current_nt = nt.state
-        nt_omega_in_tree = {}  # Dictionary to omega keys to find nucleotide on the Event Tree
-        new_omega_key = {}  # New omega created on the Event Tree
+        # new_omega_key = {}  # New omega created on the Event Tree
 
         for to_nt in NUCLEOTIDES:
+            
             if to_nt != current_nt:
+                
+                if not self.is_start_stop_codon(nt, to_nt):  # Nucleotides that are part of start or stop should never mutate
 
-                if not self.is_start_stop_codon(nt, to_nt):
-                    # Create one nucleotide key with all the omegas for that substitution
-                    omega_cat = nt.omega_keys[to_nt]
+                    # Find proper keys
                     category = nt.cat_keys[to_nt]
-                    cat_branch = self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['category'][category]['omega']
+                    orf_map_key = nt.orf_map_key
+                    omega_keys = nt.omega_keys[to_nt]
+
+                    branch = self.event_tree['to_nt'][to_nt]['from_nt'][current_nt][category][orf_map_key]
+                    
+                    if omega_keys in branch.keys():
+                        branch[omega_keys].append(nt)
+                    
+                    else:  # Create the omega layer when non existent
+                        branch[omega_keys] = [nt]
+
 
                     # Store nucleotide according to omega keys
-                    if omega_cat:
-                        nt_omega_in_tree[to_nt] = omega_cat  # Store string in the nucleotide dict for omega on the tree
+                    # if omega_cat:
+                    #     nt_omega_in_tree[to_nt] = omega_cat  # Store string in the nucleotide dict for omega on the tree
 
-                        if omega_cat in cat_branch:  # Omega class is already created on the Event Tree
-                            # Check if nucleotide is already in the branch
-                            if nt not in cat_branch[omega_cat]['nt']:
-                                cat_branch[omega_cat]['nt'].append(nt)
+                    #     if omega_cat in branch:  # Omega class is already created on the Event Tree
+                    #         # Check if nucleotide is already in the branch
+                    #         if nt not in branch[omega_cat]['nt']:
+                    #             branch[omega_cat]['nt'].append(nt)
 
-                        else:  # Create the new omega class
-                            cat_branch.update({omega_cat: {'nt': [nt]}})
-                            new_omega_key[to_nt] = {'cat': category, 'new_omega': omega_cat}
+                    #     else:  # Create the new omega class
+                    #         branch.update({omega_cat: {'nt': [nt]}})
+                    #         new_omega_key[to_nt] = {'cat': category, 'new_omega': omega_cat}
 
         # Set omega keys on nucleotide according to its path on the Event tree
-        nt.set_omega_in_event_tree(nt_omega_in_tree)
-        return new_omega_key
+
+        #return new_omega_key
 
     @staticmethod
     def is_transv(from_nt, to_nt):
@@ -678,11 +663,12 @@ class Nucleotide:
         self.codons = []  # A list of codon objects the Nucleotide is part of
         self.complement_state = COMPLEMENT_DICT[self.state]  # The complement state
         self.rates = {}  # A dictionary of mutation rates
-        self.omega_keys = {}  # omega keys chosen when calculating rates
+        self.omega_keys = {}  # For each substitution, tuple containing the omegas applied Eg. ({'A': None, 'C': [0, 3, -1, -1, -1], 'G': [1, 0, -1, -1, -1], 'T': [0, 0, -1, -1, -1]})
         self.cat_keys = {}  # category keys chosen when calculating rates
         self.omega_in_event_tree = {}
         self.mutation_rate = 0  # The total mutation rate
         self.relevant_info = {}
+        self.orf_map_key = ()
 
     def __str__(self):
         return self.state
@@ -713,6 +699,9 @@ class Nucleotide:
         new_nucleotide.codons = []  # References to Codons will be set when the Sequence is deep-copied
 
         return new_nucleotide
+
+    def set_orf_map_key(self, orf_map_key):
+        self.orf_map_key = orf_map_key
 
     def set_omega_in_event_tree(self, nt_omega_in_tree):
         self.omega_in_event_tree = nt_omega_in_tree
@@ -835,9 +824,13 @@ class Codon:
         codon = ''.join(str(nt) for nt in self.nts_in_codon)  # Cast all Nucleotides in the Codon to strings
         if self.frame.startswith('+'):
             return codon == 'ATG' and self.nts_in_codon[0].pos_in_seq == self.orf['coords'][0][0]
+            # Note: I don't think the codon needs to be ATG to be a start?
+            #return self.nts_in_codon[0].pos_in_seq == self.orf['coords'][0][0]
         else:
             # +1 to account for non-inclusive indexing
             return codon == 'ATG' and self.nts_in_codon[0].pos_in_seq + 1 == self.orf['coords'][0][1]
+            #return self.nts_in_codon[0].pos_in_seq + 1 == self.orf['coords'][0][1]
+            
 
     def is_stop(self):
         """

@@ -15,7 +15,7 @@ orfs:
     omega_dist: gamma
   
   0,837:
-    omega_classes: 4
+    omega_classes: 2
     omega_shape: 1.7
     omega_dist: gamma
   
