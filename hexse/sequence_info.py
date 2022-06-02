@@ -417,7 +417,7 @@ class Sequence:
         
         # dictionary keyed by mutation rate categories
         # (e.g., {'mu1': {(1, 0): {}, (0, 1): {}}, 'mu2': {(1, 0): {}, (0, 1): {}}})
-        cat_dict = {cat : bin_orf_layer for cat in self.cat_values.keys()}
+        cat_dict = {cat : copy.deepcopy(bin_orf_layer) for cat in self.cat_values.keys()}
 
         for to_nt in NUCLEOTIDES:
             # Update nucleotides with possible mutations
@@ -425,7 +425,7 @@ class Sequence:
                 if from_nt == to_nt:
                     event_tree['to_nt'][to_nt]['from_nt'][from_nt] = None
                 else: 
-                    event_tree['to_nt'][to_nt]['from_nt'][from_nt] = cat_dict
+                    event_tree['to_nt'][to_nt]['from_nt'][from_nt] = copy.deepcopy(cat_dict)
         return event_tree
 
     def set_substitution_rates(self, nt):
