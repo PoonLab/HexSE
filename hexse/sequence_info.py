@@ -77,7 +77,7 @@ class Sequence:
 
         self.nt_sequence = []
         self.__codons = []  # Store references to all codons
-        self.total_omegas = {}  # every possible combination of omegas present on the event tree
+        self.total_omegas = {}  # every possible combination of omegas present on the event tree and their value
         self.number_orfs = []  # List of "None"s with lenght equal to number of ORFs in sequence 
 
         pp = pprint.PrettyPrinter(indent=2)
@@ -98,7 +98,7 @@ class Sequence:
                             nt.codons.append(codon)  # FIXME: shouldn't Codon __init__ do this?
                         self.__codons.append(codon)
   
-        all_maps = {}
+        self.all_maps = {}
         non_orf = True
  
         for nt in self.nt_sequence:
@@ -113,28 +113,29 @@ class Sequence:
             nt.set_orf_map_key(orf_map_key)  # Store the map key on the nt object
 
             # Save map key into all maps dict
-            if orf_map_key not in all_maps:
-                all_maps.update({orf_map_key: [[nt.pos_in_seq, nt.pos_in_seq]]})
+            if orf_map_key not in self.all_maps:
+                self.all_maps.update({orf_map_key: {'coords':[[nt.pos_in_seq, nt.pos_in_seq]]}})
                 if not nt.codons and non_orf is False:
                     non_orf = True
             else:
                 if not nt.codons and non_orf is False:
-                    all_maps[orf_map_key].append([nt.pos_in_seq, nt.pos_in_seq])
+                    self.all_maps[orf_map_key]['coords'].append([nt.pos_in_seq, nt.pos_in_seq])
                     non_orf = True
-                all_maps[orf_map_key][-1][1] = nt.pos_in_seq
+                self.all_maps[orf_map_key]['coords'][-1][1] = nt.pos_in_seq
 
-        self.event_tree = self.create_event_tree(all_maps)  # Nested dict containing info about all possible mutation events
+        self.event_tree = self.create_event_tree()  # Nested dict containing info about all possible mutation events
         
 
         # Calculate mutation rates for each nucleotide in sequence, populate the event tree which each nucleotide
         for nt in self.nt_sequence:
-            self.set_substitution_rates(nt)  # Get substitution rates for the nucleotide
+            self.set_substitution_rates(nt)  # Get substitution rates for the nucleotide, store omega combos in self.total_omegas
             self.nt_in_event_tree(nt)  # Locate nucleotide in the event tree
 
-        pp.pprint(self.event_tree)
-        sys.exit()
-        self.compute_probability()
+        # self.compute_probability()
         self.count_events_per_layer()
+        # pp.pprint(self.event_tree)
+        # pp.pprint(self.total_omegas)
+        #sys.exit()
 
 
     def create_orf_map(self):
@@ -188,68 +189,108 @@ class Sequence:
         return (sorted(coords, key=min))
 
 
-    def compute_probability(self):
-        """
-        Get the probabilities of transition and transversion for latter selection of the branch on the tree
-        """
-        for to_nt in NUCLEOTIDES:
-            for nuc in NUCLEOTIDES:
-                if nuc != to_nt:
-                    self.event_tree['to_nt'][to_nt]['from_nt'][nuc].update({'prob': 0, 'number_of_events': 0})
+    # def compute_probability(self):
+    #     """
+    #     Compute the probabilities of selecting a nucleotide in each region of the sequence. Store it in self.all_maps
+    #     Create a new dictionary with all omega_keys and assign probabilites
+    #     Compute probabilities for the diferent keys on the different layers of the tree. Return dictionaries with 
+    #     Modify Event Tree by adding the probabilities of the branches based on kappa, mu, and the number of nucleotides in each region of the sequence
+    #     Traverse the Event Tree from the tips to the root calculating 'prob' of each layer
+    #     """
 
-            for from_nt, current_branch in self.event_tree['to_nt'][to_nt]['from_nt'].items():
-                if from_nt == to_nt:
-                    continue
+    #     omega_combo_prob = {}
 
-                # Update transition-transversion probability value
-                if self.is_transv(from_nt, to_nt):  # Substitution is transversion
-                    current_branch['prob'] += (self.kappa / (1 + 2 * self.kappa))
-                else:  # Substitution is transition
-                    current_branch['prob'] += (1 / (1 + 2 * self.kappa))
+    #     for to_nt in NUCLEOTIDES:
+            
 
-                # Update mu (base rate) classes
-                for mu_cat in self.cat_values.keys():
-                    prob = (self.cat_values[mu_cat] / sum(self.cat_values.values()))
-                    current_branch['category'][mu_cat].update({'prob': prob, 'number_of_events': 0})
+    #         for from_nt, current_branch in self.event_tree['to_nt'][to_nt]['from_nt'].items():
+    #             if from_nt == to_nt:
+    #                 continue
+                
+    #              # Enter mu layer
+    #             for mu_cat in self.cat_values.keys():
+                    
+    #                 # extract keys (tuples indicating orf per sequence region e.g. (1, 1, 0, 0, 0)) on this branch of event_tree
+    #                 branch = self.event_tree['to_nt'][to_nt]['from_nt'][from_nt][mu_cat]
+    #                 # nonsyn_values = []
+    #                 # omega_p = 1
 
-                    # extract keys (one-hot tuples) for omega on this branch of event_tree
-                    combos = self.event_tree['to_nt'][to_nt]['from_nt'][from_nt]['category'][mu_cat]['omega'].keys()
-                    # nonsyn_values = []
-                    # omega_p = 1
+    #                 # Enter orf region layer
+    #                 for orf_region in branch.keys():
+    #                     print(branch[orf_region].keys())
 
-                    for combo in combos:
-                        # a combo is a tuple of length = maximum number of overlapping reading frames (?)
-                        # each member of the tuple is a one-hot encoding of non-synonymous or synonymous categories
-                        # (1, 0, 0) = non-synonymous, first omega of two categories
-                        # (0, 1, 0) = non-synonymous, second omega of two categories
-                        # (0, 0, 1) = synonymous (always last position)
+    #                     # Enter omega combination layer: keys are tuples indicating omegas used (E.g. (1, None, 0, None, None))
+    #                     for omega_combo in branch[orf_region].keys():
+    #                         # print(branch[orf_region][omega_combo])
+    #                         if omega_combo in omega_combo_prob.keys():
+    #                           omega_combo_prob[omega_combo]['events'] += len(branch[orf_region][omega_combo])  
+    #                         if all(omega): # If is a region with no overlaps (tuple is full of Nones)
+    #                             pass
+    #                         # else:
+    #                         #     omega_combo_prob[omega_combo]= {'number_events' = len()}
+    #                         # Count number of events
+    #                         #number_nts = len(branch[orf_region][omega_combo])
+    #                         # Probability at the omega level
+                            
+    #                     #branch[orf_region][omega_combo]['prob'] = 1
+    #                 #     print(branch[orf_region][omega_combo])
 
-                        nonsyn_values = []
-                        omega_p = 1
+    #                 # print("All maps", self.all_maps[orf_region])
+    #                 # print(self.all_maps)
+
+
+    #                 sys.exit()
+    #                 for combo in combos:
+    #                     # a combo is a tuple of length = maximum number of overlapping reading frames (?)
+    #                     # each member of the tuple is a one-hot encoding of non-synonymous or synonymous categories
+    #                     # (1, 0, 0) = non-synonymous, first omega of two categories
+    #                     # (0, 1, 0) = non-synonymous, second omega of two categories
+    #                     # (0, 0, 1) = synonymous (always last position)
+
+    #                     nonsyn_values = []
+    #                     omega_p = 1
                         
-                        for omega in combo:
-                            denominator = 1 + sum(self.total_omegas.values())
-                            nonsyn_values.append(omega[:-1])
+    #                     for omega in combo:
+    #                         denominator = 1 + sum(self.total_omegas.values())
+    #                         nonsyn_values.append(omega[:-1])
 
-                            if not any(omega):
-                                omega_p = (1 / denominator)
+    #                         if not any(omega):
+    #                             omega_p = (1 / denominator)
 
-                            # Non-synonymous
-                            elif any(nonsyn_values):
-                                for nonsyn_val in nonsyn_values:
-                                    # Check last position in omega tuple to avoid counting syn ORFs twice
-                                    if any(nonsyn_val) and omega[-1] == 0:
-                                        # Multiply probabilities if nucleotide is part of synonymous and non-synonymous
-                                        omega_p *= (self.total_omegas[combo] / denominator)
-                                    if omega[-1] > 1:
-                                        omega_p *= (1 / denominator)
+    #                         # Non-synonymous
+    #                         elif any(nonsyn_values):
+    #                             for nonsyn_val in nonsyn_values:
+    #                                 # Check last position in omega tuple to avoid counting syn ORFs twice
+    #                                 if any(nonsyn_val) and omega[-1] == 0:
+    #                                     # Multiply probabilities if nucleotide is part of synonymous and non-synonymous
+    #                                     omega_p *= (self.total_omegas[combo] / denominator)
+    #                                 if omega[-1] > 1:
+    #                                     omega_p *= (1 / denominator)
 
-                            # Synonymous
-                            else:
-                                omega_p = (1 / denominator)
+    #                         # Synonymous
+    #                         else:
+    #                             omega_p = (1 / denominator)
 
-                        current_branch['category'][mu_cat]['omega'][combo].update({'prob': omega_p,  # prob for the 'omega branch' actually represents dN/dS
-                                                                         'number_of_events': 0})
+    #                     current_branch['category'][mu_cat]['omega'][combo].update({'prob': omega_p,  # prob for the 'omega branch' actually represents dN/dS
+    #                                                                      'number_of_events': 0})
+                # TODO: Probability for orf layer 
+                #for orf_map in current_branch.items():
+                    #print(orf_map)
+                
+            #     if self.is_transv(from_nt, to_nt):  # Substitution is transversion
+            #         current_branch['prob'] += (self.kappa / (1 + 2 * self.kappa))
+            #     else:  # Substitution is transition
+            #         current_branch['prob'] += (1 / (1 + 2 * self.kappa))
+
+
+            #         prob = (self.cat_values[mu_cat] / sum(self.cat_values.values()))
+            #         current_branch[mu_cat].update({'prob': prob, 'number_of_events': 0})
+
+            #         print(mu_cat, current_branch[mu_cat].keys())
+            #     #sys.exit()
+            # for nuc in NUCLEOTIDES:
+            #     if nuc != to_nt:
+            #         self.event_tree['to_nt'][to_nt]['from_nt'][nuc].update({'prob': 0, 'number_of_events': 0})
 
 
 
@@ -261,36 +302,44 @@ class Sequence:
 
     def count_events_per_layer(self):
         """
-        Traverse Event Tree to calculate and store the number of events in every branch, layer by layer
-        Number of events are required to select a branch using weighter_random_choice
+        Modify Event Tree by traversing it calculating and storing the number of events in every branch, layer by layer
+        Number of events are required to select a branch using weighted_random_choice
         """
 
         for to_nt in NUCLEOTIDES:
             to_events = 0
 
             for from_nt in NUCLEOTIDES:
+                
                 if to_nt != from_nt:
+                    
                     from_events = 0
-                    branch = self.event_tree['to_nt'][to_nt]['from_nt'][from_nt]['category']
+                    branch = self.event_tree['to_nt'][to_nt]['from_nt'][from_nt]
 
-                    for cat in branch.keys():
+                    for cat in self.cat_values.keys():
                         cat_events = 0
-                        branch_cat = branch[cat]['omega']
 
-                        for omega_tuple in branch_cat.keys():
-                            nt_list = branch_cat[omega_tuple]['nt']
-                            events = len(nt_list)
-                            self.event_tree['to_nt'][to_nt]['from_nt'][from_nt]['category'][cat]['omega'][omega_tuple]['number_of_events'] = events
-                            cat_events += events
+                        for orf_region in branch[cat].keys():
+                            orf_region_events = 0
+                            
+                            for omega_combo in branch[cat][orf_region].keys():
+                                
+                                events = len(branch[cat][orf_region][omega_combo])
+                                self.total_omegas[omega_combo]['nt_events'] = events
+                                orf_region_events += events    
+                                cat_events += events
+                                from_events += events
+                                to_events += events
+                            
+                            branch[cat][orf_region]['n_events'] = orf_region_events
 
-                        self.event_tree['to_nt'][to_nt]['from_nt'][from_nt]['category'][cat]['number_of_events'] = cat_events
-                        from_events += cat_events
+                        branch[cat]['nt_events'] = cat_events
 
-                    self.event_tree['to_nt'][to_nt]['from_nt'][from_nt]['number_of_events'] = from_events
-                    to_events += from_events
-
-            self.event_tree['to_nt'][to_nt]['number_of_events'] = to_events
-
+                    self.event_tree['to_nt'][to_nt]['from_nt'][from_nt]['nt_events'] = from_events
+            
+            self.event_tree['to_nt'][to_nt]['nt_events'] = to_events            
+                        
+    
     def count_nts_on_event_tree(self):
         """
         Traverse event tree and count total number of nucleotides on the tips
@@ -404,7 +453,7 @@ class Sequence:
 
         return frequencies
 
-    def create_event_tree(self, all_maps):
+    def create_event_tree(self):
         """
         Create an event tree (nested dictionaries) that stores pi, kappa, mu,
         and information about whether a mutation is a transition or transversion.
@@ -413,7 +462,7 @@ class Sequence:
         event_tree = {'to_nt': dict([(nuc, {'from_nt': {}}) for nuc in NUCLEOTIDES])}
         
         # dictionary keyed by binary tuples indicating combination of orfs (e.g., {(1, 0): {}, (0, 1): {} , (1, 1): {}})
-        bin_orf_layer = {bin_code : {} for bin_code in [key for  key in all_maps.keys()]}
+        bin_orf_layer = {bin_code : {} for bin_code in [key for  key in self.all_maps.keys()]}
         
         # dictionary keyed by mutation rate categories
         # (e.g., {'mu1': {(1, 0): {}, (0, 1): {}}, 'mu2': {(1, 0): {}, (0, 1): {}}})
@@ -431,6 +480,7 @@ class Sequence:
     def set_substitution_rates(self, nt):
         """
         Calculates substitution rates of a nucleotide
+        Store newly created omega_combos in self.total_omegas as key with their value E.g {(None, 3,1) = (1*0.2*0.6)}
         Sets the sub-rates, omega values, rate classes, and total mutation rate of a Nucleotide
         :param nt: object of class Nucleotide
         """
@@ -453,7 +503,7 @@ class Sequence:
                     sub_rates[to_nt] *= self.kappa
 
                 chosen_omegas = list(self.number_orfs)  # Initialize chosen omegas as list of "None"s with len equal to number of ORFs
-                
+                computed_omega = 1
                 # If nucleotide is part of at least one ORF, select omegas if mutation is non-syn or use "None" if it's syn
                 if nt.codons:
                 # For each codon, find the combination of omegas that will affect it according to the codons it is part of
@@ -474,14 +524,17 @@ class Sequence:
                             #Randomly select one of the omegas
                             omega_index = random.randrange(len(omega_values))
                             chosen_omegas[orf_index] = omega_index
+                            computed_omega *= omega_values[omega_index]
 
                         # If mutation is synonymous, use a -1 to indicate that no omegas are selected
                         else:
                             chosen_omegas[orf_index] = -1
 
-                
-                selected_omegas[to_nt] = tuple(chosen_omegas)  # Store omega keys used to describe the substitution
+                # Store omega combination and calculated value in total_omega dict
+                if tuple(chosen_omegas) not in self.total_omegas.keys():
+                    self.total_omegas[tuple(chosen_omegas)] = {'value' : computed_omega}
 
+                selected_omegas[to_nt] = tuple(chosen_omegas)  # Store omega keys used to describe the substitution
                 selected_cat = random.choice(list(self.cat_values))  # Randomly select one of the mu values (mutation rate) 
                 sub_rates[to_nt] *= self.cat_values[selected_cat]
                 my_cat_keys[to_nt] = selected_cat
@@ -552,29 +605,12 @@ class Sequence:
 
                     branch = self.event_tree['to_nt'][to_nt]['from_nt'][current_nt][category][orf_map_key]
                     
-                    if omega_keys in branch.keys():
+                    if omega_keys in branch.keys():  # Store nt on the branch
                         branch[omega_keys].append(nt)
                     
                     else:  # Create the omega layer when non existent
                         branch[omega_keys] = [nt]
-
-
-                    # Store nucleotide according to omega keys
-                    # if omega_cat:
-                    #     nt_omega_in_tree[to_nt] = omega_cat  # Store string in the nucleotide dict for omega on the tree
-
-                    #     if omega_cat in branch:  # Omega class is already created on the Event Tree
-                    #         # Check if nucleotide is already in the branch
-                    #         if nt not in branch[omega_cat]['nt']:
-                    #             branch[omega_cat]['nt'].append(nt)
-
-                    #     else:  # Create the new omega class
-                    #         branch.update({omega_cat: {'nt': [nt]}})
-                    #         new_omega_key[to_nt] = {'cat': category, 'new_omega': omega_cat}
-
-        # Set omega keys on nucleotide according to its path on the Event tree
-
-        #return new_omega_key
+                        
 
     @staticmethod
     def is_transv(from_nt, to_nt):
