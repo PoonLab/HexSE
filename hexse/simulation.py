@@ -78,13 +78,18 @@ class SimulateOnBranch:
         selected_cat = self.weighted_random_choice(cat_dict, sum(cat_dict.values()))
 
         # Select sequence region to mutate based on the number of nucleotides
-        orf_dict = cat_tree[selected_cat]
-        orf_sum = self.sequence.all_maps
+        all_maps = self.sequence.all_maps
+        orf_tree = cat_tree[selected_cat]
+        seq_lenght = sum([all_maps[orf]['len'] for orf in all_maps.keys()])
+        orf_dict = {}
 
-        print(self.sequence.all_maps)
+        for orf_combo in orf_tree.keys():
+            if type(orf_combo) == tuple:
+                orf_dict[orf_combo] = (all_maps[orf_combo]['len']/seq_lenght) * orf_tree[orf_combo]['nt_events']
+
+        print(orf_dict)
 
         sys.exit()
-
 
 
         # Select: mu category
