@@ -78,18 +78,43 @@ class SimulateOnBranch:
         selected_cat = self.weighted_random_choice(cat_dict, sum(cat_dict.values()))
 
         # Select sequence region to mutate based on the number of nucleotides
-        all_maps = self.sequence.all_maps
         orf_tree = cat_tree[selected_cat]
-        seq_lenght = sum([all_maps[orf]['len'] for orf in all_maps.keys()])
+        all_maps = self.sequence.all_maps
         orf_dict = {}
 
         for orf_combo in orf_tree.keys():
             if type(orf_combo) == tuple:
-                orf_dict[orf_combo] = (all_maps[orf_combo]['len']/seq_lenght) * orf_tree[orf_combo]['nt_events']
+                orf_dict[orf_combo] = (all_maps[orf_combo]['len']/self.sequence.length) * orf_tree[orf_combo]['nt_events']
 
-        print(orf_dict)
+        selected_orf_combo = self.weighted_random_choice(orf_dict, sum(orf_dict.values()))
 
-        sys.exit()
+        # Select omega combo when region with orfs. Else, select a random nucleotide
+        omega_tree = orf_tree[selected_orf_combo]
+        selected_nt = None
+        selected_omega = None
+        
+        # If region has no ORFs, select any nucleotide on the list at random
+        if all(v == 0 for v in selected_orf_combo):  
+            tuple_key = tuple([None]*len(selected_orf_combo))
+            selected_omega = tuple_key
+            selected_nt = random.choice(omega_tree[tuple_key])
+        
+        else:  # If region has ORFs, select omega
+            omega_dict = {}
+            for omega_combo in omega_tree.keys():
+                if type(omega_combo) == tuple:
+                    omega_dict[omega_combo] = self.sequence.total_omegas[omega_combo]['value'] * len(omega_tree[omega_combo])
+            
+            selected_omega = self.weighted_random_choice(omega_dict, sum(omega_dict.values()))
+            # Choose nucleotide
+            selected_nt = random.choice(omega_tree[selected_omega])
+
+        print(">>",to_mutation, "\n", from_mutation, "\n", selected_cat, "\n", selected_orf_combo, "\n", selected_omega, "\n", selected_nt, "\n")
+        # Return coordenates of the selection
+        # sys.exit()
+        return to_mutation, from_mutation, selected_cat, selected_orf_combo, selected_omega, selected_nt
+
+
 
 
         # Select: mu category

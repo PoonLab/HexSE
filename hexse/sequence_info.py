@@ -124,6 +124,7 @@ class Sequence:
                 self.all_maps[orf_map_key]['coords'][-1][1] = nt.pos_in_seq
                 self.all_maps[orf_map_key]['len'] = sum([abs(coord[0]-coord[1])+1 for coord in  self.all_maps[orf_map_key]['coords']])
 
+        self.length = sum([self.all_maps[orf]['len'] for orf in self.all_maps.keys()])  # Store sequence length
         self.event_tree = self.create_event_tree()  # Nested dict containing info about all possible mutation events
         
 
@@ -188,111 +189,6 @@ class Sequence:
                 coords.append(flat_coords)
         
         return (sorted(coords, key=min))
-
-
-    # def compute_probability(self):
-    #     """
-    #     Compute the probabilities of selecting a nucleotide in each region of the sequence. Store it in self.all_maps
-    #     Create a new dictionary with all omega_keys and assign probabilites
-    #     Compute probabilities for the diferent keys on the different layers of the tree. Return dictionaries with 
-    #     Modify Event Tree by adding the probabilities of the branches based on kappa, mu, and the number of nucleotides in each region of the sequence
-    #     Traverse the Event Tree from the tips to the root calculating 'prob' of each layer
-    #     """
-
-    #     omega_combo_prob = {}
-
-    #     for to_nt in NUCLEOTIDES:
-            
-
-    #         for from_nt, current_branch in self.event_tree['to_nt'][to_nt]['from_nt'].items():
-    #             if from_nt == to_nt:
-    #                 continue
-                
-    #              # Enter mu layer
-    #             for mu_cat in self.cat_values.keys():
-                    
-    #                 # extract keys (tuples indicating orf per sequence region e.g. (1, 1, 0, 0, 0)) on this branch of event_tree
-    #                 branch = self.event_tree['to_nt'][to_nt]['from_nt'][from_nt][mu_cat]
-    #                 # nonsyn_values = []
-    #                 # omega_p = 1
-
-    #                 # Enter orf region layer
-    #                 for orf_region in branch.keys():
-    #                     print(branch[orf_region].keys())
-
-    #                     # Enter omega combination layer: keys are tuples indicating omegas used (E.g. (1, None, 0, None, None))
-    #                     for omega_combo in branch[orf_region].keys():
-    #                         # print(branch[orf_region][omega_combo])
-    #                         if omega_combo in omega_combo_prob.keys():
-    #                           omega_combo_prob[omega_combo]['events'] += len(branch[orf_region][omega_combo])  
-    #                         if all(omega): # If is a region with no overlaps (tuple is full of Nones)
-    #                             pass
-    #                         # else:
-    #                         #     omega_combo_prob[omega_combo]= {'number_events' = len()}
-    #                         # Count number of events
-    #                         #number_nts = len(branch[orf_region][omega_combo])
-    #                         # Probability at the omega level
-                            
-    #                     #branch[orf_region][omega_combo]['prob'] = 1
-    #                 #     print(branch[orf_region][omega_combo])
-
-    #                 # print("All maps", self.all_maps[orf_region])
-    #                 # print(self.all_maps)
-
-
-    #                 sys.exit()
-    #                 for combo in combos:
-    #                     # a combo is a tuple of length = maximum number of overlapping reading frames (?)
-    #                     # each member of the tuple is a one-hot encoding of non-synonymous or synonymous categories
-    #                     # (1, 0, 0) = non-synonymous, first omega of two categories
-    #                     # (0, 1, 0) = non-synonymous, second omega of two categories
-    #                     # (0, 0, 1) = synonymous (always last position)
-
-    #                     nonsyn_values = []
-    #                     omega_p = 1
-                        
-    #                     for omega in combo:
-    #                         denominator = 1 + sum(self.total_omegas.values())
-    #                         nonsyn_values.append(omega[:-1])
-
-    #                         if not any(omega):
-    #                             omega_p = (1 / denominator)
-
-    #                         # Non-synonymous
-    #                         elif any(nonsyn_values):
-    #                             for nonsyn_val in nonsyn_values:
-    #                                 # Check last position in omega tuple to avoid counting syn ORFs twice
-    #                                 if any(nonsyn_val) and omega[-1] == 0:
-    #                                     # Multiply probabilities if nucleotide is part of synonymous and non-synonymous
-    #                                     omega_p *= (self.total_omegas[combo] / denominator)
-    #                                 if omega[-1] > 1:
-    #                                     omega_p *= (1 / denominator)
-
-    #                         # Synonymous
-    #                         else:
-    #                             omega_p = (1 / denominator)
-
-    #                     current_branch['category'][mu_cat]['omega'][combo].update({'prob': omega_p,  # prob for the 'omega branch' actually represents dN/dS
-    #                                                                      'number_of_events': 0})
-                # TODO: Probability for orf layer 
-                #for orf_map in current_branch.items():
-                    #print(orf_map)
-                
-            #     if self.is_transv(from_nt, to_nt):  # Substitution is transversion
-            #         current_branch['prob'] += (self.kappa / (1 + 2 * self.kappa))
-            #     else:  # Substitution is transition
-            #         current_branch['prob'] += (1 / (1 + 2 * self.kappa))
-
-
-            #         prob = (self.cat_values[mu_cat] / sum(self.cat_values.values()))
-            #         current_branch[mu_cat].update({'prob': prob, 'number_of_events': 0})
-
-            #         print(mu_cat, current_branch[mu_cat].keys())
-            #     #sys.exit()
-            # for nuc in NUCLEOTIDES:
-            #     if nuc != to_nt:
-            #         self.event_tree['to_nt'][to_nt]['from_nt'][nuc].update({'prob': 0, 'number_of_events': 0})
-
 
 
     def all_syn_values(self, nonsyn_values):
