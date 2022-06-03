@@ -114,7 +114,7 @@ class Sequence:
 
             # Save map key into all maps dict
             if orf_map_key not in self.all_maps:
-                self.all_maps.update({orf_map_key: {'coords':[[nt.pos_in_seq, nt.pos_in_seq]]}})
+                self.all_maps.update({orf_map_key: {'coords':[[nt.pos_in_seq, nt.pos_in_seq]], 'len': 0 }})
                 if not nt.codons and non_orf is False:
                     non_orf = True
             else:
@@ -122,6 +122,7 @@ class Sequence:
                     self.all_maps[orf_map_key]['coords'].append([nt.pos_in_seq, nt.pos_in_seq])
                     non_orf = True
                 self.all_maps[orf_map_key]['coords'][-1][1] = nt.pos_in_seq
+                self.all_maps[orf_map_key]['len'] = sum([(max(coord)-min(coord))+1 for coord in  self.all_maps[orf_map_key]['coords']])
 
         self.event_tree = self.create_event_tree()  # Nested dict containing info about all possible mutation events
         
