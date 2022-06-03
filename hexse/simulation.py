@@ -2,9 +2,11 @@
 
 import copy
 import random
+import sys
 
 import numpy as np
 
+NUCLEOTIDES = ['A', 'C', 'G', 'T']
 
 def is_stop(to_nt, from_nt):
     """
@@ -42,17 +44,48 @@ class SimulateOnBranch:
         """
         Select a substitution by moving over the event_tree according to the generation of random numbers
         """
-        # Select: to nucleotide
-        #print(">>>>>>>>>>>>>>>>>>>>>EVENT TREE\n", self.sequence.event_tree)
+
+        event_tree = copy.deepcopy(self.sequence.event_tree)
+
+        # Select target nucleotide based on stationary base frequency (pi) and number of events for each nucleotide
         to_dict = {
-                    to_nt: self.sequence.pi[to_nt]*self.sequence.event_tree['to_nt'][to_nt]['number_of_events']
+                    to_nt: self.sequence.pi[to_nt]*event_tree['to_nt'][to_nt]['nt_events']
                     for to_nt in self.sequence.pi.keys()
                     }
         to_mutation = self.weighted_random_choice(to_dict, sum(to_dict.values()))
 
-        # Select: from nt
-        from_tree = self.sequence.event_tree['to_nt'][to_mutation]['from_nt']
-        from_mutation = self.select_key(from_tree)
+        # Select state of initial nucleotide with probability based on transition/transversion rate ratio
+        from_tree = event_tree['to_nt'][to_mutation]['from_nt']
+        from_dict = {}
+        for from_nt in NUCLEOTIDES:
+            if to_mutation != from_nt:
+                if self.sequence.is_transv(from_nt, to_mutation):  # If its transversion apply kappa
+                    from_dict[from_nt] = (self.sequence.kappa / (1 + 2 * self.sequence.kappa)) * from_tree[from_nt]['nt_events']
+
+                else:
+                    from_dict[from_nt] = (1 / (1 + 2 * self.sequence.kappa)) * from_tree[from_nt]['nt_events']
+
+        from_mutation = self.weighted_random_choice(from_dict, sum(from_dict.values()))
+
+        # Select category based on mu values
+        cat_tree = from_tree[from_mutation]
+        cat_sum = sum(self.sequence.cat_values.values())
+        cat_dict = {
+            cat: (self.sequence.cat_values[cat]/cat_sum)*cat_tree[cat]['nt_events']
+            for cat in self.sequence.cat_values.keys()
+            }
+
+        selected_cat = self.weighted_random_choice(cat_dict, sum(cat_dict.values()))
+
+        # Select sequence region to mutate based on the number of nucleotides
+        orf_dict = cat_tree[selected_cat]
+        orf_sum = self.sequence.all_maps
+
+        print(self.sequence.all_maps)
+
+        sys.exit()
+
+
 
         # Select: mu category
         def possible_cats():  # categories

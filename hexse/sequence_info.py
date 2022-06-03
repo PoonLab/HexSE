@@ -331,7 +331,7 @@ class Sequence:
                                 from_events += events
                                 to_events += events
                             
-                            branch[cat][orf_region]['n_events'] = orf_region_events
+                            branch[cat][orf_region]['nt_events'] = orf_region_events
 
                         branch[cat]['nt_events'] = cat_events
 
@@ -610,7 +610,7 @@ class Sequence:
                     
                     else:  # Create the omega layer when non existent
                         branch[omega_keys] = [nt]
-                        
+
 
     @staticmethod
     def is_transv(from_nt, to_nt):
