@@ -234,31 +234,9 @@ class Sequence:
 
                     self.event_tree['to_nt'][to_nt]['from_nt'][from_nt]['nt_events'] = from_events
             
-            self.event_tree['to_nt'][to_nt]['nt_events'] = to_events            
+            self.event_tree['to_nt'][to_nt]['nt_events'] = to_events         
                         
     
-    def count_nts_on_event_tree(self):
-        """
-        Traverse event tree and count total number of nucleotides on the tips
-        Note: Final count should be around sequence length*3
-        """
-        total_nts = 0
-
-        for to_nt in NUCLEOTIDES:
-
-            for from_nt in NUCLEOTIDES:
-
-                if to_nt != from_nt:
-                    branch = self.event_tree['to_nt'][to_nt]['from_nt'][from_nt]['category']
-
-                    for classification in branch.keys():
-                        branch_cat = branch[classification]
-
-                        for omega_key in branch_cat.keys():
-                            nts_in_branch = len(branch_cat[omega_key])
-                            total_nts += nts_in_branch
-
-        return total_nts
 
     def __deepcopy__(self, memodict):
         """
@@ -421,7 +399,7 @@ class Sequence:
                             #Randomly select one of the omegas
                             omega_index = random.randrange(len(omega_values))
                             chosen_omegas[orf_index] = omega_index
-                            computed_omega *= omega_values[omega_index]
+                            computed_omega *= omega_values[omega_index]                           
 
                         # If mutation is synonymous, use a -1 to indicate that no omegas are selected
                         else:
@@ -433,7 +411,8 @@ class Sequence:
 
                 selected_omegas[to_nt] = tuple(chosen_omegas)  # Store omega keys used to describe the substitution
                 selected_cat = random.choice(list(self.cat_values))  # Randomly select one of the mu values (mutation rate) 
-                sub_rates[to_nt] *= self.cat_values[selected_cat]
+                sub_rates[to_nt] *= self.cat_values[selected_cat]  # Apply my value over instant mutation rate
+                sub_rates[to_nt] *= self.total_omegas[tuple(chosen_omegas)]['value']  # Apply omega value over instant mutation rate
                 my_cat_keys[to_nt] = selected_cat
 
         # Set substitution rates and key values for the nucleotide object
@@ -668,9 +647,9 @@ class Nucleotide:
 
     def get_mutation_rate(self):
         total_rate = 0
-        for to_nt, value in self.rates.items():
-            if value:
-                total_rate += value
+        for mutation_rate in self.rates.values():
+            if mutation_rate:
+                total_rate += mutation_rate
         self.mutation_rate = total_rate
 
     def get_relevant_info(self):
