@@ -182,7 +182,6 @@ class Settings:
         orf_locations = {'+': [], '-': []}
 
         raw_coords = list(yaml['orfs'].keys())
-        raw_coords = sorted(raw_coords, key=lambda x : min(x.split(';')) if ';' in x else  min(x.split(',')))
 
         for raw_coord in raw_coords:
             
@@ -196,11 +195,6 @@ class Settings:
                 # Read in partial ORFs
                 strand = ''
                 orf['coords'] = []
-
-                # Array of one's and cero's used to define position of the orf in a list with as many possitions as orfs in seq
-                # It would be latter used as binary code to map a number for the branches on the event tree
-                # e.g. [0,1,0] for the second orf in a sequence with three orfs
-                orf['orf_map'] = np.isin(raw_coords, raw_coord).astype(int)
 
                 for coords in raw_coord:
                     coords = coords.split(',')
@@ -224,7 +218,6 @@ class Settings:
 
             else:
                 orf = {}
-                orf['orf_map'] = np.isin(raw_coords, raw_coord).astype(int)
                 coords = raw_coord.split(',')
                 coords = list(map(int, coords))  # Convert string to integer
 

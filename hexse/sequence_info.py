@@ -218,9 +218,13 @@ class Sequence:
 
                         for orf_region in branch[cat].keys():
                             orf_region_events = 0
+                            if type(orf_region) is not tuple:
+                                continue
                             
                             for omega_combo in branch[cat][orf_region].keys():
-                                
+                                if type(omega_combo) is not tuple:
+                                    continue
+
                                 events = len(branch[cat][orf_region][omega_combo])
                                 self.total_omegas[omega_combo]['nt_events'] = events
                                 orf_region_events += events    
@@ -609,6 +613,8 @@ class Nucleotide:
         new_nucleotide.cat_keys = copy.deepcopy(self.cat_keys, memodict)
         new_nucleotide.omega_in_event_tree = copy.deepcopy(self.omega_in_event_tree, memodict)
         new_nucleotide.codons = []  # References to Codons will be set when the Sequence is deep-copied
+        new_nucleotide.relevant_info = copy.deepcopy(self.relevant_info, memodict)
+        new_nucleotide.orf_map_key = copy.deepcopy(self.orf_map_key, memodict)
 
         return new_nucleotide
 

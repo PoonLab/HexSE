@@ -413,7 +413,19 @@ def main():
 
         # Coordinates are empty due to removal for introduction of early STOPS codons
         orf_locations[strand][:] = [orf for orf in orfs if orf['coords']]
-    
+
+    # Orf Map
+    # Array of one's and cero's used to define position of the orf in a list with as many possitions as orfs in seq
+    # It would be latter used as binary code to map a number for the branches on the event tree
+    # e.g. [0,1,0] for the second orf in a sequence with three orfs
+    orf_coords = [orf['coords'][0] for strand in orf_locations for orf in orf_locations[strand]]
+    orf_coords = sorted(orf_coords, key=min)
+    orf_maps = np.identity(len(orf_coords), dtype=int)
+    orf_map_dict = {tuple(orf_coord):orf_maps[idx,:].copy() for idx, orf_coord in enumerate(orf_coords)}
+    for strand in orf_locations:
+        for orf in orf_locations[strand]:
+            orf['orf_map'] = orf_map_dict[tuple(orf['coords'][0])]
+
     # Since ORFs are valid, sort the ORFs by reading frame
     orfs = sort_orfs(orf_locations)
     logging.info("Valid orfs: {}".format(orfs))
