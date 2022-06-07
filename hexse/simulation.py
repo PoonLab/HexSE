@@ -111,68 +111,8 @@ class SimulateOnBranch:
 
         # print(">>",to_mutation, "\n", from_mutation, "\n", selected_cat, "\n", selected_orf_combo, "\n", selected_omega, "\n", selected_nt, "\n")
         # Return coordenates of the selection
-        # sys.exit()
         return to_mutation, from_mutation, selected_cat, selected_orf_combo, selected_omega, selected_nt
 
-
-
-
-        # # Select: mu category
-        # def possible_cats():  # categories
-        #     cat_tree = copy.copy(self.sequence.event_tree['to_nt'][to_mutation]['from_nt'][from_mutation]['category'])
-        #     for _ in list(cat_tree.keys()):
-        #         selected_cat = self.select_key(cat_tree)
-        #         cat_tree.pop(selected_cat)  # Remove empty key
-        #         yield selected_cat
-
-        # # Select omega branch
-        # def possible_nts(selected_cat):
-        #     omega_dict = copy.copy(self.sequence.event_tree['to_nt'][to_mutation]['from_nt'][from_mutation]['category'][selected_cat]['omega'])
-            
-        #     # Create a dictionary containing only omega tuples and probability value
-        #     omega_weights = {omega: omega_dict[omega]['prob']*omega_dict[omega]['number_of_events'] for omega in omega_dict.keys()}
-        #     nt_dict = self.sequence.event_tree['to_nt'][to_mutation]['from_nt'][from_mutation]['category'][selected_cat]
-
-        #     # Check if all tips of the tree for this class are empty
-        #     if all(not value for value in nt_dict.values()):
-        #         pass
-
-        #     else:
-        #         for _ in omega_dict.keys():
-        #             selected_omega = self.weighted_random_choice(omega_weights, sum(omega_weights.values()))
-        #             if selected_omega == None:
-        #                 # element = list(omega_weights.keys())[0][0]
-        #                 print("\n>>>>WHERE AM I\n",omega_weights)
-        #             self.test_omega_tree(omega_dict) 
-        #             # Select nucleotide
-        #             try:
-        #                 nt_list = self.sequence.event_tree['to_nt'][to_mutation]['from_nt'][from_mutation]['category'][selected_cat]['omega'][selected_omega]
-        #             except KeyError:
-        #                 print(to_mutation, from_mutation, selected_cat, selected_omega)
-        #                 print(self.sequence.event_tree)
-        #                 raise
-        #             omega_weights.pop(selected_omega)  # Remove empty key
-        #             yield nt_list
-
-        # for selected_cat in possible_cats():
-        #     for nt_list in possible_nts(selected_cat):  # Check if nt list is empty
-        #         if nt_list:
-        #             from_nucleotide = random.choice(nt_list['nt'])
-        #             return from_nucleotide, to_mutation
-
-        # print("\n>>>> OH NO!!")
-        #print(self.sequence.event_tree['to_nt'][to_mutation]['from_nt'][from_mutation])
-
-    # def select_key(self, dictionary):
-    #     """
-    #     Select a random key using weighted_random_choice
-    #     """
-    #     temp_dict = {}  # Dictionary containing keys to 'from nucleotides' or 'categories' and their probability (weight)
-    #     for key, value in dictionary.items():
-    #         if value:
-    #             temp_dict[key] = value['prob'] * value['number_of_events']
-    #     selected_key = self.weighted_random_choice(temp_dict, sum(temp_dict.values()))
-    #     return selected_key
 
     @staticmethod
     def weighted_random_choice(dictionary, sum_values):
@@ -219,91 +159,84 @@ class SimulateOnBranch:
             # Draw a time at which mutation occurs according to mutation rates
             random_time = np.random.exponential(scale=(1 / instant_rate))
             times_sum += random_time
+            
             if times_sum > self.branch_length:
                 break
 
             # Draw a mutation
-            to_mutation, from_mutation, selected_cat, selected_orf_combo, selected_omega, selected_nt = self.get_substitution()
+            new_state, from_mutation, selected_cat, selected_orf_combo, selected_omega, selected_nt = self.get_substitution()
             
             # Update instant rate by adding the rate at which this mutation occurs 
-            instant_rate = instant_rate + selected_nt.rates[to_mutation]
+            instant_rate = instant_rate + selected_nt.rates[new_state]
             
-            # Remove the mutated nucleotide from the event tree
+            print(selected_nt.codons, new_state, selected_nt, selected_nt.pos_in_seq)
+            # Remove the mutated nucleotide from the Event Tree
             self.remove_nt(selected_nt, selected_orf_combo)
+            
+            # For nt under new state, update it's attributes: state, complement, substitution_rate, omega_keys, cat_keys and mutation_rate
+            self.update_nucleotide_info(selected_nt, new_state)
+            
+            # Re-locate nucleotide on Event Tree according to it's new state
+            self.sequence.nt_in_event_tree(selected_nt)
 
-            # Calculate mutation rates for nucleotide under new states and place on the proper branches of the tree
-            # Re-create substitution rates for the nucleotide
-            self.update_nucleotide(selected_nt, to_mutation)
-            # sys.exit()
+            # If nucleotide is part of a codon, the rest of nucleotides in the codon might be subject to different syn and non-syn mutations
+            # Therefore, we will need to re calculate mutation rates for adjacent nucleotides and properly place them on the Event Tree
+            
+            if selected_nt.codons:
+                updated_nts = []
+                for codon in selected_nt.codons:
+                    for adj_nt in codon.nts_in_codon:
+                            # codons probably share nucleotides in common. Avoid to update them twice.
+                            if adj_nt not in updated_nts:
+                                # Remove, re calculate, and re populate Event Tree with adjacent nucleotides
+                                self.remove_nt(adj_nt, tuple(codon.orf['orf_map']))
+                                self.update_nucleotide_info(adj_nt, adj_nt.state)
+                                self.sequence.nt_in_event_tree(adj_nt)
+                                updated_nts.append(adj_nt)
 
-            # Update information about adjacent nucleotides
-            if selected_nt.codons:  # If the mutated nucleotide belongs to at least one codon
-                adjacent_positions = [selected_nt.pos_in_seq - 2, selected_nt.pos_in_seq - 1,
-                                      selected_nt.pos_in_seq + 1, selected_nt.pos_in_seq + 2]
-
-                for i in adjacent_positions:
-                    if 0 < i < len(self.sequence.nt_sequence):  # If position in sequence
-                        adj_nt = self.sequence.nt_sequence[i]
-
-                        for codon in adj_nt.codons:
-                            # If adjacent nucleotide and mutated nucleotide share at least one codon
-                            if codon in selected_nt.codons:
-                                instant_rate = instant_rate - adj_nt.mutation_rate
-                                self.remove_nt(adj_nt)
-                                self.update_nucleotide(adj_nt, adj_nt.state)
-                                # Update instant rate for adjacent nucleotide
-                                instant_rate = instant_rate + adj_nt.mutation_rate
-                                break
-
-            # Update number of events in the Tree
+            print("I HAVE MUTATED")
+        
+            # Update number of events in the Tree per branch
             self.sequence.count_events_per_layer()
 
         return self.sequence
 
     def remove_nt(self,selected_nt, selected_orf_combo):
         """
-        Find nucleotide selected to mutate in the event tree and remove it from every branch on the event tree
-        Note: it should be in three branches (one nucleotide can change to three possible)   
+        Find nucleotide on the Event Tree and remove it from the tips where it's stored
+        Note: it should be on three branches (each nucleotide has three posible states that it can change to)   
         :param selected_nt: Nucleotide Object. 
-        :param selected_ord_combo: Tuple.  1 for the orfs the nucleotide is part of. 0 for the ones it is not. 
+        :param selected_orf_combo: Tuple.  1 for the orfs the nucleotide is part of. 0 for the ones it is not. (E.g (0,1,0))
         """
 
         for to_nt in NUCLEOTIDES:
+
             if to_nt != selected_nt.state:
                 
                 cat = selected_nt.cat_keys[to_nt]
                 omega_combo = selected_nt.omega_keys[to_nt]
+
+                if omega_combo not in self.sequence.event_tree['to_nt'][to_nt]['from_nt'][selected_nt.state][cat][selected_orf_combo]:
+                    # Sometimes omega_combo not on branch, but why?
+                    print (self.sequence.event_tree['to_nt'][to_nt]['from_nt'][selected_nt.state][cat][selected_orf_combo])
+                    sys.exit()
+
                 my_branch = self.sequence.event_tree['to_nt'][to_nt]['from_nt'][selected_nt.state][cat][selected_orf_combo][omega_combo]
                 my_branch.remove(selected_nt)
                 
 
-    def update_nucleotide(self, nt, to_state):
+    def update_nucleotide_info(self, nt, new_state):
         """
-        Update parameters on the mutated nucleotide
+        When a mutation occurs, the following attributes change for the nt object: state, complement_state, substitution_rate,
+        omega_keys, cat_keys and mutation_rate
         """
         # Update the state of the nucleotide
-        nt.set_state(to_state)
+        nt.set_state(new_state)
         # Change complementary state given the mutation
         nt.set_complement_state()
-        # RESET All values
-        # Rates
-        nt.set_rates({})
-        # Omega keys
-        nt.set_omega({})
-        # Class Keys
-        nt.set_categories({})
-        # Omega in event tree
-        nt.set_omega_in_event_tree({})
-        # Mutation rate
-        nt.set_mutation_rate(0)
-
-        # Update rates, omega key according to its new state
-        self.sequence.set_substitution_rates(nt)
-        new_omega = self.sequence.nt_in_event_tree(nt)  # Update nucleotide on the Event Tree and return new key if created
-
-        if new_omega:  # If new omega key is created in the event tree, update the tree
-            self.sequence.compute_probability()
-
+        # Sub_rates, omega_key, category_key, and mutation_rate are set on set_substition_rate
+        self.sequence.set_substitution_rates(nt) 
+        
 
 class SimulateOnTree:
     """

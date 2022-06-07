@@ -110,14 +110,14 @@ class Sequence:
                 orf_map = sum([codon.orf['orf_map'] for codon in nt.codons])
 
             orf_map_key = tuple(orf_map)
-            nt.set_orf_map_key(orf_map_key)  # Store the map key on the nt object
+            nt.set_orf_map_key(orf_map_key)  # Store the map key on the nt object. This value will never change
 
             # Save map key into all maps dict
             if orf_map_key not in self.all_maps:
                 self.all_maps.update({orf_map_key: {'coords':[[nt.pos_in_seq, nt.pos_in_seq]], 'len': 0 }})
                 if not nt.codons and non_orf is False:
                     non_orf = True
-            else:
+            else:  # Update orf coordinates and length by summing the position of new nucleotide
                 if not nt.codons and non_orf is False:
                     self.all_maps[orf_map_key]['coords'].append([nt.pos_in_seq, nt.pos_in_seq])
                     non_orf = True
@@ -133,7 +133,6 @@ class Sequence:
             self.set_substitution_rates(nt)  # Get substitution rates for the nucleotide, store omega combos in self.total_omegas
             self.nt_in_event_tree(nt)  # Locate nucleotide in the event tree
 
-        # self.compute_probability()
         self.count_events_per_layer()
         # pp.pprint(self.event_tree)
         # pp.pprint(self.total_omegas)
@@ -423,7 +422,7 @@ class Sequence:
         nt.set_rates(sub_rates)
         nt.set_categories(my_cat_keys)
         nt.set_omega(selected_omegas)
-        nt.get_mutation_rate()
+        nt.get_mutation_rate()  # Sum of mutation rates for all nucleotides is used to calculate rate at which mutations occurs on simulation.py
 
     def set_total_omegas(self, chosen_omegas, codons):
         """
@@ -470,7 +469,6 @@ class Sequence:
         :return: the new omega key
         """
         current_nt = nt.state
-        # new_omega_key = {}  # New omega created on the Event Tree
 
         for to_nt in NUCLEOTIDES:
             
@@ -581,9 +579,7 @@ class Nucleotide:
         self.rates = {}  # A dictionary of mutation rates
         self.omega_keys = {}  # For each substitution, tuple containing the omegas applied Eg. ({'A': None, 'C': [0, 3, -1, -1, -1], 'G': [1, 0, -1, -1, -1], 'T': [0, 0, -1, -1, -1]})
         self.cat_keys = {}  # category keys chosen when calculating rates
-        self.omega_in_event_tree = {}
         self.mutation_rate = 0  # The total mutation rate
-        self.relevant_info = {}
         self.orf_map_key = ()
 
     def __str__(self):
@@ -611,21 +607,13 @@ class Nucleotide:
         new_nucleotide.mutation_rate = copy.deepcopy(self.mutation_rate, memodict)
         new_nucleotide.omega_keys = copy.deepcopy(self.omega_keys, memodict)
         new_nucleotide.cat_keys = copy.deepcopy(self.cat_keys, memodict)
-        new_nucleotide.omega_in_event_tree = copy.deepcopy(self.omega_in_event_tree, memodict)
         new_nucleotide.codons = []  # References to Codons will be set when the Sequence is deep-copied
-        new_nucleotide.relevant_info = copy.deepcopy(self.relevant_info, memodict)
         new_nucleotide.orf_map_key = copy.deepcopy(self.orf_map_key, memodict)
 
         return new_nucleotide
 
     def set_orf_map_key(self, orf_map_key):
         self.orf_map_key = orf_map_key
-
-    def set_omega_in_event_tree(self, nt_omega_in_tree):
-        self.omega_in_event_tree = nt_omega_in_tree
-
-    def set_relevant_info(self, relevant_info):
-        self.relevant_info = relevant_info
 
     def set_state(self, new_state):
         self.state = new_state
@@ -658,16 +646,6 @@ class Nucleotide:
                 total_rate += mutation_rate
         self.mutation_rate = total_rate
 
-    def get_relevant_info(self):
-        """
-        Create a dictionary with all relevant information related with the nucleotide
-        (Useful for debugging)
-        """
-        info = {"state": self.state, "position": self.pos_in_seq,
-                "rates": self.rates, "mutation rate": self.mutation_rate, "codons": self.codons}
-
-        return info
-
 
 class Codon:
     """
@@ -683,7 +661,7 @@ class Codon:
         """
         self.frame = frame
         self.orf = orf
-        self.nts_in_codon = nts_in_codon  # list of Nucleotides in the Codon
+        self.nts_in_codon = nts_in_codon  # list of Nucleotide objects in the Codon
 
     def __repr__(self):
         return ''.join(str(nt) for nt in self.nts_in_codon)
