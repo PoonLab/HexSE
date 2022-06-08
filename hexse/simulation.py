@@ -189,7 +189,7 @@ class SimulateOnBranch:
                             # codons probably share nucleotides in common. Avoid to update them twice.
                             if adj_nt not in updated_nts:
                                 # Remove, re calculate, and re populate Event Tree with adjacent nucleotides
-                                self.remove_nt(adj_nt, tuple(codon.orf['orf_map']))
+                                self.remove_nt(adj_nt, selected_orf_combo)
                                 self.update_nucleotide_info(adj_nt, adj_nt.state)
                                 self.sequence.nt_in_event_tree(adj_nt)
                                 updated_nts.append(adj_nt)
