@@ -5,6 +5,7 @@ import random
 import sys
 
 import numpy as np
+import pprint
 
 NUCLEOTIDES = ['A', 'C', 'G', 'T']
 
@@ -169,12 +170,12 @@ class SimulateOnBranch:
             # Update instant rate by adding the rate at which this mutation occurs 
             instant_rate = instant_rate + selected_nt.rates[new_state]
             
-            print(selected_nt.codons, new_state, selected_nt, selected_nt.pos_in_seq)
             # Remove the mutated nucleotide from the Event Tree
-            self.remove_nt(selected_nt, selected_orf_combo)
+            self.remove_nt(selected_nt, selected_orf_combo)  # ERROR OCCURS FROM HERE
             
             # For nt under new state, update it's attributes: state, complement, substitution_rate, omega_keys, cat_keys and mutation_rate
             self.update_nucleotide_info(selected_nt, new_state)
+            updated_nts = [selected_nt] # Keep track of nucleotides that have been removed and updated on the Event Tree when a mutation occurs to not update them several times
             
             # Re-locate nucleotide on Event Tree according to it's new state
             self.sequence.nt_in_event_tree(selected_nt)
@@ -183,7 +184,6 @@ class SimulateOnBranch:
             # Therefore, we will need to re calculate mutation rates for adjacent nucleotides and properly place them on the Event Tree
             
             if selected_nt.codons:
-                updated_nts = []
                 for codon in selected_nt.codons:
                     for adj_nt in codon.nts_in_codon:
                             # codons probably share nucleotides in common. Avoid to update them twice.
@@ -194,7 +194,6 @@ class SimulateOnBranch:
                                 self.sequence.nt_in_event_tree(adj_nt)
                                 updated_nts.append(adj_nt)
 
-            print("I HAVE MUTATED")
         
             # Update number of events in the Tree per branch
             self.sequence.count_events_per_layer()
@@ -210,19 +209,16 @@ class SimulateOnBranch:
         """
 
         for to_nt in NUCLEOTIDES:
-
+            
             if to_nt != selected_nt.state:
                 
                 cat = selected_nt.cat_keys[to_nt]
                 omega_combo = selected_nt.omega_keys[to_nt]
 
-                if omega_combo not in self.sequence.event_tree['to_nt'][to_nt]['from_nt'][selected_nt.state][cat][selected_orf_combo]:
-                    # Sometimes omega_combo not on branch, but why?
-                    print (self.sequence.event_tree['to_nt'][to_nt]['from_nt'][selected_nt.state][cat][selected_orf_combo])
-                    sys.exit()
-
-                my_branch = self.sequence.event_tree['to_nt'][to_nt]['from_nt'][selected_nt.state][cat][selected_orf_combo][omega_combo]
-                my_branch.remove(selected_nt)
+                if cat and omega_combo:  # If mutation did not introduced STOP codons on seq, therefore it IS stored on the tree:
+                    # Note, when mutation causes STOP codons, both cat and omega_combo are None
+                    my_branch = self.sequence.event_tree['to_nt'][to_nt]['from_nt'][selected_nt.state][cat][selected_orf_combo][omega_combo]
+                    my_branch.remove(selected_nt)
                 
 
     def update_nucleotide_info(self, nt, new_state):

@@ -369,54 +369,63 @@ class Sequence:
 
         
         for to_nt in NUCLEOTIDES:
-            
-            
+             
             if to_nt == current_nt:
                 sub_rates[to_nt] = None
                 selected_omegas[to_nt] = None
+            
             else:
-                # Apply global substitution rate and stationary nucleotide frequency
-                sub_rates[to_nt] = self.global_rate * self.pi[current_nt]
-                if self.is_transv(current_nt, to_nt):
-                    sub_rates[to_nt] *= self.kappa
+                # If mutation does not create STOP codons or affects START or STOP codons
+                if not self.is_start_stop_codon(nt, to_nt):  
 
-                chosen_omegas = list(self.number_orfs)  # Initialize chosen omegas as list of "None"s with len equal to number of ORFs
-                computed_omega = 1
-                # If nucleotide is part of at least one ORF, select omegas if mutation is non-syn or use "None" if it's syn
-                if nt.codons:
-                # For each codon, find the combination of omegas that will affect it according to the codons it is part of
-                # E.g.: [2, 3, None, None, None] represent a nucleotide in two reading frames where both mutations are non-syn. 
-                # Note: "None" means that nt is not part of that ORF
+                    # Apply global substitution rate and stationary nucleotide frequency
+                    sub_rates[to_nt] = self.global_rate * self.pi[current_nt]
+                    if self.is_transv(current_nt, to_nt):
+                        sub_rates[to_nt] *= self.kappa
 
-                    for codon in nt.codons:
+                    chosen_omegas = list(self.number_orfs)  # Initialize chosen omegas as list of "None"s with len equal to number of ORFs
+                    computed_omega = 1
+                    # If nucleotide is part of at least one ORF, select omegas if mutation is non-syn or use "None" if it's syn
+                    if nt.codons:
+                    # For each codon, find the combination of omegas that will affect it according to the codons it is part of
+                    # E.g.: [2, 3, None, None, None] represent a nucleotide in two reading frames where both mutations are non-syn. 
+                    # Note: "None" means that nt is not part of that ORF
 
-                        codon_orf = codon.orf['orf_map']  # tuple of 1s and 0s Eg., (1, 0, 0)
-                        orf_index = np.where(codon_orf==1)[0][0]  # The position with a 1 indicates the ORF for the codon
-                        pos_in_codon = codon.nt_in_pos(nt)
-                        
-                        # If mutation is non-synonymous, select one omega index to an omega_values for the orf
-                        if codon.is_nonsyn(pos_in_codon, to_nt):
-        
-                            omega_values = codon.orf['omega_values']
+                        for codon in nt.codons:
+
+                            codon_orf = codon.orf['orf_map']  # tuple of 1s and 0s Eg., (1, 0, 0)
+                            orf_index = np.where(codon_orf==1)[0][0]  # The position with a 1 indicates the ORF for the codon
+                            pos_in_codon = codon.nt_in_pos(nt)
                             
-                            #Randomly select one of the omegas
-                            omega_index = random.randrange(len(omega_values))
-                            chosen_omegas[orf_index] = omega_index
-                            computed_omega *= omega_values[omega_index]                           
+                            # If mutation is non-synonymous, select one omega index to an omega_values for the orf
+                            if codon.is_nonsyn(pos_in_codon, to_nt):
+            
+                                omega_values = codon.orf['omega_values']
+                                
+                                #Randomly select one of the omegas
+                                omega_index = random.randrange(len(omega_values))
+                                chosen_omegas[orf_index] = omega_index
+                                computed_omega *= omega_values[omega_index]                           
 
-                        # If mutation is synonymous, use a -1 to indicate that no omegas are selected
-                        else:
-                            chosen_omegas[orf_index] = -1
+                            # If mutation is synonymous, use a -1 to indicate that no omegas are selected
+                            else:
+                                chosen_omegas[orf_index] = -1
 
-                # Store omega combination and calculated value in total_omega dict
-                if tuple(chosen_omegas) not in self.total_omegas.keys():
-                    self.total_omegas[tuple(chosen_omegas)] = {'value' : computed_omega}
+                    # Store omega combination and calculated value in total_omega dict
+                    if tuple(chosen_omegas) not in self.total_omegas.keys():
+                        self.total_omegas[tuple(chosen_omegas)] = {'value' : computed_omega}
 
-                selected_omegas[to_nt] = tuple(chosen_omegas)  # Store omega keys used to describe the substitution
-                selected_cat = random.choice(list(self.cat_values))  # Randomly select one of the mu values (mutation rate) 
-                sub_rates[to_nt] *= self.cat_values[selected_cat]  # Apply my value over instant mutation rate
-                sub_rates[to_nt] *= self.total_omegas[tuple(chosen_omegas)]['value']  # Apply omega value over instant mutation rate
-                my_cat_keys[to_nt] = selected_cat
+                    selected_omegas[to_nt] = tuple(chosen_omegas)  # Store omega keys used to describe the substitution
+                    selected_cat = random.choice(list(self.cat_values))  # Randomly select one of the mu values (mutation rate) 
+                    sub_rates[to_nt] *= self.cat_values[selected_cat]  # Apply my value over instant mutation rate
+                    sub_rates[to_nt] *= self.total_omegas[tuple(chosen_omegas)]['value']  # Apply omega value over instant mutation rate
+                    my_cat_keys[to_nt] = selected_cat
+                
+                else:  # Inform nucleotide that such subs cannot occur
+                    selected_omegas[to_nt] = None
+                    my_cat_keys[to_nt] = None
+                    sub_rates[to_nt] = None
+
 
         # Set substitution rates and key values for the nucleotide object
         nt.set_rates(sub_rates)
@@ -488,7 +497,7 @@ class Sequence:
                     
                     else:  # Create the omega layer when non existent
                         branch[omega_keys] = [nt]
-
+                                    
 
     @staticmethod
     def is_transv(from_nt, to_nt):
