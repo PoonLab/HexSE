@@ -1,0 +1,27 @@
+global_rate: 0.05
+kappa: 0.3
+
+pi: 
+# Note that keys for pi values HAVE to be the exact nucleotides
+  A: 0.25
+  T: 0.25
+  G: 0.25
+  C: 0.25
+
+orfs:
+  0,837:
+    omega_classes: 2
+    omega_shape: 1.7
+    omega_dist: gamma
+  
+  156,837:
+    omega_classes: 2
+    omega_shape: 1.2
+    omega_dist: gamma
+
+mu:
+  classes: 2
+  shape: 1.0
+  dist: lognorm
+
+circular: True

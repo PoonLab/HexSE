@@ -4,6 +4,9 @@ import random
 import copy
 import sys
 
+import pprint
+import numpy as np
+
 TRANSITIONS_DICT = {'A': 'G', 'G': 'A', 'T': 'C', 'C': 'T'}
 
 NUCLEOTIDES = ['A', 'C', 'G', 'T']
@@ -41,122 +44,151 @@ class Sequence:
     def __init__(self, str_sequence, orfs, kappa, global_rate, pi, cat_values, circular=False):
         """
         Creates a list of nucleotides, locates open reading frames, and creates a list of codons.
-        :param orfs: A dictionary of ORFs, sorted by reading frame where:
-                        - the keys are the reading frames (+0, +1, +2, -0, -1, -2)
-                        - the values are a list of tuples containing the start and end positions of the ORFs.
-                        - Ex: {'+0': [(0, 8), (3, 15)], '+1': [(1, 9)], '+2': [], '-0': [], '-1': [], '-2': []}
-        :param kappa: transition/ transversion rate ratio
-        :param global_rate: The global rate (substitutions/site/unit time)
-        :param pi: Frequency of nucleotides in a given sequence, with nucleotide as keys
-        :param cat_values: Values drawn from a gamma distribution to categorize nucleotides
-                            according to their mutation rates
-        :param circular: True if the genome is circular, false if the genome is linear (default: linear)
-        """
-        self.orfs = orfs  # Dictionary of of ORFs sorted by reading frame
-        self.kappa = kappa  # Transition/ transversion rate ratio
-        self.global_rate = global_rate  # The global rate (substitutions/site/unit time)
-        self.pi = pi  # Frequency of nucleotides, with nucleotide as keys
-        self.__codons = []  # Store references to all codons
-        self.nt_sequence = []  # List of Nucleotide objects
-        self.is_circular = circular  # True if the genome is circular, False otherwise
-        self.cat_values = cat_values  # Values drawn from a gamma distribution to categorize nucleotides according to their mutation rates
-        self.total_omegas = {}  # Dictionary of every possible combination of omegas present on the event tree
 
+        :param str_sequence:  str, nucleotide sequence as a string object
+        :param orfs:  dict, A dictionary of open reading frames (ORFs) in the sequence, sorted by reading frame where:
+                        - the keys are the reading frames (+0, +1, +2, -0, -1, -2)
+                        - the values are a list containing the information for each ORF
+                        - for example:
+            {'+0': [{'coords': [[2849, 3182]], 'omega_shape': 1.5, 'omega_classes': 3,
+                     'omega_values': [0.17, 0.48, 1.14]},
+                    {'coords': [[3173, 3182]], 'omega_shape': 1.9, 'omega_classes': 5,
+                     'omega_values': [0.18, 0.40, 0.63, 0.93, 1.63]}],
+             '+1': [],
+             '+2': [{'coords': [[0, 837]], 'omega_shape': 1.7, 'omega_classes': 4,
+                     'omega_values': [0.17, 0.42, 0.72, 1.40]},
+                    {'coords': [[156, 837]], 'omega_shape': 1.2, 'omega_classes': 6,
+                     'omega_values': [0.05, 0.16, 0.28, 0.44, 0.67, 1.26]}],
+             '-0': [],
+             '-1': [],
+             '-2': []}
+        :param kappa:  float, transition/ transversion rate ratio
+        :param global_rate:  float, the global substitution rate (/site/unit time)
+        :param pi:  float, stationary frequencies of nucleotides, with nucleotide as keys
+        :param cat_values:  dict, values drawn from a gamma distribution modeling rate variation among nucleotides, keyed by 'mu1', etc.
+        :param circular:  bool, true if the genome is circular, false if the genome is linear (default: false)
+        """
+        self.orfs = orfs
+        self.kappa = kappa
+        self.global_rate = global_rate
+        self.pi = pi
+        self.cat_values = cat_values
+        self.is_circular = circular
+
+        self.nt_sequence = []
+        self.__codons = []  # Store references to all codons
+        self.total_omegas = {}  # every possible combination of omegas present on the event tree and their value
+        self.number_orfs = []  # List of "None"s with lenght equal to number of ORFs in sequence 
+
+        pp = pprint.PrettyPrinter(indent=2)
         # Create Nucleotides
         for pos_in_seq, nt in enumerate(str_sequence):
             self.nt_sequence.append(Nucleotide(nt, pos_in_seq))
 
         # Set Codons based on the reading frames
         if self.orfs is not None:
-            for frame in self.orfs:
-                orf_list = self.orfs[frame]
-                for orf in orf_list:
-                    codons = self.find_codons(frame, orf)
+            for frame, orf_list in self.orfs.items():
+                for orf in orf_list:  # orf is a dictionary
+                    codons = self.find_codons(frame, orf)  # generates Codon objects
+                    self.number_orfs.append(None)  
 
-                    # Tell Nucleotide which Codon(s) it belongs to
+                    # tell Nucleotide which Codon(s) it belongs to
                     for codon in codons:
-                        for i, nt in enumerate(codon.nts_in_codon):
-                            nt.codons.append(codon)
+                        for nt in codon.nts_in_codon:
+                            nt.codons.append(codon)  # FIXME: shouldn't Codon __init__ do this?
                         self.__codons.append(codon)
+  
+        self.all_maps = {}
+        non_orf = True
+ 
+        for nt in self.nt_sequence:
+            if not nt.codons:  # If nt not in a coding region
+                orf_map = [0]*len(self.number_orfs)
+            
+            else:  # Get the orf map for the nucleotide including overlapping regions (E.g. ((0,1,1,0))
+                non_orf = False
+                orf_map = sum([codon.orf['orf_map'] for codon in nt.codons])
 
-        # Create event tree containing all possible mutations
+            orf_map_key = tuple(orf_map)
+            nt.set_orf_map_key(orf_map_key)  # Store the map key on the nt object. This value will never change
+
+            # Save map key into all maps dict
+            if orf_map_key not in self.all_maps:
+                self.all_maps.update({orf_map_key: {'coords':[[nt.pos_in_seq, nt.pos_in_seq]], 'len': 0 }})
+                if not nt.codons and non_orf is False:
+                    non_orf = True
+            else:  # Update orf coordinates and length by summing the position of new nucleotide
+                if not nt.codons and non_orf is False:
+                    self.all_maps[orf_map_key]['coords'].append([nt.pos_in_seq, nt.pos_in_seq])
+                    non_orf = True
+                self.all_maps[orf_map_key]['coords'][-1][1] = nt.pos_in_seq
+                self.all_maps[orf_map_key]['len'] = sum([abs(coord[0]-coord[1])+1 for coord in  self.all_maps[orf_map_key]['coords']])
+
+        self.length = sum([self.all_maps[orf]['len'] for orf in self.all_maps.keys()])  # Store sequence length
         self.event_tree = self.create_event_tree()  # Nested dict containing info about all possible mutation events
+        
 
         # Calculate mutation rates for each nucleotide in sequence, populate the event tree which each nucleotide
         for nt in self.nt_sequence:
-            self.set_substitution_rates(nt)  # Get substitution rates for the nucleotide
+            self.set_substitution_rates(nt)  # Get substitution rates for the nucleotide, store omega combos in self.total_omegas
             self.nt_in_event_tree(nt)  # Locate nucleotide in the event tree
 
-        # Create probability tree with the probabilities for each branch
-        self.probability_tree = self.create_probability_tree()
-        self.populate_prob_tree_with_events()
+        self.count_events_per_layer()
+        # pp.pprint(self.event_tree)
+        # pp.pprint(self.total_omegas)
+        #sys.exit()
 
-    def create_probability_tree(self):
+
+    def create_orf_map(self):
         """
-        Get the probabilities of transition and transversion for latter selection of the branch on the tree
+        Create a dictionary with orf coordinates as keys and binary set of orf_map as value 
+        (e.g, { '[[0, 837]]': [0, 1, 0, 0], '[[156, 837]]': [0, 0, 1, 0]})
         """
-        prob_tree = {'to_nt': {'A': {'number_of_events': 0},
-                               'T': {'number_of_events': 0},
-                               'C': {'number_of_events': 0},
-                               'G': {'number_of_events': 0}}}
+        orf_map = {}
 
-        for to_nt in NUCLEOTIDES:
-            if to_nt in prob_tree['to_nt'].keys():
-                # Update Probability tree
-                prob_tree['to_nt'][to_nt].update([('from_nt', {'A': {'prob': 0, 'cat': {}, 'number_of_events': 0},
-                                                               'T': {'prob': 0, 'cat': {}, 'number_of_events': 0},
-                                                               'C': {'prob': 0, 'cat': {}, 'number_of_events': 0},
-                                                               'G': {'prob': 0, 'cat': {}, 'number_of_events': 0}})])
+        for rf, orf_list in self.orfs.items():
+            for orf_info in orf_list:
+                coord = str([item for sublist in orf_info['coords'] for item in sublist])
+                map = list(orf_info['orf_map'])
+                orf_map[coord] = map
+        return orf_map
 
-                # Nucleotide cannot change to itself
-                for from_nt in prob_tree['to_nt'][to_nt]['from_nt'].keys():
-                    if from_nt == to_nt:
-                        prob_tree['to_nt'][to_nt]['from_nt'][from_nt] = None
-                    else:
-                        current_branch = prob_tree['to_nt'][to_nt]['from_nt'][from_nt]
+    def compare(self):
+        """
+        Compare orfs
+        Store in orf_map if overlaps
+        Assign new map value by summing the two orf_maps
+        """
 
-                        # Update transition-transversion probability value
-                        if self.is_transv(from_nt, to_nt):  # Substitution is transversion
-                            current_branch['prob'] += (self.kappa / (1 + 2 * self.kappa))
-                        else:  # Substitution is transition
-                            current_branch['prob'] += (1 / (1 + 2 * self.kappa))
+    def find_intersection(orf1,orf2):
+        """
+        Find positions with overlapping nucleotides
+        orf: tuple?, start and end positions
+        """
+        orf1=range(orf1)
+        orf2=range(orf2)
+        set_orf1=set(orf1)
+        
+        return set_orf1.intersection(orf2)
 
-                        # Update mu classes
-                        for mu_cat in self.cat_values.keys():
-                            prob = (self.cat_values[mu_cat] / sum(self.cat_values.values()))
-                            # print(prob)
-                            current_branch['cat'].update([(mu_cat, {'prob': prob, 'omega': {}, 'number_of_events': 0})])
-                            # Bring Omega keys on the Event Tree
-                            omegas = self.event_tree['to_nt'][to_nt]['from_nt'][from_nt]['category'][mu_cat].keys()
+    def get_sorted_coords(self):
+        """
+        Sort reading frames according to their position on the genome
+        orf_list: list of tuples with start and end position for each open reading frame     
+        """
+        coords = []
+        # Get list of orfs
+        for rf, orf_list in self.orfs.items():
+            for orf_info in orf_list:
 
-                            omega_p = 1
-                            nonsyn_values = []
-                            for orf_omega in omegas:
-                                for omega in orf_omega:
-                                    denominator = 1 + sum(self.total_omegas.values())
-                                    nonsyn_values.append(omega[:-1])
+                # Coords are a list of list (e.g, [[156, 837], [836,106]]) used to account for spliced orfs
+                # Note: most orfs are a list of only one list (no splicing)
+                # TODO: how to do this for spliced orfs?
+                flat_coords = [item for sublist in orf_info['coords'] for item in sublist] 
+                coords.append(flat_coords)
+        
+        return (sorted(coords, key=min))
 
-                                    if not any(omega):
-                                        omega_p = (1 / denominator)
-
-                                    # Non-synonymous
-                                    elif any(nonsyn_values):
-                                        for nonsyn_val in nonsyn_values:
-                                            # Check last position in omega tuple to avoid counting syn ORFs twice
-                                            if any(nonsyn_val) and omega[-1] == 0:
-                                                # Multiply probabilities if nucleotide is part of synonymous and non-synonymous
-                                                omega_p *= (self.total_omegas[orf_omega] / denominator)
-                                            if omega[-1] > 1:
-                                                omega_p *= (1 / denominator)
-
-                                    # Synonymous
-                                    else:
-                                        omega_p = (1 / denominator)
-
-                                current_branch['cat'][mu_cat]['omega'][orf_omega] = {'prob': omega_p,
-                                                                                     'number_of_events': 0}
-
-        return prob_tree
 
     def all_syn_values(self, nonsyn_values):
         for nonsyn_val in nonsyn_values:
@@ -164,60 +196,50 @@ class Sequence:
                 return True
         return False
 
-    def populate_prob_tree_with_events(self):
+    def count_events_per_layer(self):
         """
-        Traverse the Probability tree and find the number of events in each branch according to the Event Tree
+        Modify Event Tree by traversing it calculating and storing the number of events in every branch, layer by layer
+        Number of events are required to select a branch using weighted_random_choice
         """
 
         for to_nt in NUCLEOTIDES:
             to_events = 0
 
             for from_nt in NUCLEOTIDES:
+                
                 if to_nt != from_nt:
+                    
                     from_events = 0
-                    branch = self.event_tree['to_nt'][to_nt]['from_nt'][from_nt]['category']
+                    branch = self.event_tree['to_nt'][to_nt]['from_nt'][from_nt]
 
-                    for cat in branch.keys():
+                    for cat in self.cat_values.keys():
                         cat_events = 0
-                        branch_cat = branch[cat]
 
-                        for omega_tuple in branch_cat.keys():
-                            nt_list = branch_cat[omega_tuple]
-                            events = len(nt_list)
-                            self.probability_tree['to_nt'][to_nt]['from_nt'][from_nt]['cat'][cat]['omega'][omega_tuple]['number_of_events'] = events
+                        for orf_region in branch[cat].keys():
+                            orf_region_events = 0
+                            if type(orf_region) is not tuple:
+                                continue
+                            
+                            for omega_combo in branch[cat][orf_region].keys():
+                                if type(omega_combo) is not tuple:
+                                    continue
 
-                            cat_events += events
+                                events = len(branch[cat][orf_region][omega_combo])
+                                self.total_omegas[omega_combo]['nt_events'] = events
+                                orf_region_events += events    
+                                cat_events += events
+                                from_events += events
+                                to_events += events
+                            
+                            branch[cat][orf_region]['nt_events'] = orf_region_events
 
-                        self.probability_tree['to_nt'][to_nt]['from_nt'][from_nt]['cat'][cat]['number_of_events'] = cat_events
-                        from_events += cat_events
+                        branch[cat]['nt_events'] = cat_events
 
-                    self.probability_tree['to_nt'][to_nt]['from_nt'][from_nt]['number_of_events'] = from_events
-                    to_events += from_events
-
-            self.probability_tree['to_nt'][to_nt]['number_of_events'] = to_events
-
-    def count_nts_on_event_tree(self):
-        """
-        Traverse event tree and count total number of nucleotides on the tips
-        Note: Final count should be around sequence length*3
-        """
-        total_nts = 0
-
-        for to_nt in NUCLEOTIDES:
-
-            for from_nt in NUCLEOTIDES:
-
-                if to_nt != from_nt:
-                    branch = self.event_tree['to_nt'][to_nt]['from_nt'][from_nt]['category']
-
-                    for classification in branch.keys():
-                        branch_cat = branch[classification]
-
-                        for omega_key in branch_cat.keys():
-                            nts_in_branch = len(branch_cat[omega_key])
-                            total_nts += nts_in_branch
-
-        return total_nts
+                    self.event_tree['to_nt'][to_nt]['from_nt'][from_nt]['nt_events'] = from_events
+            
+            self.event_tree['to_nt'][to_nt]['nt_events'] = to_events         
+                        
+    
 
     def __deepcopy__(self, memodict):
         """
@@ -276,9 +298,6 @@ class Sequence:
     def get_event_tree(self):
         return self.event_tree
 
-    def get_probability_tree(self):
-        return self.probability_tree
-
     @staticmethod
     def complement(seq, rev=False):
         """
@@ -318,113 +337,111 @@ class Sequence:
         and information about whether a mutation is a transition or transversion.
         :return event tree: a nested dictionary containing information about the mutation event
         """
-        event_tree = {'to_nt': {'A': {}, 'T': {}, 'C': {}, 'G': {}}}
-        cat_dict = {cat: {} for cat in self.cat_values.keys()}
+        event_tree = {'to_nt': dict([(nuc, {'from_nt': {}}) for nuc in NUCLEOTIDES])}
+        
+        # dictionary keyed by binary tuples indicating combination of orfs (e.g., {(1, 0): {}, (0, 1): {} , (1, 1): {}})
+        bin_orf_layer = {bin_code : {} for bin_code in [key for  key in self.all_maps.keys()]}
+        
+        # dictionary keyed by mutation rate categories
+        # (e.g., {'mu1': {(1, 0): {}, (0, 1): {}}, 'mu2': {(1, 0): {}, (0, 1): {}}})
+        cat_dict = {cat : copy.deepcopy(bin_orf_layer) for cat in self.cat_values.keys()}
 
         for to_nt in NUCLEOTIDES:
-            if to_nt in event_tree['to_nt'].keys():
-                # Update nucleotides with possible mutations
-                event_tree['to_nt'][to_nt].update([('from_nt', {'A': {'category': copy.deepcopy(cat_dict)},
-                                                                'T': {'category': copy.deepcopy(cat_dict)},
-                                                                'C': {'category': copy.deepcopy(cat_dict)},
-                                                                'G': {'category': copy.deepcopy(cat_dict)}})])
-                # Nucleotide cannot change to itself, store all classes
-                for from_nt in event_tree['to_nt'][to_nt]['from_nt'].keys():
-                    if from_nt == to_nt:
-                        event_tree['to_nt'][to_nt]['from_nt'][from_nt] = None
-
-        # print(event_tree)
+            # Update nucleotides with possible mutations
+            for from_nt in NUCLEOTIDES:
+                if from_nt == to_nt:
+                    event_tree['to_nt'][to_nt]['from_nt'][from_nt] = None
+                else: 
+                    event_tree['to_nt'][to_nt]['from_nt'][from_nt] = copy.deepcopy(cat_dict)
         return event_tree
 
     def set_substitution_rates(self, nt):
         """
         Calculates substitution rates of a nucleotide
+        Store newly created omega_combos in self.total_omegas as key with their value E.g {(None, 3,1) = (1*0.2*0.6)}
         Sets the sub-rates, omega values, rate classes, and total mutation rate of a Nucleotide
         :param nt: object of class Nucleotide
         """
         current_nt = nt.state
         sub_rates = {}
-        my_omega_keys = {}
+        selected_omegas = {}
         my_cat_keys = {}
 
+        
         for to_nt in NUCLEOTIDES:
-
+             
             if to_nt == current_nt:
                 sub_rates[to_nt] = None
-                my_omega_keys[to_nt] = None
-
+                selected_omegas[to_nt] = None
+            
             else:
-                # Apply global substitution rate and stationary nucleotide frequency
-                sub_rates[to_nt] = self.global_rate * self.pi[current_nt]
-                if self.is_transv(current_nt, to_nt):
-                    sub_rates[to_nt] *= self.kappa
+                # If mutation does not create STOP codons or affects START or STOP codons
+                if not self.is_start_stop_codon(nt, to_nt):  
 
-                # Keep track of the omega values using a list of lists that is num_codons long
-                # The inner list is 1 + number of omega classes
-                chosen_omegas = []
-                for codon in nt.codons:
-                    omega_values = codon.orf['omega_values']
-                    num_omegas = len(omega_values)
-                    chosen_omegas.append([0 for _ in range(num_omegas + 1)])
+                    # Apply global substitution rate and stationary nucleotide frequency
+                    sub_rates[to_nt] = self.global_rate * self.pi[current_nt]
+                    if self.is_transv(current_nt, to_nt):
+                        sub_rates[to_nt] *= self.kappa
 
-                # If nucleotide belongs to a codon
-                if nt.codons:
+                    chosen_omegas = list(self.number_orfs)  # Initialize chosen omegas as list of "None"s with len equal to number of ORFs
+                    computed_omega = 1
+                    # If nucleotide is part of at least one ORF, select omegas if mutation is non-syn or use "None" if it's syn
+                    if nt.codons:
+                    # For each codon, find the combination of omegas that will affect it according to the codons it is part of
+                    # E.g.: [2, 3, None, None, None] represent a nucleotide in two reading frames where both mutations are non-syn. 
+                    # Note: "None" means that nt is not part of that ORF
 
-                    # If mutation does not introduce a STOP and nucleotide is not part of a START codon
-                    if not self.is_start_stop_codon(nt, to_nt):
-
-                        # Iterate over codons to initialize the list to store chosen omegas
-                        chosen_omegas = []
                         for codon in nt.codons:
-                            num_omegas = len(codon.orf['omega_values'])
-                            chosen_omegas.append([0 for _ in range(num_omegas + 1)])
 
-                        # Loop through codons again to process the codons
-                        for idx, codon in enumerate(nt.codons):
-                            omega_values = codon.orf['omega_values']
+                            codon_orf = codon.orf['orf_map']  # tuple of 1s and 0s Eg., (1, 0, 0)
+                            orf_index = np.where(codon_orf==1)[0][0]  # The position with a 1 indicates the ORF for the codon
                             pos_in_codon = codon.nt_in_pos(nt)
-                            num_omegas = len(codon.orf['omega_values'])
-
-                            # Apply omega when mutation is non-synonymous
+                            
+                            # If mutation is non-synonymous, select one omega index to an omega_values for the orf
                             if codon.is_nonsyn(pos_in_codon, to_nt):
+            
+                                omega_values = codon.orf['omega_values']
+                                
+                                #Randomly select one of the omegas
+                                omega_index = random.randrange(len(omega_values))
+                                chosen_omegas[orf_index] = omega_index
+                                computed_omega *= omega_values[omega_index]                           
 
-                                # Randomly select a key in the omega values dictionary
-                                omega_index = random.randrange(num_omegas)
-                                sub_rates[to_nt] *= omega_values[omega_index]
-                                chosen_omegas[idx][omega_index] += 1
-
-                            # Record that mutation is synonymous
+                            # If mutation is synonymous, use a -1 to indicate that no omegas are selected
                             else:
-                                chosen_omegas[idx][num_omegas] += 1
+                                chosen_omegas[orf_index] = -1
 
-                    else:  # Mutation introduces or destroys a STOP or nt is part of a START
-                        sub_rates[to_nt] *= 0
+                    # Store omega combination and calculated value in total_omega dict
+                    if tuple(chosen_omegas) not in self.total_omegas.keys():
+                        self.total_omegas[tuple(chosen_omegas)] = {'value' : computed_omega}
 
-                # Randomly select one of the mu Values
-                selected_cat = random.choice(list(self.cat_values))
-                sub_rates[to_nt] *= self.cat_values[selected_cat]
-                chosen_omegas = tuple(tuple(t) for t in chosen_omegas)  # Tuple of tuples
-                my_omega_keys[to_nt] = chosen_omegas  # Store omega keys used in the substitution
+                    selected_omegas[to_nt] = tuple(chosen_omegas)  # Store omega keys used to describe the substitution
+                    selected_cat = random.choice(list(self.cat_values))  # Randomly select one of the mu values (mutation rate) 
+                    sub_rates[to_nt] *= self.cat_values[selected_cat]  # Apply my value over instant mutation rate
+                    sub_rates[to_nt] *= self.total_omegas[tuple(chosen_omegas)]['value']  # Apply omega value over instant mutation rate
+                    my_cat_keys[to_nt] = selected_cat
+                
+                else:  # Inform nucleotide that such subs cannot occur
+                    selected_omegas[to_nt] = None
+                    my_cat_keys[to_nt] = None
+                    sub_rates[to_nt] = None
 
-                my_cat_keys[to_nt] = selected_cat
-
-                # If key is not in total omegas dict, create it
-                self.set_total_omegas(chosen_omegas, nt.codons)
 
         # Set substitution rates and key values for the nucleotide object
         nt.set_rates(sub_rates)
         nt.set_categories(my_cat_keys)
-        nt.set_omega(my_omega_keys)
-        nt.get_mutation_rate()
+        nt.set_omega(selected_omegas)
+        nt.get_mutation_rate()  # Sum of mutation rates for all nucleotides is used to calculate rate at which mutations occurs on simulation.py
 
     def set_total_omegas(self, chosen_omegas, codons):
         """
-        Adds unique combinations of omega values to total_omegas
-        Synonymous mutations are represented as tuples containing all zeroes
-        :param chosen_omegas: tuple of lists of values representing the indices of the selected omega values
+        Find if the omega keys (one-hot tuples) of a nucleotide are stored in self.total_omegas.
+        If not, store it. 
+        :param chosen_omegas: tuple of tuples, representing the indices of the selected omega values
+        :param codons: list, codons that a given nucleotide is part of
         """
 
-        # Number of codons a nucleotide is part of is the same as the number of ORFS (and number of omega values)
+        # Number of codons a nucleotide is part of is the same as the number of ORFS
         for codon_idx in range(len(codons)):
             # Exclude last position (synonymous)
             nonsyn_values = chosen_omegas[codon_idx][:len(chosen_omegas[codon_idx]) - 1]
@@ -461,34 +478,26 @@ class Sequence:
         :return: the new omega key
         """
         current_nt = nt.state
-        nt_omega_in_tree = {}  # Dictionary to omega keys to find nucleotide on the Event Tree
-        new_omega_key = {}  # New omega created on the Event Tree
 
         for to_nt in NUCLEOTIDES:
+            
             if to_nt != current_nt:
+                
+                if not self.is_start_stop_codon(nt, to_nt):  # Nucleotides that are part of start or stop should never mutate
 
-                if not self.is_start_stop_codon(nt, to_nt):
-                    # Create one nucleotide key with all the omegas for that substitution
-                    omega_cat = nt.omega_keys[to_nt]
+                    # Find proper keys
                     category = nt.cat_keys[to_nt]
-                    cat_branch = self.event_tree['to_nt'][to_nt]['from_nt'][current_nt]['category'][category]
+                    orf_map_key = nt.orf_map_key
+                    omega_keys = nt.omega_keys[to_nt]
 
-                    # Store nucleotide according to omega keys
-                    if omega_cat:
-                        nt_omega_in_tree[to_nt] = omega_cat  # Store string in the nucleotide dict for omega on the tree
-
-                        if omega_cat in cat_branch:  # Omega class is already created on the Event Tree
-                            # Check if nucleotide is already in the branch
-                            if nt not in cat_branch[omega_cat]:
-                                cat_branch[omega_cat].append(nt)
-
-                        else:  # Create the new omega class
-                            cat_branch[omega_cat] = [nt]
-                            new_omega_key[to_nt] = {'cat': category, 'new_omega': omega_cat}
-
-        # Set omega keys on nucleotide according to its path on the Event tree
-        nt.set_omega_in_event_tree(nt_omega_in_tree)
-        return new_omega_key
+                    branch = self.event_tree['to_nt'][to_nt]['from_nt'][current_nt][category][orf_map_key]
+                    
+                    if omega_keys in branch.keys():  # Store nt on the branch
+                        branch[omega_keys].append(nt)
+                    
+                    else:  # Create the omega layer when non existent
+                        branch[omega_keys] = [nt]
+                                    
 
     @staticmethod
     def is_transv(from_nt, to_nt):
@@ -527,26 +536,21 @@ class Sequence:
     def find_codons(self, frame, orf):
         """
         Gets the Codon sequence
-        :param frame: the frame of the ORF
-        :param orf: dictionary containing the coordinates of the ORF, and the associated omega values
+        :param frame:  str, the frame of the ORF, e.g., "+1"
+        :param orf:  dict, containing the coordinates of the ORF, and the associated omega values
         :return: a list of Codon objects for the specified ORF
         """
-        codons = []
+        # extract coding sequence
         cds = []
-        for coord_list in orf['coords']:
-            # Handle spliced ORFs
-            cds.extend(self.nt_sequence[coord_list[0]: coord_list[1]])
-
-        # Reverse strand orf
+        for start, stop in orf['coords']:
+            cds.extend(self.nt_sequence[start:stop])  # concatenates spliced ORFs
         if frame.startswith('-'):
-            cds = cds[::-1]
+            cds = cds[::-1]  # negative strand ORF
 
-        # Iterate over list by threes and create Codons
-        for i in range(3, len(cds) + 1, 3):
-            cdn = cds[i - 3: i]
-            codon = Codon(frame, orf, cdn)
-            codons.append(codon)
-
+        # Iterate over string by threes and create Codon objects
+        codons = []
+        for i in range(3, len(cds)+1, 3):
+            codons.append(Codon(frame, orf, cds[(i-3):i]))
         return codons
 
     def check_event_tree(self):
@@ -573,19 +577,19 @@ class Nucleotide:
 
     def __init__(self, state, pos_in_seq):
         """
-        :param state: Nucleotide A, C, G or T
-        :param pos_in_seq: Position of the nucleotide in the sequence
+        :param state:  str, nucleotide A, C, G or T
+        :param pos_in_seq:  int, position of the nucleotide in the sequence
         """
-        self.state = state  # The nucleotide base (A, T, G, C)
-        self.pos_in_seq = pos_in_seq  # The nt's position relative to the start of the sequence
+        self.state = state
+        self.pos_in_seq = pos_in_seq
+
         self.codons = []  # A list of codon objects the Nucleotide is part of
         self.complement_state = COMPLEMENT_DICT[self.state]  # The complement state
         self.rates = {}  # A dictionary of mutation rates
-        self.omega_keys = {}  # omega keys chosen when calculating rates
+        self.omega_keys = {}  # For each substitution, tuple containing the omegas applied Eg. ({'A': None, 'C': [0, 3, -1, -1, -1], 'G': [1, 0, -1, -1, -1], 'T': [0, 0, -1, -1, -1]})
         self.cat_keys = {}  # category keys chosen when calculating rates
-        self.omega_in_event_tree = {}
         self.mutation_rate = 0  # The total mutation rate
-        self.relevant_info = {}
+        self.orf_map_key = ()
 
     def __str__(self):
         return self.state
@@ -612,16 +616,13 @@ class Nucleotide:
         new_nucleotide.mutation_rate = copy.deepcopy(self.mutation_rate, memodict)
         new_nucleotide.omega_keys = copy.deepcopy(self.omega_keys, memodict)
         new_nucleotide.cat_keys = copy.deepcopy(self.cat_keys, memodict)
-        new_nucleotide.omega_in_event_tree = copy.deepcopy(self.omega_in_event_tree, memodict)
         new_nucleotide.codons = []  # References to Codons will be set when the Sequence is deep-copied
+        new_nucleotide.orf_map_key = copy.deepcopy(self.orf_map_key, memodict)
 
         return new_nucleotide
 
-    def set_omega_in_event_tree(self, nt_omega_in_tree):
-        self.omega_in_event_tree = nt_omega_in_tree
-
-    def set_relevant_info(self, relevant_info):
-        self.relevant_info = relevant_info
+    def set_orf_map_key(self, orf_map_key):
+        self.orf_map_key = orf_map_key
 
     def set_state(self, new_state):
         self.state = new_state
@@ -649,20 +650,10 @@ class Nucleotide:
 
     def get_mutation_rate(self):
         total_rate = 0
-        for to_nt, value in self.rates.items():
-            if value:
-                total_rate += value
+        for mutation_rate in self.rates.values():
+            if mutation_rate:
+                total_rate += mutation_rate
         self.mutation_rate = total_rate
-
-    def get_relevant_info(self):
-        """
-        Create a dictionary with all relevant information related with the nucleotide
-        (Useful for debugging)
-        """
-        info = {"state": self.state, "position": self.pos_in_seq,
-                "rates": self.rates, "mutation rate": self.mutation_rate, "codons": self.codons}
-
-        return info
 
 
 class Codon:
@@ -673,13 +664,13 @@ class Codon:
     def __init__(self, frame, orf, nts_in_codon):
         """
         Create a Codon
-        :param frame: the reading frame (+0, +1, +2, -0, -1, -2)
-        :param orf: a tuple containing the reading frame and the coordinates of the orf
-        :param nts_in_codon: a list of pointers to the Nucleotides in the Codon
+        :param frame:  str, the reading frame (+0, +1, +2, -0, -1, -2)
+        :param orf:  tuple, containing the reading frame and the coordinates of the orf
+        :param nts_in_codon:  a list of pointers to the Nucleotides in the Codon
         """
-        self.frame = frame  # The reading frame
-        self.orf = orf  # Tuple containing the reading frame and the coordinates
-        self.nts_in_codon = nts_in_codon  # List of Nucleotides in the Codon
+        self.frame = frame
+        self.orf = orf
+        self.nts_in_codon = nts_in_codon  # list of Nucleotide objects in the Codon
 
     def __repr__(self):
         return ''.join(str(nt) for nt in self.nts_in_codon)
@@ -690,6 +681,7 @@ class Codon:
         :param query_nt: the Nucleotide of interest
         :return: the position of the Nucleotide in the Codon
         """
+        # FIXME: isn't this just self.nts_in_codon.index(query_nt) ?
         for idx, nt in enumerate(self.nts_in_codon):
             if query_nt is nt:
                 return idx
@@ -737,9 +729,13 @@ class Codon:
         codon = ''.join(str(nt) for nt in self.nts_in_codon)  # Cast all Nucleotides in the Codon to strings
         if self.frame.startswith('+'):
             return codon == 'ATG' and self.nts_in_codon[0].pos_in_seq == self.orf['coords'][0][0]
+            # Note: I don't think the codon needs to be ATG to be a start?
+            #return self.nts_in_codon[0].pos_in_seq == self.orf['coords'][0][0]
         else:
             # +1 to account for non-inclusive indexing
             return codon == 'ATG' and self.nts_in_codon[0].pos_in_seq + 1 == self.orf['coords'][0][1]
+            #return self.nts_in_codon[0].pos_in_seq + 1 == self.orf['coords'][0][1]
+            
 
     def is_stop(self):
         """
