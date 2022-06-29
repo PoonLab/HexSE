@@ -217,6 +217,11 @@ class SimulateOnBranch:
 
                 if cat and omega_combo:  # If mutation did not introduced STOP codons on seq, therefore it IS stored on the tree:
                     # Note, when mutation causes STOP codons, both cat and omega_combo are None
+                    # if omega_combo not in self.sequence.event_tree['to_nt'][to_nt]['from_nt'][selected_nt.state][cat][selected_orf_combo].keys():
+                    #     print(f"\n{self.sequence.event_tree['to_nt'][to_nt]['from_nt'][selected_nt.state][cat][selected_orf_combo].keys()}")
+                    #     print(f"ORF combo:{omega_combo}, selected nucleotide {selected_nt}")
+                    #     sys.exit()
+
                     my_branch = self.sequence.event_tree['to_nt'][to_nt]['from_nt'][selected_nt.state][cat][selected_orf_combo][omega_combo]
                     my_branch.remove(selected_nt)
                 
