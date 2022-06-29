@@ -189,11 +189,11 @@ class SimulateOnBranch:
                             # codons probably share nucleotides in common. Avoid to update them twice.
                             if adj_nt not in updated_nts:
                                 # Remove, re calculate, and re populate Event Tree with adjacent nucleotides
-                                self.remove_nt(adj_nt, selected_orf_combo)
+                                self.remove_nt(adj_nt, adj_nt.orf_map_key)  # Adjacent nucleotides might have different orf maps since they can be not on the same overlapping region
                                 self.update_nucleotide_info(adj_nt, adj_nt.state)
                                 self.sequence.nt_in_event_tree(adj_nt)
                                 updated_nts.append(adj_nt)
-
+            
         
             # Update number of events in the Tree per branch
             self.sequence.count_events_per_layer()
@@ -216,12 +216,7 @@ class SimulateOnBranch:
                 omega_combo = selected_nt.omega_keys[to_nt]
 
                 if cat and omega_combo:  # If mutation did not introduced STOP codons on seq, therefore it IS stored on the tree:
-                    # Note, when mutation causes STOP codons, both cat and omega_combo are None
-                    # if omega_combo not in self.sequence.event_tree['to_nt'][to_nt]['from_nt'][selected_nt.state][cat][selected_orf_combo].keys():
-                    #     print(f"\n{self.sequence.event_tree['to_nt'][to_nt]['from_nt'][selected_nt.state][cat][selected_orf_combo].keys()}")
-                    #     print(f"ORF combo:{omega_combo}, selected nucleotide {selected_nt}")
-                    #     sys.exit()
-
+                    # Note, when mutation causes STOP codons, both cat and omega_combo are Noneq
                     my_branch = self.sequence.event_tree['to_nt'][to_nt]['from_nt'][selected_nt.state][cat][selected_orf_combo][omega_combo]
                     my_branch.remove(selected_nt)
                 
