@@ -39,6 +39,10 @@ def get_args(parser):
         '--outfile', default=None, help='Path to the alignment file; defaults to stdout.'
     )
 
+    parser.add_argument(
+        '--logfile', default=None, help='Path to the log file; defaults to stdout.'
+    )
+
     return parser.parse_args()
 
 
@@ -379,13 +383,21 @@ def main():
     mu_values = create_values_dict(mu_shape, mu_classes, "mu", mu_dist)
 
     # Log global parameters
-    logging.info(f"Parameters for the run: \n"
-                 f"Pi: {pi}\n"
-                 f"Global rate: {global_rate}\n"
-                 f"Kappa: {kappa}\n"
-                 f"Number of nucleotide classification classes: {mu_classes}\n"
-                 f"Nucleotide classification shape parameter: {mu_shape}\n"
-                 f"Rates classification values: {mu_values}")
+    logging.info(   f"\n\n"
+                    f"FILES\n"
+                    f"\tSequence: {args.seq}\n"
+                    f"\tConfiguration: {args.config}\n"
+                    f"\tPhylo Tree: {args.tree}\n"
+                    f"\tAlignment: {args.outfile}\n"
+
+                    f"\n"
+                    f"PARAMETERS: \n"
+                    f"\tPi: {pi}\n"
+                    f"\tGlobal rate: {global_rate}\n"
+                    f"\tKappa: {kappa}\n"
+                    f"\tNumber of nucleotide classification classes: {mu_classes}\n"
+                    f"\tNucleotide classification shape parameter: {mu_shape}\n"
+                    f"\tRates classification values: {mu_values}\n")
 
     orf_locations = settings.orfs
     # Check if the ORFs are valid
@@ -436,7 +448,7 @@ def main():
     # Since ORFs are valid, sort the ORFs by reading frame
     orfs = sort_orfs(orf_locations)
     # print("Valid orfs: {}".format(value for coord in orfs))
-    logging.info(f"\nValid orfs: {orfs}\n")
+    logging.info(f"\n\tValid orfs: {orfs}\n")
     # Final orf list:
     orfs_list = []
     for frame, orf_list in orfs.items():
@@ -472,8 +484,10 @@ def main():
 
     end_time = datetime.now()
     print(f"Simulation duration: {end_time - start_time} seconds")
-    logging.info(f"\nSimulation Ended at: {end_time}\n"
-                 f"Simulation lasted: {end_time - start_time} seconds\n")
+    logging.info(
+                    f"\n\tSimulation Ended at: {end_time}\n"
+                    f"\tSimulation lasted: {end_time - start_time} seconds\n"
+                    f"----------------------------------------------------------\n")
 
 
 if __name__ == '__main__':
