@@ -10,7 +10,6 @@ HexSE is a Python module designed to simulate sequence evolution along a phyloge
 + [Output files](#output-files)  
 + [Additional features](#additional-features)
 + [Rationale](#rationale)
-+ [Workflow](#workflow)
 
 ## System requirements
 `HexSE` is a Python package developed under version 3.6.9.
@@ -61,15 +60,58 @@ To check that `HexSE` has been properly installed and that you have all the requ
 $ python3 -m unittest
 ```
 
-Test files are provided in `.tests/fisxtures/`. For a test run of HexSE on [HBV genome](https://www.ncbi.nlm.nih.gov/nuccore/NC_003977.2) along a phylogeny with 100 tips, use:
+Test files are provided in `.tests/fisxtures/`. For a run of *HexSE* on [HBV genome](https://www.ncbi.nlm.nih.gov/nuccore/NC_003977.2) along a phylogeny with 100 tips, use:
 ```console
 $ python3 -m hexse.run_simulation tests/fixtures/NC_003977.2_HBV.gb tests/fixtures/100_tree.newick tests/fixtures/conf_NC_00377.yaml --logfile test_HBV.log --outfile HBV_out.fasta
 ```
 
 ## Output Files
+HeSE will output one alignment file in `fasta` format with as many mutated sequences as tips on the phylogeny. It will also create a log file specifying the run parameters. 
+
+A log file for a test run on HBV looks includes the follwing information:
+```python
+INFO:root:
+Simulation started at: 2022-09-09 12:30:53.815405
+
+INFO:root:
+
+FILES
+	Sequence: tests/fixtures/NC_003977.2_HBV.gb
+	Configuration: tests/fixtures/conf_NC_00377.yaml
+	Phylo Tree: tests/fixtures/100_tree.newick
+	Alignment: HBV_out.fasta
+
+PARAMETERS: 
+	Pi: {'A': 0.25, 'C': 0.25, 'G': 0.25, 'T': 0.25}
+	Global rate: 0.05
+	Kappa: 0.3
+	Number of nucleotide classification classes: 2
+	Nucleotide classification shape parameter: 1.0
+	Rates classification values: {'mu1': 0.2615782918648644, 'mu2': 1.3871429788350027}
+	
+INFO:root:
+	Valid ORFs: [[[0, 837]], [[156, 837]], [[1815, 2454]], [[1902, 2454]], [[1375, 1840]], [[1853, 1922]], [[2849, 3182]], [[3173, 3182]]]
+	Total ORFs: 8
+
+INFO:root:
+	Simulation Ended at: 2022-09-09 15:37:49.275652
+	Simulation lasted: 0:00:46.946687 seconds
+```
 
 ## Aditional Features
+*HexSE* includes a set of scripts located at `./accesory_scripts/` that might be usefult to prepare information for a run and to process the alignment afterwards. 
+
+* `gb_to_yaml.py`: Creates a YAML configuration file by identifying the Coding Sequences (CDSs) on a `genbank` file and sets default values to `mu`, `kappa`, `global_rate`, and `pi`.
+
+* `get_orfs.py`: Obtains the Open Reading Frames (ORF) of a genome based on its `genbank` annotations.
+
+* `extract_cds`: From a sequence alignment in `fasta` file, extracts a specific region between two nucleotide locations.    
 
 ## Rationale
 
-## Workflow
+Gene overlap occurs when two or more genes are encoded by the same nucleotides.
+This phenomenon is found in all taxonomic domains, but is particularly common in viruses, where it may provide a mechanism to increase the information content of compact genomes. The presence of overlapping reading frames (OvRFs) can skew estimates of selection based on the rates of non-synonymous and synonymous substitutions, since a substitution that is synonymous in one reading frame may be non-synonymous in another, and vice versa. 
+
+To understand the impact of OvRFs on molecular evolution, HexSE implemented a versatile simulation model of nucleotide sequence evolution along a phylogeny with an arbitrary distribution of reading frames in linear or circular genomes. We use a custom data structure to track the substitution rates at every nucleotide site, which is determined by the stationary nucleotide frequencies, transition bias, and the distribution of selection biases (dN/dS) in the respective reading frames.
+
+![Pipeline_overview](./images/Probability_tree.png)
