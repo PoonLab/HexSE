@@ -358,7 +358,7 @@ def main():
 
     # Create log file
     file_name = input.split("/")[-1]
-    LOG_FILENAME = f'{file_name.split(".")[0]}_evol_simulation.log'
+    LOG_FILENAME = args.logfile if args.logfile else (f'{file_name.split(".")[0]}_evol_simulation.log')
     logging.basicConfig(filename=LOG_FILENAME, level=logging.INFO)
     logging.info(f"\nSimulation started at: {start_time}\n")
 
@@ -447,14 +447,16 @@ def main():
 
     # Since ORFs are valid, sort the ORFs by reading frame
     orfs = sort_orfs(orf_locations)
-    # print("Valid orfs: {}".format(value for coord in orfs))
-    logging.info(f"\n\tValid orfs: {orfs}\n")
+
     # Final orf list:
     orfs_list = []
     for frame, orf_list in orfs.items():
         for orf in orf_list:
             orfs_list.append(orf['coords'])
-    
+
+    logging.info(f"\n\tValid ORFs: {orfs_list}\n"
+                 f"\tTotal ORFs: {len(orfs_list)}\n"
+                 f"\n\tOrf Map: {orfs}\n")
     print(f"\nValid orfs: {orfs_list}\nTotal orfs: {len(orfs_list)}")
 
     # Check if sequence is valid
@@ -483,12 +485,13 @@ def main():
     simulation.get_alignment(args.outfile)
 
     end_time = datetime.now()
-    print(f"Simulation duration: {end_time - start_time} seconds")
     logging.info(
                     f"\n\tSimulation Ended at: {end_time}\n"
                     f"\tSimulation lasted: {end_time - start_time} seconds\n"
                     f"----------------------------------------------------------\n")
 
+    print(f"Simulation completed.\nAlignment at: {args.outfile}")
+    print(f"Duration: {end_time - start_time} seconds")
 
 if __name__ == '__main__':
     main()
