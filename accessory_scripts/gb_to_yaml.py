@@ -5,9 +5,18 @@ from Bio import SeqIO
 import yaml
 from random import randint
 
-print("This is a script")
 
-handle = "HIV_NC_001802.gb"
+def get_args(parser):
+    parser.add_argument(
+        'gb_file',
+        help = 'Path to the genbank file'
+    )
+    parser.add_argument(
+        'yaml_file',
+        help = 'Path to the yaml configuration file'
+    )
+
+    return parser.parse_args()
 
 def get_locations(handle):
     
@@ -23,17 +32,26 @@ def get_locations(handle):
     return locations
 
 
-orf_info = {}
-for location in get_locations(handle):
-    loc_string = ','.join([str(value) for value in location])
-    omega_shape = 1+ (randint(0,10)/10)
-    orf_info[loc_string] = {
-                            'omega_classes': randint(2,6),
-                            'omega_shape': omega_shape,
-                            'omega_dist': 'gamma'
+def main():
+    parser = argparse.ArgumentParser(
+        description='Create a YAML configuration file to Hexse from GenBank file'
+    )
+
+    args = get_args(parser)
+    gb_file = args.gb_file
+    out = args.yaml_file
+    
+    orf_info = {}   
+    for location in get_locations(gb_file):
+        loc_string = ','.join([str(value) for value in location])
+        omega_shape = 1+ (randint(0,10)/10)
+        orf_info[loc_string] = {
+                                'omega_classes': randint(2,6),
+                                'omega_shape': omega_shape,
+                                'omega_dist': 'gamma'
                         }
 
-info_for_yaml = {
+    info_for_yaml = {
                     'global_rate': 0.5,
                     'kappa': 0.3,
                     'pi': {'A': 0.25, 'C': 0.25, 'G': 0.25, 'T':0.25},
@@ -43,5 +61,9 @@ info_for_yaml = {
                 }
 
 
-with open('NC_001802_HIV.yaml', 'w') as file:
-    documents = yaml.dump(info_for_yaml, file)
+    with open(out, 'w+') as file:
+        yaml.dump(info_for_yaml, file)
+
+
+if __name__ == '__main__':
+    main()
