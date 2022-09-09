@@ -39,6 +39,10 @@ def get_args(parser):
         '--outfile', default=None, help='Path to the alignment file; defaults to stdout.'
     )
 
+    parser.add_argument(
+        '--logfile', default=None, help='Path to the log file; defaults to stdout.'
+    )
+
     return parser.parse_args()
 
 
@@ -91,7 +95,7 @@ def valid_orfs(orf_locations, seq_length):
             # Check that the ORF is composed of codons
             # Inclusive range (start and end coordinates included)
             if orf_length % 3 != 0 and orf not in invalid_orfs[strand]:
-                print("Invalid orf: {}; Not multiple of three".format(orf))
+                print("Invalid orf: {}; Not multiple of three".format(orf['coords']))
                 invalid_orfs[strand].append(orf)
 
     return invalid_orfs
@@ -305,6 +309,7 @@ def count_internal_stop_codons(seq, strand, orf):
     pat = '(TAA|TGA|TAG)'
     reg = re.compile(pat)
     stop_count, cds = 0, ""
+    stop_codons = ['TAA', 'TGA', 'TAG']
 
     # Get CDS
     cds += seq[orf[0]: orf[1]]
@@ -314,11 +319,17 @@ def count_internal_stop_codons(seq, strand, orf):
     stop_matches = reg.finditer(str(cds))
 
     # Check if the STOP codon is in the same frame the start codon and is not the last STOP codon in the ORF
-    for match in stop_matches:
-        stop_start = match.span()[0]
-        stop_end = match.span()[1]
-        if stop_start % 3 == orf[0] % 3 and stop_end < orf[1]:
-            stop_count += 1
+    # for match in stop_matches:
+    #     stop_start = match.span()[0]
+    #     stop_end = match.span()[1]
+    #     if stop_start % 3 == orf[0] % 3 and stop_end < orf[1]:
+    #         stop_count += 1
+
+    # Find if STOP codons in cds by iterating sequence every three nucleotides
+    for i in range(3, len(cds)+1, 3):
+        codon = cds[(i-3):i]
+        if codon in stop_codons:
+            stop_count +=1
 
     return stop_count
 
@@ -347,9 +358,9 @@ def main():
 
     # Create log file
     file_name = input.split("/")[-1]
-    LOG_FILENAME = f'{file_name.split(".")[0]}_evol_simulation.log'
+    LOG_FILENAME = args.logfile if args.logfile else (f'{file_name.split(".")[0]}_evol_simulation.log')
     logging.basicConfig(filename=LOG_FILENAME, level=logging.INFO)
-    logging.info(f"\nSimulation started at: {start_time}")
+    logging.info(f"\nSimulation started at: {start_time}\n")
 
     # Assign settings
     settings = Settings(args)
@@ -372,13 +383,21 @@ def main():
     mu_values = create_values_dict(mu_shape, mu_classes, "mu", mu_dist)
 
     # Log global parameters
-    logging.info(f"Parameters for the run: \n"
-                 f"Pi: {pi}\n"
-                 f"Global rate: {global_rate}\n"
-                 f"Kappa: {kappa}\n"
-                 f"Number of nucleotide classification classes: {mu_classes}\n"
-                 f"Nucleotide classification shape parameter: {mu_shape}\n"
-                 f"Rates classification values: {mu_values}")
+    logging.info(   f"\n\n"
+                    f"FILES\n"
+                    f"\tSequence: {args.seq}\n"
+                    f"\tConfiguration: {args.config}\n"
+                    f"\tPhylo Tree: {args.tree}\n"
+                    f"\tAlignment: {args.outfile}\n"
+
+                    f"\n"
+                    f"PARAMETERS: \n"
+                    f"\tPi: {pi}\n"
+                    f"\tGlobal rate: {global_rate}\n"
+                    f"\tKappa: {kappa}\n"
+                    f"\tNumber of nucleotide classification classes: {mu_classes}\n"
+                    f"\tNucleotide classification shape parameter: {mu_shape}\n"
+                    f"\tRates classification values: {mu_values}\n")
 
     orf_locations = settings.orfs
     # Check if the ORFs are valid
@@ -390,11 +409,11 @@ def main():
         for strand in invalid_orfs:
             orfs = invalid_orfs[strand]
             for orf in orfs:
-                invalid_orf_msg += f" {orf} "
+                invalid_orf_msg += f" {orf['coords']} "
                 orf_locations[strand].remove(orf)
 
         if invalid_orf_msg:
-            print(f"\nOmitted orfs: {invalid_orf_msg}\n")
+            # print(f"\nOmitted orfs: {invalid_orf_msg}\n")
             logging.warning(f"Omitted orfs: {invalid_orf_msg}")
     
     for strand in orf_locations:
@@ -408,8 +427,8 @@ def main():
 
                 # CDS has more than one stop codon (the final one)
                 if stop_count > 1:
-                    orf_locations[strand][idx]['coords'].remove(orf_coord)  # Remove from coords list
                     print(f"Omitted orf: {orf_coord} in {orf['coords']}, has {stop_count} STOP codons")
+                    orf_locations[strand][idx]['coords'].remove(orf_coord)  # Remove from coords list
 
         # Coordinates are empty due to removal for introduction of early STOPS codons
         orf_locations[strand][:] = [orf for orf in orfs if orf['coords']]
@@ -428,7 +447,17 @@ def main():
 
     # Since ORFs are valid, sort the ORFs by reading frame
     orfs = sort_orfs(orf_locations)
-    logging.info("Valid orfs: {}".format(orfs))
+
+    # Final orf list:
+    orfs_list = []
+    for frame, orf_list in orfs.items():
+        for orf in orf_list:
+            orfs_list.append(orf['coords'])
+
+    logging.info(f"\n\tValid ORFs: {orfs_list}\n"
+                 f"\tTotal ORFs: {len(orfs_list)}\n"
+                 f"\n\tOrf Map: {orfs}\n")
+    print(f"\nValid orfs: {orfs_list}\nTotal orfs: {len(orfs_list)}")
 
     # Check if sequence is valid
     if not valid_sequence(s):
@@ -456,10 +485,13 @@ def main():
     simulation.get_alignment(args.outfile)
 
     end_time = datetime.now()
-    print(f"Simulation duration: {end_time - start_time} seconds")
-    logging.info(f"\nSimulation Ended at: {end_time}\n"
-                 f"Simulation lasted: {end_time - start_time} seconds\n")
+    logging.info(
+                    f"\n\tSimulation Ended at: {end_time}\n"
+                    f"\tSimulation lasted: {end_time - start_time} seconds\n"
+                    f"----------------------------------------------------------\n")
 
+    print(f"Simulation completed.\nAlignment at: {args.outfile}")
+    print(f"Duration: {end_time - start_time} seconds")
 
 if __name__ == '__main__':
     main()
