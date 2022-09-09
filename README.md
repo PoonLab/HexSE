@@ -1,43 +1,38 @@
 # HexSE: Simulating evolution in overlapping reading frames
-Python module to simulate mutations on a nucleotide sequence along a phylogenetic tree taking into account the coding context of the nucleotide in the sequence.
+HexSE is a Python module designed to simulate sequence evolution along a phylogeny while considering the coding context the nucleotides. The ultimate porpuse of HexSE is to account for multiple selection preasures on Overlapping Reading Frames. 
 
+![Pipeline_overview](./images/Pipeline_overview.png)
 
-## Usage
-The minimum requirenments for the pipeline are:
++ [System requirements](#system-requirements)  
++ [Installation](#installation)  
++ [Usage](#usage)
++ [Test](#test)  
++ [Output files](#output-files)  
++ [Additional features](#additional-features)
++ [Rationale](#rationale)
++ [Workflow](#workflow)
 
-**Nucleotide sequence** The sequence to evolve can be either in `fasta` of `genbank` format.
+## System requirements
+`HexSE` is a Python package developed under version 3.6.9.
+The following dependencies are required (as listed in the `setup.py` file):
 
-**Phylogenetic tree** expected on `newick` format
-
-**Open reading frames**
-If the input file is on `genbank` format, the program will retrieve the ORFs from the genome annotation. If the input sequence is a `fasta` file, you have two options:
-1. Specify the ORFs with the first and last nucleotide of the CDs as an csv file
-2. Let the program search for CDSs by recognizing start and stop codons
-
-**Optional parameters**
-Other substitution biases can be specified in a [YAML](https://en.wikipedia.org/wiki/YAML) file.
-
-The pipeline can be run as a Python module from the terminal as following:
-
-```console
-$ python3 -m hexse.run_simulation sars-cov.fa phylo_tree.newick subs_rates.yaml
-```
+* `scipy`
+* `numpy`
+* `biopython`
+* `pyyaml`
 
 ## Installation
-`HexSE` is a Python package developed under the version 3.6. The following dependencies are required (as listed in the `setup.py` file):
-- `scipy`
-- `numpy`
-- `biopython`
-- `pyyaml`
 
-To install `HexSE`, there are three options. To install using the cloned repository:
+To install `HexSE`, there are three options. 
+
+* Clone repository:
 ```console
 $ git clone https://github.com/PoonLab/HexSE
 $ cd HexSE
 $ sudo python3 setup.py install
 ```
 
-Ideally, consider using a virtual environment to ensure the right versions for the dependencies:
+* Create virtual environment (ideal to ensure the right versions for the dependencies):
 ```console
 $ git clone https://github.com/PoonLab/HexSE
 $ cd HexSE 
@@ -46,14 +41,35 @@ $ source ./venv/bin/activate
 $ python3 setup.py install
 ```
 
-To install without cloning (Using `pip`):
+* Install with `pip` (without clonning):
 ```console
 $ python3 -m pip install --upgrade git+https://github.com/PoonLab/HexSE
 ```
 
-## Unittest
+## Usage
+HexSe requires users to provide a nucleotide sequence (either on `fasta` or `genbank` format), a phylogenetic tree (on `newick` format), and a configuration file on [YAML](https://en.wikipedia.org/wiki/YAML) format specifying the substitution biases and the coordinates of the Open Reading Frames in the sequence.
+
+HexSE runs as a Python module from the terminal with command line arguments as following:
+```console
+$ python3 -m hexse.run_simulation <path_to_sequence_file> <path_to_phylogenetic_tree> <path_to_configuration_file> --outfile <path_to_alignment_file> --logfile <path_to_log_file>
+```
+
+## Test
 To check that `HexSE` has been properly installed and that you have all the required dependencies, use:
 
-```python
+```console
 $ python3 -m unittest
 ```
+
+Test files are provided in `.tests/fisxtures/`. For a test run of HexSE on [HBV genome](https://www.ncbi.nlm.nih.gov/nuccore/NC_003977.2) along a phylogeny with 100 tips, use:
+```console
+$ python3 -m hexse.run_simulation tests/fixtures/NC_003977.2_HBV.gb tests/fixtures/100_tree.newick tests/fixtures/conf_NC_00377.yaml --logfile test_HBV.log --outfile HBV_out.fasta
+```
+
+## Output Files
+
+## Aditional Features
+
+## Rationale
+
+## Workflow

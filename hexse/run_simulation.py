@@ -66,6 +66,7 @@ def valid_orfs(orf_locations, seq_length):
     :return: <True> if the ORFs are valid, <False> otherwise
     """
     invalid_orfs = {'+': [], '-': []}   # ORF locations sorted by strand
+    invalid_msg = []  # Store the reason why and orf was invalid
 
     for strand in orf_locations:
         orf_list = orf_locations[strand]
@@ -81,12 +82,14 @@ def valid_orfs(orf_locations, seq_length):
             if type(orf['coords'][0][0]) is not int or type(orf['coords'][0][1]) is not int and orf not in invalid_orfs:
                 print("Invalid orf: {}; Start and end positions must be integers.".format(orf))
                 invalid_orfs[strand].append(orf)
+                invalid_msg.append([orf['coords'],"Start and end position must be intergers"])
 
             # Check that the start and stop positions are in the range of the sequence
             if 0 > orf_start or seq_length < orf_start or \
                     0 > orf_end or seq_length < orf_end and orf not in invalid_orfs[strand]:
                 print("Invalid orf: {}; Positions must be between 0 and {}".format(orf, seq_length))
                 invalid_orfs[strand].append(orf)
+                invalid_msg.append([orf['coords'],"Positions must be between 0 and sequence length"])
 
             # Check that the ORF range is valid
             if orf_length < 8 and orf not in invalid_orfs[strand]:
@@ -97,8 +100,10 @@ def valid_orfs(orf_locations, seq_length):
             if orf_length % 3 != 0 and orf not in invalid_orfs[strand]:
                 print("Invalid orf: {}; Not multiple of three".format(orf['coords']))
                 invalid_orfs[strand].append(orf)
+                invalid_msg.append([orf['coords'][0],"Not multiple of three"])
 
-    return invalid_orfs
+    print(invalid_msg)
+    return invalid_orfs, invalid_msg
 
 
 def get_open_reading_frames(seq):
@@ -401,20 +406,19 @@ def main():
 
     orf_locations = settings.orfs
     # Check if the ORFs are valid
-    invalid_orfs = valid_orfs(orf_locations, len(s))
+    invalid_orfs, invalid_msg = valid_orfs(orf_locations, len(s))
 
     # Omit the invalid ORFs
-    if invalid_orfs['+'] or invalid_orfs['+']:
-        invalid_orf_msg = ""
+    if invalid_orfs['+'] or invalid_orfs['-']:
+        logging.warning(f" Omitted IRFS:\n{invalid_msg}\n")
         for strand in invalid_orfs:
             orfs = invalid_orfs[strand]
             for orf in orfs:
-                invalid_orf_msg += f" {orf['coords']} "
                 orf_locations[strand].remove(orf)
 
-        if invalid_orf_msg:
-            # print(f"\nOmitted orfs: {invalid_orf_msg}\n")
-            logging.warning(f"Omitted orfs: {invalid_orf_msg}")
+        # if invalid_orf_msg:
+        #     # print(f"\nOmitted orfs: {invalid_orf_msg}\n")
+        #     logging.warning(f"Omitted orfs: {invalid_orf_msg}")
     
     for strand in orf_locations:
         orfs = orf_locations[strand]
