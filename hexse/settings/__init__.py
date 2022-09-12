@@ -6,9 +6,7 @@ from functools import reduce
 import scipy.stats as ss
 import numpy as np
 
-import itertools
 import yaml
-import pprint
 
 class Settings:
     """
@@ -172,8 +170,19 @@ class Settings:
 
         return Sequence.get_frequency_rates(seq)
 
-    @staticmethod
-    def parse_orfs_from_yaml(yaml):
+    def define_strand(self, start,end):
+        """
+        Define is a Reading frame is on + on - strand
+        """
+        strand = ''
+        if start < end:
+            strand = '+'
+        else:
+            strand = '-'
+
+        return strand
+
+    def parse_orfs_from_yaml(self, yaml):
         """
         Reads ORFs from a YAML file containing the ORF coordinates and the parameters of the dN/dS distribution for each ORF
         :param settings: dictionary representation of YAML file
@@ -184,61 +193,41 @@ class Settings:
         raw_coords = list(yaml['orfs'].keys())
 
         for raw_coord in raw_coords:
-            
+            orf = {}
+
             # Spliced ORF
-            # TODO: Find how to deal with orf_map on spliced orfs
             if ';' in raw_coord:
-                orf = {}
-                complete_orf = raw_coord
-                raw_coord = raw_coord.split(';')
+                subset_raw = raw_coord.split(';')
+                coords = []
+                
+                for set in subset_raw:
+                    raw_set = list(map(int, set.split(',')))  # Convert string to integer
+                    coords.append(raw_set)        
+                
+                # Use first set of coord to define strand
+                strand = self.define_strand(coords[0][0], coords[0][1])
+                orf['coords'] = coords
 
-                # Read in partial ORFs
-                strand = ''
-                orf['coords'] = []
-
-                for coords in raw_coord:
-                    coords = coords.split(',')
-                    coords = list(map(int, coords))  # Convert string to integer
-                    orf['coords'].append(coords)          
-
-                    if coords[0] > coords[1]:
-                        strand = '+'
-                    else:
-                        strand = '-'
-
-                    # Get omega values based on the full ORF
-                    orf['omega_shape'] = yaml['orfs'][complete_orf]['omega_shape']
-                    orf['omega_classes'] = yaml['orfs'][complete_orf]['omega_classes']
-                    dist = yaml['orfs'][complete_orf]['omega_dist']
-                    dist = '%s%s' % ('ss.', dist)
-                    orf['omega_values'] = list(discretize(yaml['orfs'][complete_orf]['omega_shape'],
-                                                            yaml['orfs'][complete_orf]['omega_classes'], dist))
-            
-                orf_locations[strand].append(orf)
 
             else:
                 orf = {}
                 coords = raw_coord.split(',')
                 coords = list(map(int, coords))  # Convert string to integer
-
+                strand = self.define_strand(coords[0], coords[1])
                 orf['coords'] = [coords]
-                if coords[0] < coords[1]:
-                    strand = '+'
-                else:
-                    strand = '-'
 
-                orf['omega_shape'] = yaml['orfs'][raw_coord]['omega_shape']
-                orf['omega_classes'] = yaml['orfs'][raw_coord]['omega_classes']
-                dist = yaml['orfs'][raw_coord]['omega_dist']
-                dist = '%s%s' % ('ss.', dist)
-                orf['omega_values'] = list(discretize(yaml['orfs'][raw_coord]['omega_shape'],
-                                                        yaml['orfs'][raw_coord]['omega_classes'], dist))
+            orf['omega_shape'] = yaml['orfs'][raw_coord]['omega_shape']
+            orf['omega_classes'] = yaml['orfs'][raw_coord]['omega_classes']
+            dist = yaml['orfs'][raw_coord]['omega_dist']
+            dist = '%s%s' % ('ss.', dist)
+            orf['omega_values'] = list(discretize(yaml['orfs'][raw_coord]['omega_shape'],
+                                                    yaml['orfs'][raw_coord]['omega_classes'], dist))
 
-                orf_locations[strand].append(orf)
+            orf_locations[strand].append(orf)
         
         #print(">> RUNING FROM SETTINGS")
         # pp = pprint.PrettyPrinter(indent=4)
         # pp.pprint(orf_locations)
-
+    
         return orf_locations
 

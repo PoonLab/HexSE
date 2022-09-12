@@ -5,6 +5,7 @@ import copy
 import sys
 
 import pprint
+from tempfile import tempdir
 import numpy as np
 
 TRANSITIONS_DICT = {'A': 'G', 'G': 'A', 'T': 'C', 'C': 'T'}
@@ -97,7 +98,7 @@ class Sequence:
                         for nt in codon.nts_in_codon:
                             nt.codons.append(codon)  # FIXME: shouldn't Codon __init__ do this?
                         self.__codons.append(codon)
-  
+
         self.all_maps = {}
         non_orf = True
  
@@ -551,6 +552,7 @@ class Sequence:
         codons = []
         for i in range(3, len(cds)+1, 3):
             codons.append(Codon(frame, orf, cds[(i-3):i]))
+
         return codons
 
     def check_event_tree(self):

@@ -69,14 +69,14 @@ def valid_orfs(orf_locations, seq_length):
     invalid_msg = []  # Store the reason why and orf was invalid
 
     for strand in orf_locations:
-        orf_list = orf_locations[strand]
+        orf_list = orf_locations[strand]  # List of dictionaries with ORF info
 
         for orf in orf_list:
+            
             orf_length = 0
             orf_start = orf['coords'][0][0]
             orf_end = orf['coords'][-1][1]  # handle spliced ORFs
-
-            orf_length += abs(orf['coords'][-1][1] - orf['coords'][0][0])
+            orf_length += abs(sum([end - start for end, start in orf['coords']]))  # Get orf length by adding all fragments
 
             # Check that the start and end positions are integers
             if type(orf['coords'][0][0]) is not int or type(orf['coords'][0][1]) is not int and orf not in invalid_orfs:
@@ -102,92 +102,7 @@ def valid_orfs(orf_locations, seq_length):
                 invalid_orfs[strand].append(orf)
                 invalid_msg.append([orf['coords'][0],"Not multiple of three"])
 
-    print(invalid_msg)
     return invalid_orfs, invalid_msg
-
-
-def get_open_reading_frames(seq):
-    """
-    Gets positions of the START and STOP codons for each open reading frame in the forward and reverse directions.
-    Positions of the START and STOP codons indexed relative to the forward strand.
-    :return reading_frames: a list of tuples containing the index of the first nucleotide of
-                the START codon and the index of the last nucleotide of the STOP codon
-    """
-    start_codon = re.compile('ATG', flags=re.IGNORECASE)
-    stop = re.compile('(TAG)|(TAA)|(TGA)', flags=re.IGNORECASE)
-    reading_frames = []
-
-    # Record positions of all potential START codons in the forward (positive) reading frame
-    fwd_start_positions = [match.start() for match in start_codon.finditer(seq)]
-
-    # Find open forward open reading frames
-    for position in fwd_start_positions:
-        frame = position % 3
-
-        internal_met = False
-        # If the ATG codon is an internal methionine and not an initiation codon
-        for orf in reversed(reading_frames):
-
-            # If the START codon and the potential START codon are in the same reading frame
-            # and the existing ORF ends before the potential ORF, stop searching
-            if orf[0] % 3 == frame and orf[1] < position:
-                break
-
-            # If the potential START codon is between the range of the START and STOP codons,
-            # and it is in the same frame, the codon is an internal methionine
-            if orf[0] < position < orf[1] and orf[0] % 3 == frame:
-                internal_met = True
-                break
-
-        # If the ATG is a START codon and not simply methionine
-        if not internal_met:
-            for match in stop.finditer(seq, position):
-                orf_length = match.end() - position
-                # Find a stop codon and ensure ORF length is sufficient in the forward strand
-                if match.start() % 3 == frame and orf_length >= 8:
-                    # Get the positions in the sequence for the first and last nt of the RF
-                    orf = (position, match.end())
-                    reading_frames.append(orf)
-                    break
-
-    # Forward (positive) reading frames of the reverse complement of the original
-    # sequence is equivalent to reverse (negative) reading frames of the original sequence
-    rcseq = Sequence.complement(seq, rev=True)
-
-    # Record positions of all potential START codons in the reverse (negative) reading frame
-    rev_start_positions = [match.start() for match in start_codon.finditer(rcseq)]
-
-    # Find reverse open reading frames
-    for position in rev_start_positions:
-        frame = position % 3
-
-        internal_met = False
-        # If the ATG codon is an internal methionine and not an initiation codon
-        for orf in reversed(reading_frames):
-
-            # If the START codon and the potential START codon are in the same reading frame
-            # and the existing ORF ends before the potential ORF, stop searching
-            if orf[0] % 3 == frame and orf[1] < position:
-                break
-
-            # If the potential START codon is between the range of the START and STOP codons,
-            # and it is in the same frame, the codon is an internal methionine
-            if orf[0] < position < orf[1] and orf[0] % 3 == frame:
-                internal_met = True
-                break
-
-        # If the ATG is a START codon and not simply methionine
-        if not internal_met:
-            for match in stop.finditer(rcseq, position):
-                orf_length = match.end() - position
-                # Find a stop codon and ensure ORF length is sufficient in the forward strand
-                if match.start() % 3 == frame and orf_length >= 8:
-                    # Get the positions in the sequence for the first and last nt of the RF
-                    orf = (len(rcseq) - position, len(rcseq) - match.end())
-                    reading_frames.append(orf)
-                    break
-
-    return reading_frames
 
 
 def sort_orfs(orf_locations):
@@ -303,32 +218,16 @@ def codon_iterator(my_orf, start_pos, end_pos):
         i += 3
 
 
-def count_internal_stop_codons(seq, strand, orf):
+def count_internal_stop_codons(cds):
     """
     Look for stop codons inside the CDS
-    :param seq: the input sequence
-    :param strand: the strand (1 or -1)
-    :param orf: dictionary containing the coordinates of the ORF and the omega values
+    :param cds: str, Coding Aequences (if on negative strand, cds must be the complement)
     :return: the number of stop codons in the coding sequence
     """
     pat = '(TAA|TGA|TAG)'
     reg = re.compile(pat)
-    stop_count, cds = 0, ""
+    stop_count = 0
     stop_codons = ['TAA', 'TGA', 'TAG']
-
-    # Get CDS
-    cds += seq[orf[0]: orf[1]]
-
-    if strand == '-':    # Reverse strand
-        cds = cds[::-1]
-    stop_matches = reg.finditer(str(cds))
-
-    # Check if the STOP codon is in the same frame the start codon and is not the last STOP codon in the ORF
-    # for match in stop_matches:
-    #     stop_start = match.span()[0]
-    #     stop_end = match.span()[1]
-    #     if stop_start % 3 == orf[0] % 3 and stop_end < orf[1]:
-    #         stop_count += 1
 
     # Find if STOP codons in cds by iterating sequence every three nucleotides
     for i in range(3, len(cds)+1, 3):
@@ -410,32 +309,29 @@ def main():
 
     # Omit the invalid ORFs
     if invalid_orfs['+'] or invalid_orfs['-']:
-        logging.warning(f" Omitted IRFS:\n{invalid_msg}\n")
+        logging.warning(f" Omitted ORFS:\n{invalid_msg}\n")
         for strand in invalid_orfs:
             orfs = invalid_orfs[strand]
             for orf in orfs:
                 orf_locations[strand].remove(orf)
 
-        # if invalid_orf_msg:
-        #     # print(f"\nOmitted orfs: {invalid_orf_msg}\n")
-        #     logging.warning(f"Omitted orfs: {invalid_orf_msg}")
-    
+    # Find internal STOP, remove from orf_locations CDSs with more than 1 STOP codon
+    cds = []
     for strand in orf_locations:
         orfs = orf_locations[strand]
-        for idx, orf in enumerate(orfs):
-            for orf_coord in orf['coords']:
-                if strand == '-':       # Reverse strand
-                    stop_count = count_internal_stop_codons(Sequence.complement(s), strand, orf_coord)
-                else:                   # Forward strand
-                    stop_count = count_internal_stop_codons(s, strand, orf_coord)
+        for orf in orfs:
+            for start, stop in orf['coords']:
+                cds.extend(s[start:stop])  # concatenates spliced ORFs
+            
+            if strand.startswith('-'):
+                cds = cds[::-1]  # negative strand ORF
+                cds = Sequence.complement(cds)  # negative strand ORF
 
-                # CDS has more than one stop codon (the final one)
-                if stop_count > 1:
-                    print(f"Omitted orf: {orf_coord} in {orf['coords']}, has {stop_count} STOP codons")
-                    orf_locations[strand][idx]['coords'].remove(orf_coord)  # Remove from coords list
-
-        # Coordinates are empty due to removal for introduction of early STOPS codons
-        orf_locations[strand][:] = [orf for orf in orfs if orf['coords']]
+            # Count internal STOP codons on CDS
+            stop_count = count_internal_stop_codons(cds)
+            if stop_count > 1:
+                print(f"Omitted orf: {orf['coords']}, has {stop_count} STOP codons")
+                orf_locations[strand].remove(orf)  # Remove orf from list of orfs in strand
 
     # Orf Map
     # Array of one's and cero's used to define position of the orf in a list with as many possitions as orfs in seq
