@@ -223,6 +223,35 @@ def count_internal_stop_codons(cds):
 
     return stop_count
 
+def find_ovrfs(orf_list):
+    """
+    Search for overlapping regions between ORF coordinates
+    :param: orf_list: list of list. Start and end positions of reading frames in seq (including spliced and circular CDSs)
+    :return: Overlapping regions and ORFs involved 
+    """
+
+    # TO DO: How to calculate overlaps on circular genomes? 
+    n = len(orf_list)
+    overlaps = {}
+
+    for i in range(n):
+        orf1 = orf_list[i]  # Select one orf
+        xl1 = min([l for l, r in orf1])  # Find extreme left
+
+        for j in range(i):  # Compare against every other orf
+            orf2 = orf_list[j]
+            xl2 = min([l for l, r in orf2])
+
+            for l1, r1 in orf1:
+                for l2, r2 in orf2:
+                    left = max(l1, l2)
+                    right = min(r1, r2)
+                    overlap = (right - left) +1
+                    if overlap > 0:
+                        k = str(orf1) + 'and' + str(orf2)
+                        overlaps[k] = [orf1, orf2, overlap, xl1, xl2]
+
+    return overlaps
 
 
 def main():
@@ -333,6 +362,16 @@ def main():
                  f"\tTotal ORFs: {len(orfs_list)}\n"
                  f"\n\tOrf Map: {orfs}\n")
     print(f"\nValid orfs: {orfs_list}\nTotal orfs: {len(orfs_list)}")
+    
+    overlaps = find_ovrfs(orfs_list)
+    ov_msg = ''
+    for feat in overlaps.values():
+        #overlaps[k] = [orf1, orf2, overlap, xl1, xl2]
+        orf1 = list(np.concatenate(feat[0]).flat)
+        orf2 = list(np.concatenate(feat[1]).flat)
+        ov_msg += (f"\t{feat[2]} nts overlap between {orf1} and {orf2}\n")
+    print(f"Total Overlaps Found: {len(overlaps)}\n")
+    logging.info(f"\n\tOVERLAPS:\n{ov_msg}")
 
     # Check if sequence is valid
     if not valid_sequence(s):
@@ -365,7 +404,7 @@ def main():
                     f"\tSimulation lasted: {end_time - start_time} seconds\n"
                     f"----------------------------------------------------------\n")
 
-    print(f"Simulation completed.\nAlignment at: {args.outfile}")
+    print(f"Simulation completed.\nAlignment at: {args.outfile}.\nRun Information at:{args.logfile}.\n")
     print(f"Duration: {end_time - start_time} seconds")
 
 if __name__ == '__main__':
