@@ -53,6 +53,51 @@ HexSE runs as a Python module from the terminal with command line arguments as f
 $ python3 -m hexse.run_simulation <path_to_sequence_file> <path_to_phylogenetic_tree> <path_to_configuration_file> --outfile <path_to_alignment_file> --logfile <path_to_log_file>
 ```
 
+**Configuration file**
+
+The configuration file contains the parameters that make the simulation possible. It must include a global substitution rate (`global_rate`), transition-transvertion rate ratio (`kappa`), mutation rates (`mu`), stationary nucleotide frequencies (`pi`), and locations of the coding sequences (`orfs`) with specifications of the distrbution from which dN/dS values (`omega`) are drawn (`omega_classes`, `omega_shape`, `omega_dist`):
+
+```python
+global_rate: 0.05
+kappa: 0.3
+
+pi: 
+# Note that keys for pi values HAVE to be the exact nucleotides
+  A: 0.25
+  T: 0.25
+  G: 0.25
+  C: 0.25
+
+orfs:   
+  1902,2454:
+    omega_classes: 5
+    omega_shape: 2.5
+    omega_dist: gamma
+
+  2308, 3182; 0, 1625:  # From circular genome, this gene is specified as two separated fragments
+    omega_classes: 4
+    omega_shape: 1.7
+    omega_dist: gamma
+
+mu:
+  classes: 2
+  shape: 1.0
+  dist: lognorm
+
+circular: true
+
+```
+To create a configuration file from a `.gb` file, users can use `gb_to_yaml.py` available at `./accesory_scripts/`.
+
+**Note:** To declare Coding Sequences resulting from spliced genes or circular genomes, coordinates must be specified as the same `orf` separated by a colon (`;`), in the exact order than the ribosome would read it. For example, a gene from a circular genome encoded from position `2308` to `1625`, is defined in the configuration file as:
+
+```python
+  2308, 3182; 0, 1625:
+    omega_classes: 4
+    omega_shape: 1.7
+    omega_dist: gamma
+```
+
 ## Test
 To check that `HexSE` has been properly installed and that you have all the required dependencies, use:
 
@@ -68,7 +113,7 @@ $ python3 -m hexse.run_simulation tests/fixtures/NC_003977.2_HBV.gb tests/fixtur
 ## Output Files
 HeSE will output one alignment file in `fasta` format with as many mutated sequences as tips on the phylogeny. It will also create a log file specifying the run parameters. 
 
-A log file for a test run on HBV looks includes the follwing information:
+A log file for a test run on HBV looks includes the following information:
 ```python
 INFO:root:
 Simulation started at: 2022-09-09 12:30:53.815405
