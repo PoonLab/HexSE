@@ -188,20 +188,6 @@ def create_log_file(input_file_name):
     return LOG_FILENAME
 
 
-def stop_in_seq(seq, start, end):
-    """
-    Look for stop codons inside the CDS
-    """
-    cds = seq[start:end]
-    stop = ["TGA", "TAG", "TAA"]
-    stop_count = 0
-    for codon, nt in codon_iterator(cds, start, end):
-        if codon in stop:
-            stop_count += 1
-
-    return stop_count
-
-
 def codon_iterator(my_orf, start_pos, end_pos):
     """
     Generator to move every three nucleotides (codon)
@@ -238,17 +224,6 @@ def count_internal_stop_codons(cds):
     return stop_count
 
 
-def retrieve_cds(seq, orf):
-    
-    cds = ""
-    if len(orf) > 1:  # If CDS comes from a spliced event
-        for orf_coord in orf['coords']:
-            cds += seq[orf_coord[0]: orf_coord[1]]
-
-    else:
-        cds += seq[orf[0]: orf[1]]
-
-    return cds
 
 def main():
     start_time = datetime.now()
