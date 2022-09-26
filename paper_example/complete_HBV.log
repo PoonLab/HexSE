@@ -1,0 +1,132 @@
+INFO:root:
+Simulation started at: 2022-09-22 18:53:27.912381
+
+INFO:root:
+
+FILES
+	Sequence: paper_example/HBV_NC003977.gb
+	Configuration: paper_example/conf_complete.yaml
+	Phylo Tree: paper_example/100_tree.newick
+	Alignment: paper_example/complete_HBV.fa
+
+PARAMETERS: 
+	Pi: {'A': 0.25, 'C': 0.25, 'G': 0.25, 'T': 0.25}
+	Global rate: 0.05
+	Kappa: 0.3
+	Number of nucleotide classification classes: 2
+	Nucleotide classification shape parameter: 1.0
+	Rates classification values: {'mu1': 0.2615782918648644, 'mu2': 1.3871429788350027}
+
+INFO:root:
+	Valid ORFs: [[[1375, 1840]], [[2308, 3182], [0, 1625]], [[156, 837]], [[2849, 3182], [0, 837]], [[3173, 3182], [0, 837]], [[1815, 2454]], [[1902, 2454]]]
+	Total ORFs: 7
+
+	Orf Map: {'+0': [{'coords': [[1375, 1840]], 'omega_shape': 1.0, 'omega_classes': 5, 'omega_values': [0.04297031789726438, 0.1440389335835469, 0.27995816301986465, 0.4892574205256841, 1.04377516497364], 'orf_map': array([0, 1, 0, 0, 0, 0, 0])}, {'coords': [[2308, 3182], [0, 1625]], 'omega_shape': 1.2, 'omega_classes': 2, 'omega_values': [0.1691149716766538, 0.7908850282996809], 'orf_map': array([0, 0, 0, 0, 1, 0, 0])}], '+1': [{'coords': [[156, 837]], 'omega_shape': 1.0, 'omega_classes': 4, 'omega_values': [0.05478151305786287, 0.190700742494181, 0.3999999999999998, 0.9545177444479566], 'orf_map': array([1, 0, 0, 0, 0, 0, 0])}, {'coords': [[2849, 3182], [0, 837]], 'omega_shape': 1.2, 'omega_classes': 3, 'omega_values': [0.11098924219663184, 0.36293140817456776, 0.9660793495713997], 'orf_map': array([0, 0, 0, 0, 0, 1, 0])}, {'coords': [[3173, 3182], [0, 837]], 'omega_shape': 1.8, 'omega_classes': 2, 'omega_values': [0.32402926491141015, 1.1159707350818262], 'orf_map': array([0, 0, 0, 0, 0, 0, 1])}], '+2': [{'coords': [[1815, 2454]], 'omega_shape': 1.5, 'omega_classes': 2, 'omega_values': [0.24416368216471415, 0.9558363178137649], 'orf_map': array([0, 0, 1, 0, 0, 0, 0])}, {'coords': [[1902, 2454]], 'omega_shape': 1.8, 'omega_classes': 3, 'omega_values': [0.23681212649898592, 0.5998219005438794, 1.3233659729535014], 'orf_map': array([0, 0, 0, 1, 0, 0, 0])}], '-0': [], '-1': [], '-2': []}
+
+INFO:root:
+	OVERLAPS:
+	251 nts overlap between [2308, 3182, 0, 1625] and [1375, 1840]
+	682 nts overlap between [156, 837] and [2308, 3182, 0, 1625]
+	838 nts overlap between [2849, 3182, 0, 837] and [2308, 3182, 0, 1625]
+	682 nts overlap between [2849, 3182, 0, 837] and [156, 837]
+	838 nts overlap between [3173, 3182, 0, 837] and [2308, 3182, 0, 1625]
+	682 nts overlap between [3173, 3182, 0, 837] and [156, 837]
+	838 nts overlap between [3173, 3182, 0, 837] and [2849, 3182, 0, 837]
+	26 nts overlap between [1815, 2454] and [1375, 1840]
+	147 nts overlap between [1815, 2454] and [2308, 3182, 0, 1625]
+	147 nts overlap between [1902, 2454] and [2308, 3182, 0, 1625]
+	553 nts overlap between [1902, 2454] and [1815, 2454]
+
+INFO:root:
+	Simulation Ended at: 2022-09-22 18:54:26.483787
+	Simulation lasted: 0:00:58.571406 seconds
+----------------------------------------------------------
+
+INFO:root:
+Simulation started at: 2022-09-22 19:09:09.346633
+
+INFO:root:
+
+FILES
+	Sequence: paper_example/HBV_NC003977.gb
+	Configuration: paper_example/conf_complete.yaml
+	Phylo Tree: paper_example/100_tree.newick
+	Alignment: paper_example/complete_HBV.fa
+
+PARAMETERS: 
+	Pi: {'A': 0.25, 'C': 0.25, 'G': 0.25, 'T': 0.25}
+	Global rate: 0.05
+	Kappa: 0.3
+	Number of nucleotide classification classes: 2
+	Nucleotide classification shape parameter: 1.0
+	Rates classification values: {'mu1': 0.2615782918648644, 'mu2': 1.3871429788350027}
+
+INFO:root:
+	Valid ORFs: [[[1375, 1840]], [[2308, 3182], [0, 1625]], [[156, 837]], [[2849, 3182], [0, 837]], [[3173, 3182], [0, 837]], [[1815, 2454]], [[1902, 2454]]]
+	Total ORFs: 7
+
+	Orf Map: {'+0': [{'coords': [[1375, 1840]], 'omega_shape': 1.0, 'omega_classes': 5, 'omega_values': [0.04297031789726438, 0.1440389335835469, 0.27995816301986465, 0.4892574205256841, 1.04377516497364], 'orf_map': array([0, 1, 0, 0, 0, 0, 0])}, {'coords': [[2308, 3182], [0, 1625]], 'omega_shape': 1.2, 'omega_classes': 2, 'omega_values': [0.1691149716766538, 0.7908850282996809], 'orf_map': array([0, 0, 0, 0, 1, 0, 0])}], '+1': [{'coords': [[156, 837]], 'omega_shape': 1.0, 'omega_classes': 4, 'omega_values': [0.05478151305786287, 0.190700742494181, 0.3999999999999998, 0.9545177444479566], 'orf_map': array([1, 0, 0, 0, 0, 0, 0])}, {'coords': [[2849, 3182], [0, 837]], 'omega_shape': 1.2, 'omega_classes': 3, 'omega_values': [0.11098924219663184, 0.36293140817456776, 0.9660793495713997], 'orf_map': array([0, 0, 0, 0, 0, 1, 0])}, {'coords': [[3173, 3182], [0, 837]], 'omega_shape': 1.8, 'omega_classes': 2, 'omega_values': [0.32402926491141015, 1.1159707350818262], 'orf_map': array([0, 0, 0, 0, 0, 0, 1])}], '+2': [{'coords': [[1815, 2454]], 'omega_shape': 1.5, 'omega_classes': 2, 'omega_values': [0.24416368216471415, 0.9558363178137649], 'orf_map': array([0, 0, 1, 0, 0, 0, 0])}, {'coords': [[1902, 2454]], 'omega_shape': 1.8, 'omega_classes': 3, 'omega_values': [0.23681212649898592, 0.5998219005438794, 1.3233659729535014], 'orf_map': array([0, 0, 0, 1, 0, 0, 0])}], '-0': [], '-1': [], '-2': []}
+
+INFO:root:
+	OVERLAPS:
+	251 nts overlap between [2308, 3182, 0, 1625] and [1375, 1840]
+	682 nts overlap between [156, 837] and [2308, 3182, 0, 1625]
+	838 nts overlap between [2849, 3182, 0, 837] and [2308, 3182, 0, 1625]
+	682 nts overlap between [2849, 3182, 0, 837] and [156, 837]
+	838 nts overlap between [3173, 3182, 0, 837] and [2308, 3182, 0, 1625]
+	682 nts overlap between [3173, 3182, 0, 837] and [156, 837]
+	838 nts overlap between [3173, 3182, 0, 837] and [2849, 3182, 0, 837]
+	26 nts overlap between [1815, 2454] and [1375, 1840]
+	147 nts overlap between [1815, 2454] and [2308, 3182, 0, 1625]
+	147 nts overlap between [1902, 2454] and [2308, 3182, 0, 1625]
+	553 nts overlap between [1902, 2454] and [1815, 2454]
+
+INFO:root:
+	Simulation Ended at: 2022-09-22 19:10:07.949413
+	Simulation lasted: 0:00:58.602780 seconds
+----------------------------------------------------------
+
+INFO:root:
+Simulation started at: 2022-09-22 19:13:22.361502
+
+INFO:root:
+
+FILES
+	Sequence: paper_example/HBV_NC003977.gb
+	Configuration: paper_example/conf_complete.yaml
+	Phylo Tree: paper_example/100_tree.newick
+	Alignment: paper_example/complete_HBV.fa
+
+PARAMETERS: 
+	Pi: {'A': 0.25, 'C': 0.25, 'G': 0.25, 'T': 0.25}
+	Global rate: 0.05
+	Kappa: 0.3
+	Number of nucleotide classification classes: 2
+	Nucleotide classification shape parameter: 1.0
+	Rates classification values: {'mu1': 0.2615782918648644, 'mu2': 1.3871429788350027}
+
+INFO:root:
+	Valid ORFs: [[[1375, 1840]], [[2308, 3182], [0, 1625]], [[156, 837]], [[2849, 3182], [0, 837]], [[3173, 3182], [0, 837]], [[1815, 2454]], [[1902, 2454]]]
+	Total ORFs: 7
+
+	Orf Map: {'+0': [{'coords': [[1375, 1840]], 'omega_shape': 1.0, 'omega_classes': 5, 'omega_values': [0.04297031789726438, 0.1440389335835469, 0.27995816301986465, 0.4892574205256841, 1.04377516497364], 'orf_map': array([0, 1, 0, 0, 0, 0, 0])}, {'coords': [[2308, 3182], [0, 1625]], 'omega_shape': 1.2, 'omega_classes': 2, 'omega_values': [0.1691149716766538, 0.7908850282996809], 'orf_map': array([0, 0, 0, 0, 1, 0, 0])}], '+1': [{'coords': [[156, 837]], 'omega_shape': 1.0, 'omega_classes': 4, 'omega_values': [0.05478151305786287, 0.190700742494181, 0.3999999999999998, 0.9545177444479566], 'orf_map': array([1, 0, 0, 0, 0, 0, 0])}, {'coords': [[2849, 3182], [0, 837]], 'omega_shape': 1.2, 'omega_classes': 3, 'omega_values': [0.11098924219663184, 0.36293140817456776, 0.9660793495713997], 'orf_map': array([0, 0, 0, 0, 0, 1, 0])}, {'coords': [[3173, 3182], [0, 837]], 'omega_shape': 1.8, 'omega_classes': 2, 'omega_values': [0.32402926491141015, 1.1159707350818262], 'orf_map': array([0, 0, 0, 0, 0, 0, 1])}], '+2': [{'coords': [[1815, 2454]], 'omega_shape': 1.0, 'omega_classes': 4, 'omega_values': [0.05478151305786287, 0.190700742494181, 0.3999999999999998, 0.9545177444479566], 'orf_map': array([0, 0, 1, 0, 0, 0, 0])}, {'coords': [[1902, 2454]], 'omega_shape': 1.8, 'omega_classes': 3, 'omega_values': [0.23681212649898592, 0.5998219005438794, 1.3233659729535014], 'orf_map': array([0, 0, 0, 1, 0, 0, 0])}], '-0': [], '-1': [], '-2': []}
+
+INFO:root:
+	OVERLAPS:
+	251 nts overlap between [2308, 3182, 0, 1625] and [1375, 1840]
+	682 nts overlap between [156, 837] and [2308, 3182, 0, 1625]
+	838 nts overlap between [2849, 3182, 0, 837] and [2308, 3182, 0, 1625]
+	682 nts overlap between [2849, 3182, 0, 837] and [156, 837]
+	838 nts overlap between [3173, 3182, 0, 837] and [2308, 3182, 0, 1625]
+	682 nts overlap between [3173, 3182, 0, 837] and [156, 837]
+	838 nts overlap between [3173, 3182, 0, 837] and [2849, 3182, 0, 837]
+	26 nts overlap between [1815, 2454] and [1375, 1840]
+	147 nts overlap between [1815, 2454] and [2308, 3182, 0, 1625]
+	147 nts overlap between [1902, 2454] and [2308, 3182, 0, 1625]
+	553 nts overlap between [1902, 2454] and [1815, 2454]
+
+INFO:root:
+	Simulation Ended at: 2022-09-22 19:14:18.357179
+	Simulation lasted: 0:00:55.995677 seconds
+----------------------------------------------------------
+
