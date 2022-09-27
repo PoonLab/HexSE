@@ -396,30 +396,6 @@ class Sequence:
         nt.set_omega(selected_omegas)
         nt.get_mutation_rate()  # Sum of mutation rates for all nucleotides is used to calculate rate at which mutations occurs on simulation.py
 
-    def set_total_omegas(self, chosen_omegas, codons):
-        """
-        Find if the omega keys (one-hot tuples) of a nucleotide are stored in self.total_omegas.
-        If not, store it. 
-        :param chosen_omegas: tuple of tuples, representing the indices of the selected omega values
-        :param codons: list, codons that a given nucleotide is part of
-        """
-
-        # Number of codons a nucleotide is part of is the same as the number of ORFS
-        for codon_idx in range(len(codons)):
-            # Exclude last position (synonymous)
-            nonsyn_values = chosen_omegas[codon_idx][:len(chosen_omegas[codon_idx]) - 1]
-
-            if any(nonsyn_values):
-                if tuple(nonsyn_values) not in self.total_omegas:
-                    value = 1
-                    for pos, omega_index in enumerate(nonsyn_values):
-                        if omega_index != 0:
-                            # Access the omega value associated with the correct ORF
-                            value *= codons[codon_idx].orf['omega_values'][pos] ** omega_index
-
-                    # Store key of combined omegas, and their multiplied value
-                    self.total_omegas[chosen_omegas] = value
-
     @staticmethod
     def is_start_stop_codon(nt, to_nt):
         """"
