@@ -78,14 +78,14 @@ class SimulateOnBranch:
 
         selected_cat = self.weighted_random_choice(cat_dict, sum(cat_dict.values()))
 
-        # Select sequence region to mutate based on the number of nucleotides
+        # Select sequence region to mutate based on the number of nucleotides (E.g, ((0, 1, 1, 0)))
         orf_tree = cat_tree[selected_cat]
         all_maps = self.sequence.all_maps
         orf_dict = {}
 
         for orf_combo in orf_tree.keys():
             if type(orf_combo) == tuple:
-                orf_dict[orf_combo] = (all_maps[orf_combo]['len']/self.sequence.length) * orf_tree[orf_combo]['nt_events']
+                orf_dict[orf_combo] = (all_maps[orf_combo]['len']/self.sequence.length) * orf_tree[orf_combo]['nt_events'] * orf_tree[orf_combo]['value_omegas_in_region']
 
         selected_orf_combo = self.weighted_random_choice(orf_dict, sum(orf_dict.values()))
 
@@ -103,9 +103,9 @@ class SimulateOnBranch:
         else:  # If region has ORFs, select omega
             omega_dict = {}
             for omega_combo in omega_tree.keys():
-                if type(omega_combo) == tuple:
+                if type(omega_combo) == tuple:  # Ignore the key 'nt_events' that contains the number on events on the branch
                     omega_dict[omega_combo] = self.sequence.total_omegas[omega_combo]['value'] * len(omega_tree[omega_combo])
-            
+
             selected_omega = self.weighted_random_choice(omega_dict, sum(omega_dict.values()))
             # Choose nucleotide
             selected_nt = random.choice(omega_tree[selected_omega])
@@ -195,7 +195,7 @@ class SimulateOnBranch:
                                 updated_nts.append(adj_nt)
             
         
-            # Update number of events in the Tree per branch
+            # Update number of events in the Tree per branch, updates self.sequence.total_omegas and number of events per branch
             self.sequence.count_events_per_layer()
 
         return self.sequence

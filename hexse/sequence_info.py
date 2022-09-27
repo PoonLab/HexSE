@@ -78,7 +78,7 @@ class Sequence:
 
         self.nt_sequence = []
         self.__codons = []  # Store references to all codons
-        self.total_omegas = {}  # every possible combination of omegas present on the event tree and their value
+        self.total_omegas = {}  # Omega combinations and their values. Populated when set_substitution_rates for nucleotides
         self.number_orfs = []  # List of "None"s with lenght equal to number of ORFs in sequence 
 
         pp = pprint.PrettyPrinter(indent=2)
@@ -146,7 +146,6 @@ class Sequence:
         self.count_events_per_layer()
         # pp.pprint(self.event_tree)
         # pp.pprint(self.total_omegas)
-        # pp.pprint(self.all_maps)
         # sys.exit()
 
 
@@ -181,6 +180,7 @@ class Sequence:
                             if type(orf_region) is not tuple:
                                 continue
                             
+                            value_omegas_in_region = 0  # sum of all omega combinations on the region by the number of nucleotides with such combination
                             for omega_combo in branch[cat][orf_region].keys():
                                 if type(omega_combo) is not tuple:
                                     continue
@@ -191,8 +191,11 @@ class Sequence:
                                 cat_events += events
                                 from_events += events
                                 to_events += events
+                                value_omegas_in_region =+ self.total_omegas[omega_combo]['value']*events
+
                             
                             branch[cat][orf_region]['nt_events'] = orf_region_events
+                            branch[cat][orf_region]['value_omegas_in_region'] = value_omegas_in_region
 
                         branch[cat]['nt_events'] = cat_events
 
@@ -314,6 +317,7 @@ class Sequence:
                     event_tree['to_nt'][to_nt]['from_nt'][from_nt] = None
                 else: 
                     event_tree['to_nt'][to_nt]['from_nt'][from_nt] = copy.deepcopy(cat_dict)
+           
         return event_tree
 
     def set_substitution_rates(self, nt):
