@@ -99,6 +99,9 @@ class Sequence:
                             nt.codons.append(codon)  # FIXME: shouldn't Codon __init__ do this?
                         self.__codons.append(codon)
 
+        # Dict to find ORF combination. 
+        # Keys are combos where 1 represent presence and 0 absence of the ORF assigned in that position of the tuple. Values are coordinates and length of the fragment
+        # E.g. { (0, 0, 1, 0): {'coords': [[837, 1374], [2454, 2848]], 'len': 933}, (0, 0, 1, 1): {'coords': [[0, 836], [2849, 3181]], 'len': 1170}, (0, 1, 0, 0): {'coords': [[1840, 2307]], 'len': 468}}
         self.all_maps = {}
         non_orf = True
  
@@ -118,16 +121,22 @@ class Sequence:
                 self.all_maps.update({orf_map_key: {'coords':[[nt.pos_in_seq, nt.pos_in_seq]], 'len': 0 }})
                 if not nt.codons and non_orf is False:
                     non_orf = True
+            
             else:  # Update orf coordinates and length by summing the position of new nucleotide
                 if not nt.codons and non_orf is False:
                     self.all_maps[orf_map_key]['coords'].append([nt.pos_in_seq, nt.pos_in_seq])
                     non_orf = True
-                self.all_maps[orf_map_key]['coords'][-1][1] = nt.pos_in_seq
+                last_pos = self.all_maps[orf_map_key]['coords'][-1][1]  # End position in 'coord'
+                
+                if nt.pos_in_seq - last_pos > 1:  # Splitted gene, start new coordinates
+                    self.all_maps[orf_map_key]['coords'].append([nt.pos_in_seq, nt.pos_in_seq])
+                else:  # Not splitted, update last nucleotide in coords
+                    self.all_maps[orf_map_key]['coords'][-1][1] = nt.pos_in_seq
+                
                 self.all_maps[orf_map_key]['len'] = sum([abs(coord[0]-coord[1])+1 for coord in  self.all_maps[orf_map_key]['coords']])
 
         self.length = sum([self.all_maps[orf]['len'] for orf in self.all_maps.keys()])  # Store sequence length
         self.event_tree = self.create_event_tree()  # Nested dict containing info about all possible mutation events
-        
 
         # Calculate mutation rates for each nucleotide in sequence, populate the event tree which each nucleotide
         for nt in self.nt_sequence:
@@ -137,58 +146,9 @@ class Sequence:
         self.count_events_per_layer()
         # pp.pprint(self.event_tree)
         # pp.pprint(self.total_omegas)
-        #sys.exit()
+        # pp.pprint(self.all_maps)
+        # sys.exit()
 
-
-    def create_orf_map(self):
-        """
-        Create a dictionary with orf coordinates as keys and binary set of orf_map as value 
-        (e.g, { '[[0, 837]]': [0, 1, 0, 0], '[[156, 837]]': [0, 0, 1, 0]})
-        """
-        orf_map = {}
-
-        for rf, orf_list in self.orfs.items():
-            for orf_info in orf_list:
-                coord = str([item for sublist in orf_info['coords'] for item in sublist])
-                map = list(orf_info['orf_map'])
-                orf_map[coord] = map
-        return orf_map
-
-    def compare(self):
-        """
-        Compare orfs
-        Store in orf_map if overlaps
-        Assign new map value by summing the two orf_maps
-        """
-
-    def find_intersection(orf1,orf2):
-        """
-        Find positions with overlapping nucleotides
-        orf: tuple?, start and end positions
-        """
-        orf1=range(orf1)
-        orf2=range(orf2)
-        set_orf1=set(orf1)
-        
-        return set_orf1.intersection(orf2)
-
-    def get_sorted_coords(self):
-        """
-        Sort reading frames according to their position on the genome
-        orf_list: list of tuples with start and end position for each open reading frame     
-        """
-        coords = []
-        # Get list of orfs
-        for rf, orf_list in self.orfs.items():
-            for orf_info in orf_list:
-
-                # Coords are a list of list (e.g, [[156, 837], [836,106]]) used to account for spliced orfs
-                # Note: most orfs are a list of only one list (no splicing)
-                # TODO: how to do this for spliced orfs?
-                flat_coords = [item for sublist in orf_info['coords'] for item in sublist] 
-                coords.append(flat_coords)
-        
-        return (sorted(coords, key=min))
 
 
     def all_syn_values(self, nonsyn_values):
@@ -368,7 +328,6 @@ class Sequence:
         selected_omegas = {}
         my_cat_keys = {}
 
-        
         for to_nt in NUCLEOTIDES:
              
             if to_nt == current_nt:
@@ -406,7 +365,7 @@ class Sequence:
                                 #Randomly select one of the omegas
                                 omega_index = random.randrange(len(omega_values))
                                 chosen_omegas[orf_index] = omega_index
-                                computed_omega *= omega_values[omega_index]                           
+                                computed_omega *= omega_values[omega_index]                          
 
                             # If mutation is synonymous, use a -1 to indicate that no omegas are selected
                             else:
@@ -426,7 +385,6 @@ class Sequence:
                     selected_omegas[to_nt] = None
                     my_cat_keys[to_nt] = None
                     sub_rates[to_nt] = None
-
 
         # Set substitution rates and key values for the nucleotide object
         nt.set_rates(sub_rates)
