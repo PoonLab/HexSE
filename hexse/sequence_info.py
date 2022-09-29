@@ -78,7 +78,7 @@ class Sequence:
 
         self.nt_sequence = []
         self.__codons = []  # Store references to all codons
-        self.total_omegas = {}  # Omega combinations and their values. Populated when set_substitution_rates for nucleotides
+        self.total_omegas = {}  # Omega combos and their values. Populated when set_substitution_rates for nucleotides
         self.number_orfs = []  # List of "None"s with lenght equal to number of ORFs in sequence 
 
         pp = pprint.PrettyPrinter(indent=2)
@@ -99,9 +99,14 @@ class Sequence:
                             nt.codons.append(codon)  # FIXME: shouldn't Codon __init__ do this?
                         self.__codons.append(codon)
 
+        """
         # Dict to find ORF combination. 
-        # Keys are combos where 1 represent presence and 0 absence of the ORF assigned in that position of the tuple. Values are coordinates and length of the fragment
-        # E.g. { (0, 0, 1, 0): {'coords': [[837, 1374], [2454, 2848]], 'len': 933}, (0, 0, 1, 1): {'coords': [[0, 836], [2849, 3181]], 'len': 1170}, (0, 1, 0, 0): {'coords': [[1840, 2307]], 'len': 468}}
+        Keys are combos where 1 represent presence and 0 absence of the ORF assigned in that position of the tuple. 
+        Values are coordinates and length of the fragment.
+        E.g. { (0, 0, 1, 0): {'coords': [[837, 1374], [2454, 2848]], 'len': 933}, 
+               (0, 0, 1, 1): {'coords': [[0, 836], [2849, 3181]], 'len': 1170}, 
+               (0, 1, 0, 0): {'coords': [[1840, 2307]], 'len': 468}}
+        """
         self.all_maps = {}
         non_orf = True
  
@@ -133,22 +138,22 @@ class Sequence:
                 else:  # Not splitted, update last nucleotide in coords
                     self.all_maps[orf_map_key]['coords'][-1][1] = nt.pos_in_seq
                 
-                self.all_maps[orf_map_key]['len'] = sum([abs(coord[0]-coord[1])+1 for coord in  self.all_maps[orf_map_key]['coords']])
+                self.all_maps[orf_map_key]['len'] = sum([abs(coord[0]-coord[1])+1 for coord in
+                                                         self.all_maps[orf_map_key]['coords']])
 
         self.length = sum([self.all_maps[orf]['len'] for orf in self.all_maps.keys()])  # Store sequence length
         self.event_tree = self.create_event_tree()  # Nested dict containing info about all possible mutation events
 
         # Calculate mutation rates for each nucleotide in sequence, populate the event tree which each nucleotide
         for nt in self.nt_sequence:
-            self.set_substitution_rates(nt)  # Get substitution rates for the nucleotide, store omega combos in self.total_omegas
+            # Get substitution rates for the nucleotide, store omega combos in self.total_omegas
+            self.set_substitution_rates(nt)
             self.nt_in_event_tree(nt)  # Locate nucleotide in the event tree
 
         self.count_events_per_layer()
         # pp.pprint(self.event_tree)
         # pp.pprint(self.total_omegas)
         # sys.exit()
-
-
 
     def all_syn_values(self, nonsyn_values):
         for nonsyn_val in nonsyn_values:
@@ -161,49 +166,40 @@ class Sequence:
         Modify Event Tree by traversing it calculating and storing the number of events in every branch, layer by layer
         Number of events are required to select a branch using weighted_random_choice
         """
-
         for to_nt in NUCLEOTIDES:
-            to_events = 0
-
+            to_events = 0  # count total number of events of this category
             for from_nt in NUCLEOTIDES:
-                
                 if to_nt != from_nt:
-                    
                     from_events = 0
                     branch = self.event_tree['to_nt'][to_nt]['from_nt'][from_nt]
-
                     for cat in self.cat_values.keys():
                         cat_events = 0
-
                         for orf_region in branch[cat].keys():
                             orf_region_events = 0
                             if type(orf_region) is not tuple:
                                 continue
-                            
-                            value_omegas_in_region = 0  # sum of all omega combinations on the region by the number of nucleotides with such combination
+
+                            region_weight = 0
                             for omega_combo in branch[cat][orf_region].keys():
                                 if type(omega_combo) is not tuple:
                                     continue
-
                                 events = len(branch[cat][orf_region][omega_combo])
                                 self.total_omegas[omega_combo]['nt_events'] = events
                                 orf_region_events += events    
                                 cat_events += events
                                 from_events += events
                                 to_events += events
-                                value_omegas_in_region =+ self.total_omegas[omega_combo]['value']*events
+                                # number of events multiplied by net effect of omegas
+                                region_weight += self.total_omegas[omega_combo]['value'] * events
 
-                            
                             branch[cat][orf_region]['nt_events'] = orf_region_events
-                            branch[cat][orf_region]['value_omegas_in_region'] = value_omegas_in_region
+                            branch[cat][orf_region]['region_weight'] = region_weight
 
                         branch[cat]['nt_events'] = cat_events
 
                     self.event_tree['to_nt'][to_nt]['from_nt'][from_nt]['nt_events'] = from_events
             
             self.event_tree['to_nt'][to_nt]['nt_events'] = to_events         
-                        
-    
 
     def __deepcopy__(self, memodict):
         """
