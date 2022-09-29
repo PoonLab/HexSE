@@ -45,14 +45,13 @@ class SimulateOnBranch:
         """
         Select a substitution by moving over the event_tree according to the generation of random numbers
         """
-
         event_tree = self.sequence.event_tree
 
         # Select target nucleotide based on stationary base frequency (pi) and number of events for each nucleotide
         to_dict = {
-                    to_nt: self.sequence.pi[to_nt]*event_tree['to_nt'][to_nt]['nt_events']
-                    for to_nt in self.sequence.pi.keys()
-                    }
+            to_nt: self.sequence.pi[to_nt] * event_tree['to_nt'][to_nt]['nt_events']
+            for to_nt in self.sequence.pi.keys()  # A,C,G,T
+        }
         to_mutation = self.weighted_random_choice(to_dict, sum(to_dict.values()))
 
         # Select state of initial nucleotide with probability based on transition/transversion rate ratio
@@ -60,9 +59,9 @@ class SimulateOnBranch:
         from_dict = {}
         for from_nt in NUCLEOTIDES:
             if to_mutation != from_nt:
-                if self.sequence.is_transv(from_nt, to_mutation):  # If its transversion apply kappa
-                    from_dict[from_nt] = (self.sequence.kappa / (1 + 2 * self.sequence.kappa)) * from_tree[from_nt]['nt_events']
-
+                if self.sequence.is_transv(from_nt, to_mutation):  # If its transversion applies kappa
+                    from_dict[from_nt] = (self.sequence.kappa / (1 + 2 * self.sequence.kappa)) * \
+                                         from_tree[from_nt]['nt_events']
                 else:
                     from_dict[from_nt] = (1 / (1 + 2 * self.sequence.kappa)) * from_tree[from_nt]['nt_events']
 
@@ -72,22 +71,25 @@ class SimulateOnBranch:
         cat_tree = from_tree[from_mutation]
         cat_sum = sum(self.sequence.cat_values.values())
         cat_dict = {
-            cat: (self.sequence.cat_values[cat]/cat_sum)*cat_tree[cat]['nt_events']
+            cat: (self.sequence.cat_values[cat] / cat_sum) * cat_tree[cat]['nt_events']
             for cat in self.sequence.cat_values.keys()
-            }
+        }
 
         selected_cat = self.weighted_random_choice(cat_dict, sum(cat_dict.values()))
 
         # Select sequence region to mutate based on the number of nucleotides (E.g, ((0, 1, 1, 0)))
         orf_tree = cat_tree[selected_cat]
-        all_maps = self.sequence.all_maps
-        orf_dict = {}
+        all_maps = self.sequence.all_maps  # regions
+        region_weights = {}
 
         for orf_combo in orf_tree.keys():
             if type(orf_combo) == tuple:
-                orf_dict[orf_combo] = (all_maps[orf_combo]['len']/self.sequence.length) * orf_tree[orf_combo]['nt_events'] * orf_tree[orf_combo]['value_omegas_in_region']
-
-        selected_orf_combo = self.weighted_random_choice(orf_dict, sum(orf_dict.values()))
+                region_weights[orf_combo] = (
+                    #(all_maps[orf_combo]['len'] / self.sequence.length) *  # proportion of genome covered by region
+                    #orf_tree[orf_combo]['nt_events'] *  # number of events associated with this combination of ORFs
+                    orf_tree[orf_combo]['region_weight']  # weight calculated in count_events_per_layer()
+                )
+        selected_orf_combo = self.weighted_random_choice(region_weights, sum(region_weights.values()))
 
         # Select omega combo when region with orfs. Else, select a random nucleotide
         omega_tree = orf_tree[selected_orf_combo]
