@@ -263,10 +263,10 @@ def main():
     )
     args = get_args(parser)
     input = args.seq.lower()
-
+    outfile = args.outfile if args.outfile else f'{input}.simOut.fa'
     # Create log file
     file_name = input.split("/")[-1]
-    LOG_FILENAME = args.logfile if args.logfile else (f'{file_name.split(".")[0]}_evol_simulation.log')
+    LOG_FILENAME = args.logfile if args.logfile else (f'{file_name.split(".")[0]}.HexSE.log')
     logging.basicConfig(filename=LOG_FILENAME, level=logging.INFO)
     logging.info(f"\nSimulation started at: {start_time}\n")
 
@@ -296,7 +296,7 @@ def main():
                     f"\tSequence: {args.seq}\n"
                     f"\tConfiguration: {args.config}\n"
                     f"\tPhylo Tree: {args.tree}\n"
-                    f"\tAlignment: {args.outfile}\n"
+                    f"\tAlignment: {outfile}\n"
 
                     f"\n"
                     f"PARAMETERS: \n"
@@ -395,8 +395,8 @@ def main():
     root_sequence = Sequence(s, orfs, kappa, global_rate, pi, mu_values, circular)
 
     # Run simulation
-    simulation = SimulateOnTree(root_sequence, phylo_tree, args.outfile)
-    simulation.get_alignment(args.outfile)
+    simulation = SimulateOnTree(root_sequence, phylo_tree, outfile)
+    simulation.get_alignment(outfile)
 
     end_time = datetime.now()
     logging.info(
@@ -404,7 +404,7 @@ def main():
                     f"\tSimulation lasted: {end_time - start_time} seconds\n"
                     f"----------------------------------------------------------\n")
 
-    print(f"Simulation completed.\nAlignment at: {args.outfile}.\nRun Information at:{args.logfile}.\n")
+    print(f"Simulation completed.\nAlignment at: {outfile}.\nRun Information at:{LOG_FILENAME}.\n")
     print(f"Duration: {end_time - start_time} seconds")
 
 if __name__ == '__main__':
