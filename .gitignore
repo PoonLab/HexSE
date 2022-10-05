@@ -5,5 +5,5 @@ temp/
 *.log
 dist/
 Experiments_2022/
-paper_example/*.txt
+paper_example/selection_analysis/
 paper_example/*.pdf
