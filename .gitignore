@@ -6,3 +6,8 @@ temp/
 dist/
 Experiments_2022/
 paper_example/selection_analysis/
+README.html
+accessory_scripts/get.LHS.value.R
+accessory_scripts/get_orfs_in_seq.py
+paper_example/.RData
+paper_example/.Rhistory

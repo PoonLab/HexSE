@@ -107,7 +107,7 @@ $ python3 -m unittest
 
 Test files are provided in `.tests/fisxtures/`. For a run of *HexSE* on [HBV genome](https://www.ncbi.nlm.nih.gov/nuccore/NC_003977.2) along a phylogeny with 100 tips, use:
 ```console
-$ python3 -m hexse.run_simulation tests/fixtures/NC_003977.2_HBV.gb tests/fixtures/100_tree.newick tests/fixtures/conf_NC_00377.yaml --logfile test_HBV.log --outfile HBV_out.fasta
+$ python3 -m hexse.run_simulation tests/fixtures/NC_003977.2_HBV.gb tests/fixtures/100_tree.newick tests/fixtures/conf_complete_HBV.yaml --logfile test_HBV.hexse.log --outfile HBV_align.hexse.fasta
 ```
 
 ## Output Files
@@ -116,15 +116,15 @@ HeSE will output one alignment file in `fasta` format with as many mutated seque
 A log file for a test run on HBV looks includes the following information:
 ```python
 INFO:root:
-Simulation started at: 2022-09-09 12:30:53.815405
+Simulation started at: 2022-10-05 11:05:29.745964
 
 INFO:root:
 
 FILES
 	Sequence: tests/fixtures/NC_003977.2_HBV.gb
-	Configuration: tests/fixtures/conf_NC_00377.yaml
+	Configuration: tests/fixtures/conf_complete_HBV.yaml
 	Phylo Tree: tests/fixtures/100_tree.newick
-	Alignment: HBV_out.fasta
+	Alignment: HBV_align.hexse.fasta
 
 PARAMETERS: 
 	Pi: {'A': 0.25, 'C': 0.25, 'G': 0.25, 'T': 0.25}
@@ -133,14 +133,16 @@ PARAMETERS:
 	Number of nucleotide classification classes: 2
 	Nucleotide classification shape parameter: 1.0
 	Rates classification values: {'mu1': 0.2615782918648644, 'mu2': 1.3871429788350027}
-	
-INFO:root:
-	Valid ORFs: [[[0, 837]], [[156, 837]], [[1815, 2454]], [[1902, 2454]], [[1375, 1840]], [[1853, 1922]], [[2849, 3182]], [[3173, 3182]]]
-	Total ORFs: 8
 
 INFO:root:
-	Simulation Ended at: 2022-09-09 15:37:49.275652
-	Simulation lasted: 0:00:46.946687 seconds
+	Valid ORFs: [[[1375, 1840]], [[2308, 3182], [0, 1625]], [[2849, 3182], [0, 837]], [[1815, 2454]]]
+	Total ORFs: 4
+
+	Orf Map: {'+0': [{'coords': [[1375, 1840]], 'omega_shape': 1.5, 'omega_classes': 5, 'omega_values': [0.11355787594057443, 0.28563496606388417, 0.47595127509121704, 0.74137416016263, 1.383481722705885], 'orf_map': array([1, 0, 0, 0])}, {'coords': [[2308, 3182], [0, 1625]], 'omega_shape': 2, 'omega_classes': 2, 'omega_values': [0.37931535691266643, 1.2206846430881086], 'orf_map': array([0, 0, 1, 0])}], '+1': [{'coords': [[2849, 3182], [0, 837]], 'omega_shape': 1.2, 'omega_classes': 3, 'omega_values': [0.11098924219663184, 0.36293140817456776, 0.9660793495713997], 'orf_map': array([0, 0, 0, 1])}], '+2': [{'coords': [[1815, 2454]], 'omega_shape': 1.0, 'omega_classes': 4, 'omega_values': [0.05478151305786287, 0.190700742494181, 0.3999999999999998, 0.9545177444479566], 'orf_map': array([0, 1, 0, 0])}], '-0': [], '-1': [], '-2': []}
+
+INFO:root:
+	Simulation Ended at: 2022-10-05 11:06:22.429321
+	Simulation lasted: 0:00:52.683357 seconds
 ```
 
 ## Aditional Features
