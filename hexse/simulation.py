@@ -79,14 +79,11 @@ class SimulateOnBranch:
 
         # Select sequence region to mutate based on the number of nucleotides (E.g, ((0, 1, 1, 0)))
         orf_tree = cat_tree[selected_cat]
-        all_maps = self.sequence.all_maps  # regions
         region_weights = {}
 
         for orf_combo in orf_tree.keys():
             if type(orf_combo) == tuple:
                 region_weights[orf_combo] = (
-                    #(all_maps[orf_combo]['len'] / self.sequence.length) *  # proportion of genome covered by region
-                    #orf_tree[orf_combo]['nt_events'] *  # number of events associated with this combination of ORFs
                     orf_tree[orf_combo]['region_weight']  # weight calculated in count_events_per_layer()
                 )
         selected_orf_combo = self.weighted_random_choice(region_weights, sum(region_weights.values()))

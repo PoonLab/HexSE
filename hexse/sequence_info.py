@@ -107,7 +107,7 @@ class Sequence:
                (0, 0, 1, 1): {'coords': [[0, 836], [2849, 3181]], 'len': 1170}, 
                (0, 1, 0, 0): {'coords': [[1840, 2307]], 'len': 468}}
         """
-        self.all_maps = {}
+        self.regions = {}  # Sequence regions, divided depending on the cooding context
         non_orf = True
  
         for nt in self.nt_sequence:
@@ -122,26 +122,26 @@ class Sequence:
             nt.set_orf_map_key(orf_map_key)  # Store the map key on the nt object. This value will never change
 
             # Save map key into all maps dict
-            if orf_map_key not in self.all_maps:
-                self.all_maps.update({orf_map_key: {'coords':[[nt.pos_in_seq, nt.pos_in_seq]], 'len': 0 }})
+            if orf_map_key not in self.regions:
+                self.regions.update({orf_map_key: {'coords':[[nt.pos_in_seq, nt.pos_in_seq]], 'len': 0 }})
                 if not nt.codons and non_orf is False:
                     non_orf = True
             
             else:  # Update orf coordinates and length by summing the position of new nucleotide
                 if not nt.codons and non_orf is False:
-                    self.all_maps[orf_map_key]['coords'].append([nt.pos_in_seq, nt.pos_in_seq])
+                    self.regions[orf_map_key]['coords'].append([nt.pos_in_seq, nt.pos_in_seq])
                     non_orf = True
-                last_pos = self.all_maps[orf_map_key]['coords'][-1][1]  # End position in 'coord'
+                last_pos = self.regions[orf_map_key]['coords'][-1][1]  # End position in 'coord'
                 
                 if nt.pos_in_seq - last_pos > 1:  # Splitted gene, start new coordinates
-                    self.all_maps[orf_map_key]['coords'].append([nt.pos_in_seq, nt.pos_in_seq])
+                    self.regions[orf_map_key]['coords'].append([nt.pos_in_seq, nt.pos_in_seq])
                 else:  # Not splitted, update last nucleotide in coords
-                    self.all_maps[orf_map_key]['coords'][-1][1] = nt.pos_in_seq
+                    self.regions[orf_map_key]['coords'][-1][1] = nt.pos_in_seq
                 
-                self.all_maps[orf_map_key]['len'] = sum([abs(coord[0]-coord[1])+1 for coord in
-                                                         self.all_maps[orf_map_key]['coords']])
+                self.regions[orf_map_key]['len'] = sum([abs(coord[0]-coord[1])+1 for coord in
+                                                         self.regions[orf_map_key]['coords']])
 
-        self.length = sum([self.all_maps[orf]['len'] for orf in self.all_maps.keys()])  # Store sequence length
+        self.length = sum([self.regions[orf]['len'] for orf in self.regions.keys()])  # Store sequence length
         self.event_tree = self.create_event_tree()  # Nested dict containing info about all possible mutation events
 
         # Calculate mutation rates for each nucleotide in sequence, populate the event tree which each nucleotide
@@ -152,7 +152,7 @@ class Sequence:
 
         self.count_events_per_layer()
         # pp.pprint(self.event_tree)
-        # pp.pprint(self.total_omegas)
+        # pp.pprint(self.regions)
         # sys.exit()
 
     def all_syn_values(self, nonsyn_values):
@@ -300,7 +300,7 @@ class Sequence:
         event_tree = {'to_nt': dict([(nuc, {'from_nt': {}}) for nuc in NUCLEOTIDES])}
         
         # dictionary keyed by binary tuples indicating combination of orfs (e.g., {(1, 0): {}, (0, 1): {} , (1, 1): {}})
-        bin_orf_layer = {bin_code : {} for bin_code in [key for  key in self.all_maps.keys()]}
+        bin_orf_layer = {bin_code : {} for bin_code in [key for  key in self.regions.keys()]}
         
         # dictionary keyed by mutation rate categories
         # (e.g., {'mu1': {(1, 0): {}, (0, 1): {}}, 'mu2': {(1, 0): {}, (0, 1): {}}})

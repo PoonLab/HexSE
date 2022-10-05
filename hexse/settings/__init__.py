@@ -25,12 +25,20 @@ class Settings:
         self.orfs = self.get_orfs()
         self.pi = self.get_pi()
         self.kappa = self.from_yaml('kappa', 0.3)
-        self.mu_classes = self.from_yaml('mu.classes', 4)
-        self.mu_shape = self.from_yaml('mu.shape', 1.0)
-        self.mu_dist = self.from_yaml('mu.dist', 'lognorm')
         self.global_rate = self.from_yaml('global_rate', 0.5)
         self.circular = self.from_yaml('circular', False)
 
+        # Handling mu categories
+        mu_keys = self.yaml['mu'].keys()
+        if 'mu1' in mu_keys:  # mu values are specified as int
+            self.mu_info = self.yaml['mu']
+        else:  # mu values will be drawn from distribution
+            self.mu_info = {
+                            'classes': self.from_yaml('mu.classes', 4), 
+                            'dist': self.from_yaml('mu.dist', 'lognorm'), 
+                            'shape': self.from_yaml('mu.shape', 1.0)
+                            }
+            
     def get_pi(self):
         if 'pi' in self.yaml.keys():
             pi = self.yaml['pi']

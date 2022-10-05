@@ -2,6 +2,7 @@ import argparse
 import re
 import sys
 import logging
+import pprint
 
 import numpy as np
 import scipy
@@ -229,7 +230,7 @@ def find_ovrfs(orf_list):
     :return: Overlapping regions and ORFs involved 
     """
 
-    # TO DO: How to calculate overlaps on circular genomes? 
+    # TO DO: How to calculate overlaps on spliced genomes? 
     n = len(orf_list)
     overlaps = {}
 
@@ -277,18 +278,24 @@ def main():
 
     # Get parameters for run
     #TODO: Remove unncesary parameters
-
     pi = settings.pi
     global_rate = settings.global_rate
     kappa = settings.kappa
-    mu_classes = settings.mu_classes
-    mu_shape = settings.mu_shape
-    mu_dist = settings.mu_dist
-    circular = settings.circular
 
-    # Create classes to classify nucleotides on the Event Tree
-    mu_values = create_values_dict(mu_shape, mu_classes, "mu", mu_dist)
-
+    # mu information -> different categories for mutation rates. Will be stored on the Event Tree
+    mu_info = settings.mu_info
+    if 'mu1' in mu_info.keys():  # mu values are specified
+        mu_values = mu_info
+    else:  # Generate mu values from distribution
+        # dict keyd by each mu and its value
+        mu_values = create_values_dict(mu_info['shape'], 
+                                       mu_info['classes'], 
+                                       "mu",
+                                       mu_info['dist'])
+        mu_info['values'] = mu_values
+    
+    
+    pp = pprint.PrettyPrinter(indent=2)
     # Log global parameters
     logging.info(   f"\n\n"
                     f"FILES\n"
@@ -298,14 +305,12 @@ def main():
                     f"\tAlignment: {args.outfile}\n"
 
                     f"\n"
-                    f"PARAMETERS: \n"
+                    f"PARAMETERS \n"
                     f"\tPi: {pi}\n"
                     f"\tGlobal rate: {global_rate}\n"
                     f"\tKappa: {kappa}\n"
-                    f"\tNumber of nucleotide classification classes: {mu_classes}\n"
-                    f"\tNucleotide classification shape parameter: {mu_shape}\n"
-                    f"\tRates classification values: {mu_values}\n")
-
+                    f"\tRate classes info: \n{pp.pformat(mu_info)}\n")
+    
     orf_locations = settings.orfs
     # Check if the ORFs are valid
     invalid_orfs, invalid_msg = valid_orfs(orf_locations, len(s))
@@ -357,20 +362,12 @@ def main():
         for orf in orf_list:
             orfs_list.append(orf['coords'])
 
-    logging.info(f"\n\tValid ORFs: {orfs_list}\n"
-                 f"\tTotal ORFs: {len(orfs_list)}\n"
-                 f"\n\tOrf Map: {orfs}\n")
-    print(f"\nValid orfs: {orfs_list}\nTotal orfs: {len(orfs_list)}")
+    logging.info(f"\n\nVALID ORFs\n"
+                 f"{pp.pformat(orfs_list)}\n"
+                 f"\nTotal ORFs: {len(orfs_list)}\n"
+                 f"\nORFs INFO \n{pp.pformat(orfs)}\n")
+    print(f"\nValid orfs: {orfs_list}\nTotal orfs: {len(orfs_list)}\n")
     
-    overlaps = find_ovrfs(orfs_list)
-    ov_msg = ''
-    for feat in overlaps.values():
-        #overlaps[k] = [orf1, orf2, overlap, xl1, xl2]
-        orf1 = list(np.concatenate(feat[0]).flat)
-        orf2 = list(np.concatenate(feat[1]).flat)
-        ov_msg += (f"\t{feat[2]} nts overlap between {orf1} and {orf2}\n")
-    print(f"Total Overlaps Found: {len(overlaps)}\n")
-    logging.info(f"\n\tOVERLAPS:\n{ov_msg}")
 
     # Check if sequence is valid
     if not valid_sequence(s):
@@ -378,20 +375,17 @@ def main():
         logging.error("Invalid sequence: {}".format(s))
         sys.exit(0)
 
-    # Record the parameters for each ORF
-    for frame in orfs:
-        orf_list = orfs[frame]
-        for orf in orf_list:
-            for c in orf['coords']:
-                coords = ','.join(map(str, c))
-
     # Read in the tree
     phylo_tree = Phylo.read(settings.tree, 'newick', rooted=True)
     # logging.info("Phylogenetic tree: {}".format(args.tree))
 
     # Make Sequence object
-    print("\nCreating root sequence")
-    root_sequence = Sequence(s, orfs, kappa, global_rate, pi, mu_values, circular)
+    print("Creating root sequence")
+    root_sequence = Sequence(s, orfs, kappa, global_rate, pi, mu_values)
+
+    print(f"Regions info:")
+    pp.pprint(root_sequence.regions)
+    logging.info(f"\n\nREGIONS\n{pp.pformat(root_sequence.regions)}\n")
 
     # Run simulation
     simulation = SimulateOnTree(root_sequence, phylo_tree, args.outfile)
