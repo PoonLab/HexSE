@@ -130,7 +130,7 @@ def sort_orfs(orf_locations):
                 sorted_orfs['+2'].append(fwd_orf)
 
         for rev_orf in reverse_orfs:
-            difference = abs(rev_orf['coords'][0][0] - first_orf['coords'][0][0])
+            difference = abs(rev_orf['coords'][0][0] - first_orf['coords'][0][0])  % 3
             if difference == 0:
                 sorted_orfs['-0'].append(rev_orf)
             elif difference == 1:
@@ -174,7 +174,6 @@ def set_global_omega_values(orf_locations, omega_values, omega_shape, omega_clas
             orf['omega_classes'] = omega_classes
 
     return orf_locations
-
 
 def create_log_file(input_file_name):
     """
@@ -263,10 +262,10 @@ def main():
     )
     args = get_args(parser)
     input = args.seq.lower()
-    outfile = args.outfile if args.outfile else f'{input}.simOut.fa'
+
     # Create log file
     file_name = input.split("/")[-1]
-    LOG_FILENAME = args.logfile if args.logfile else (f'{file_name.split(".")[0]}.HexSE.log')
+    LOG_FILENAME = args.logfile if args.logfile else (f'{file_name.split(".")[0]}_evol_simulation.log')
     logging.basicConfig(filename=LOG_FILENAME, level=logging.INFO)
     logging.info(f"\nSimulation started at: {start_time}\n")
 
@@ -296,7 +295,7 @@ def main():
                     f"\tSequence: {args.seq}\n"
                     f"\tConfiguration: {args.config}\n"
                     f"\tPhylo Tree: {args.tree}\n"
-                    f"\tAlignment: {outfile}\n"
+                    f"\tAlignment: {args.outfile}\n"
 
                     f"\n"
                     f"PARAMETERS: \n"
@@ -395,8 +394,8 @@ def main():
     root_sequence = Sequence(s, orfs, kappa, global_rate, pi, mu_values, circular)
 
     # Run simulation
-    simulation = SimulateOnTree(root_sequence, phylo_tree, outfile)
-    simulation.get_alignment(outfile)
+    simulation = SimulateOnTree(root_sequence, phylo_tree, args.outfile)
+    simulation.get_alignment(args.outfile)
 
     end_time = datetime.now()
     logging.info(
@@ -404,7 +403,7 @@ def main():
                     f"\tSimulation lasted: {end_time - start_time} seconds\n"
                     f"----------------------------------------------------------\n")
 
-    print(f"Simulation completed.\nAlignment at: {outfile}.\nRun Information at:{LOG_FILENAME}.\n")
+    print(f"Simulation completed.\nAlignment at: {args.outfile}.\nRun Information at:{args.logfile}.\n")
     print(f"Duration: {end_time - start_time} seconds")
 
 if __name__ == '__main__':
