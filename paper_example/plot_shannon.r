@@ -2,10 +2,10 @@ setwd('/home/laura/Projects/ovrf/paper_example/')
 
 library(scales)
 
-one <- read.csv("1gene_HBV.m20.shannon.txt", sep="\t", header = FALSE)
+one <- read.csv("1gen.HBV.m20.shannon.txt", sep="\t", header = FALSE)
 colnames(one) <-  c("pos", "value")
 
-comp <- read.csv("correct_splits_HBV.0.shannon.txt", sep="\t", header = FALSE)
+comp <- read.csv("compl.HBV.m20.shannon.txt", sep="\t", header = FALSE)
 colnames(comp) <-  c("pos", "value")
 
 
@@ -14,12 +14,12 @@ lo_one <- loess(one$value~one$pos, span=0.1)
 lo_comp <- loess(comp$value~comp$pos, span=0.1)
 
 
-# pdf(file = "NEWshannon_equal_ShapeAndClases.pdf",
+# pdf(file = "shannon_HBV_compare.pdf",
 #     width = 12, # The width of the plot in inches
 #     height = 5) # The height of the plot in inches
 
 # Points
-plot(comp, xaxt='n', col=alpha("#117fa3", 0.3), pch=16, cex=0.8, 
+plot(comp, xaxt='n', col=alpha("#117fa3", 0.3), pch=16, cex=0.8, ylim=c(0,1),
      ylab = "Shannon Entropy",
      xlab= "Genome position"
      )
@@ -34,15 +34,27 @@ legend(400, 0.2, legend=c("Multiple ORFs", "Single ORF"), col=c("#005e7d", "#f08
 # 
 # dev.off()
 
-non_coding_one <- one[-one$pos[1800:2600],]
+# Only one orf in [1815:2454] (coding vs non-coding)
 non_coding_one <- one[-one$pos[1815:2454],]
-non_coding_one[which.min(non_coding_one$value),]
+coding_one <- one[one$pos[1815:2454],]
+
 
 # Complete genome information (lowest are vs the rest)
 
-lowest_region <- comp[comp$pos[1374:2454],]
-rest_region <- comp[-comp$pos[1374:2454],]
 
-# Only one orf (coding vs non-coding)
-non_coding_one <- one[-one$pos[1815:2454],]
-coding_one <- one[one$pos[1815:2454],]
+
+# Non coding one 
+
+# Valid ORFs: [1375:1840, 2308:3182, 0: 1625, 2849:3182, 0:837, 1815:2454]
+non_ov_c <- comp[comp$pos[1840:2308],] # Non overlapping on gene C
+all_non_ov <- c(837:1365, 1625:1815, 1840:2308, 2545:2849) 
+comp_non_ov <- comp[comp$pos[t_ov],]  # Total non_overlapping regions
+comp_ov <- comp[-comp$pos[t_ov],]  # Total non_overlapping regions
+
+# Comparing differences
+comp$region <- ifelse(comp$pos %in% all_non_ov, "no-ov", "ov")
+boxplot(value~region, data=comp)
+res <- wilcox.test(value~region, data=comp)
+
+# complete, overlap gene C
+ov_c <- comp[comp$pos[2308:2454],]
