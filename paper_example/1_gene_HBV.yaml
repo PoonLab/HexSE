@@ -1,0 +1,7 @@
+circular: 'false'
+global_rate: 0.05
+kappa: 0.3
+mu: {classes: 2, dist: lognorm, shape: 1.0}
+orfs:
+  1815,2454: {omega_classes: 4, omega_dist: gamma, omega_shape: 1.0}
+pi: {A: 0.25, C: 0.25, G: 0.25, T: 0.25}

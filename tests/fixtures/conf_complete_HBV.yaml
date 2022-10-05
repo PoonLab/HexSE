@@ -1,0 +1,9 @@
+global_rate: 0.05
+kappa: 0.3
+mu: {classes: 2, dist: lognorm, shape: 1.0}
+orfs:
+  1375,1840: {omega_classes: 5, omega_dist: gamma, omega_shape: 1.5}
+  1815,2454: {omega_classes: 4, omega_dist: gamma, omega_shape: 1.0}
+  2308,3182;0,1625: {omega_classes: 2, omega_dist: gamma, omega_shape: 2}
+  2849,3182;0,837: {omega_classes: 3, omega_dist: gamma, omega_shape: 1.2}
+pi: {A: 0.25, C: 0.25, G: 0.25, T: 0.25}
