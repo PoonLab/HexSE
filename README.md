@@ -145,7 +145,7 @@ VALID ORFs
   [[2849, 3182], [0, 837]],
   [[1815, 2454]]]
 
-	Total ORFs: 4
+Total ORFs: 4
 
 ORFs INFO 
 { '+0': [ { 'coords': [[1375, 1840]],
