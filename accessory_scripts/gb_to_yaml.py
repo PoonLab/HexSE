@@ -65,7 +65,6 @@ def main():
                     'kappa': 0.3,
                     'pi': {'A': 0.25, 'C': 0.25, 'G': 0.25, 'T':0.25},
                     'mu':{'classes': 2, 'shape': 1.0, 'dist': 'lognorm'},
-                    'circular': 'false',
                     'orfs': orf_info
                 }
 
