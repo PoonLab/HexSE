@@ -2,13 +2,14 @@ import scipy
 import numpy as np
 import scipy.stats as ss
 
-def discretize(alpha, ncat, dist):
+def discretize(alpha, ncat, dist, scale=1):
     """
     Divide a distribution into a number of intervals with equal probability and get the mid point of those intervals
     From https://gist.github.com/kgori/95f604131ce92ec15f4338635a86dfb9
     :param alpha: shape parameter
     :param ncat: Number of categories
     :param dist: distribution of probabilities, can be a string
+    :param scale: scale parameter of gamma or lognormal distribution, defaults to 1
     :return: array with ncat number of values
     """
 
@@ -19,9 +20,9 @@ def discretize(alpha, ncat, dist):
         dist = ss.lognorm
 
     if dist == ss.gamma:
-        dist = dist(alpha, scale=0.4)
+        dist = dist(alpha, scale=scale)
     elif dist == ss.lognorm:
-        dist = dist(s=alpha, scale=0.5)  # scale=np.exp(0.05 * alpha**2)
+        dist = dist(s=alpha, scale=scale)  # scale=np.exp(0.05 * alpha**2)
 
     quantiles = dist.ppf(np.arange(0, ncat) / ncat)
     rates = np.zeros(ncat, dtype=np.double)
