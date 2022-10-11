@@ -26,7 +26,6 @@ class Settings:
         self.pi = self.get_pi()
         self.kappa = self.from_yaml('kappa', 0.3)
         self.global_rate = self.from_yaml('global_rate', 0.5)
-        self.circular = self.from_yaml('circular', False)
 
         # Handling mu categories
         mu_keys = self.yaml['mu'].keys()
@@ -61,9 +60,6 @@ class Settings:
             value = default
 
         return value        
-
-    def get_circular(self):
-        return self.circular
     
     def get_orfs(self):
         orfs = {}
