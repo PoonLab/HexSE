@@ -1,14 +1,9 @@
 # Get a specific reading frame from an alignment (simulation output)
 import argparse
 import os
-import json
 from urllib.parse import unquote
 import ast
 import sys
-
-
-handle = "/home/laura/Projects/ovrf/temp/hiv_0.05.fa"
-pos = (200,500)
 
 def get_args(parser):
     parser.add_argument(
@@ -24,17 +19,17 @@ def get_args(parser):
         'end', default=None, type=int,
         help = 'Position of the last nucleotide on the CDS'
     )
-
+    
+    parser.add_argument(
+        '--out', default=None,
+        help = 'path to log file; defaults to stdout'
+    )
+    
     return parser.parse_args()
 
-def get_cds(alignment_file, start, end):
-
-    file_name = os.path.basename(alignment_file)
-    genome = file_name.split('_')[0]
-
-
-    out_file = open("{}_{}_{}.fa".format(file_name, start, end),"w")
-
+def get_cds(alignment_file, start, end, out_name):
+    
+    out_file = open(out_name, "w")
     with open(alignment_file) as alignment:
         for line in alignment:
             if line.startswith('>'):
@@ -53,9 +48,14 @@ def main():
     args = get_args(parser)
     alignment_file = args.file
     start, end = args.start, args.end
+    out_file = args.out
     
+    if not out_file:
+        file_name = os.path.basename(alignment_file)
+        out_file = f"{file_name}_{start}_{end}.fa"
+
     print(start,end)
-    get_cds(alignment_file, start, end)
+    get_cds(alignment_file, start, end, out_file)
 
 if __name__ == '__main__':
     main()
