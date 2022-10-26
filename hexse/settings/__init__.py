@@ -36,7 +36,7 @@ class Settings:
                             'classes': self.from_yaml('mu.classes', 4), 
                             'dist': self.from_yaml('mu.dist', 'lognorm'), 
                             'shape': self.from_yaml('mu.shape', 1.0),
-                            'scale': self.from_yaml('mu.scale', 1.0)
+                            'scale': self.from_yaml('mu.scale', None)
                             }
             
     def get_pi(self):
@@ -224,7 +224,7 @@ class Settings:
             orf['omega_shape'] = yaml['orfs'][raw_coord]['omega_shape']
             orf['omega_classes'] = yaml['orfs'][raw_coord]['omega_classes']
             dist = yaml['orfs'][raw_coord]['omega_dist']
-            orf['omega_scale'] = yaml['orfs'][raw_coord].get('omega_scale', 1)
+            orf['omega_scale'] = yaml['orfs'][raw_coord].get('omega_scale', None)  # Default sets scale = 1/shape
             dist = '%s%s' % ('ss.', dist)
             orf['omega_values'] = list(discretize(yaml['orfs'][raw_coord]['omega_shape'],
                                                   yaml['orfs'][raw_coord]['omega_classes'], 
