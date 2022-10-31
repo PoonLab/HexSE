@@ -3,6 +3,7 @@ import re
 import sys
 import logging
 import pprint
+import random
 
 import numpy as np
 import scipy
@@ -12,6 +13,7 @@ from Bio import SeqIO
 from datetime import datetime
 
 from .sequence_info import NUCLEOTIDES
+from .sequence_info import AMBIGUOUS_NUCLEOTIDES
 from .sequence_info import Sequence
 from .simulation import SimulateOnTree
 from .settings import Settings
@@ -49,12 +51,26 @@ def get_args(parser):
 
 def valid_sequence(seq):
     """
-     Verifies that the length of the input sequence is valid and the sequence is composed of only nucleotides.
+    Verifies that the length of the input sequence is valid and the sequence is composed of only nucleotides.
     A valid sequence is assumed to be composed of a START codon, at least one amino acid codon, and a STOP codon.
     :return is_valid: <True> if the sequence is valid, <False> otherwise
     """
     is_valid = len(seq) >= 9 and all(pos in NUCLEOTIDES for pos in seq.upper())
     return is_valid
+
+
+def resolve_ambiguities(seq):
+    """
+    Resolves ambiguous positions in nt seq by randomly selecting one of its posibilites
+    :return: seq without ambiguities
+    """
+    new_seq = list(seq.upper())
+    for id_nt, nt in enumerate(new_seq):
+        unambiguous_list = AMBIGUOUS_NUCLEOTIDES.get(nt)
+        if unambiguous_list:
+            new_seq[id_nt] = random.choice(unambiguous_list)
+
+    return("".join(new_seq))
 
 
 def valid_orfs(orf_locations, seq_length):
@@ -273,8 +289,8 @@ def main():
     # Assign settings
     settings = Settings(args)
 
-    # Read in sequence
-    s = settings.seq
+    # Read in sequence and resolve ambiguos nucleotides
+    s = resolve_ambiguities(str(settings.seq))
 
     # Get parameters for run
     #TODO: Remove unncesary parameters
@@ -368,13 +384,13 @@ def main():
                  f"\nORFs INFO \n{pp.pformat(orfs)}\n")
     print(f"\nValid orfs: {orfs_list}\nTotal orfs: {len(orfs_list)}\n")
     
-
     # Check if sequence is valid
     if not valid_sequence(s):
-        print("Invalid sequence: {}".format(s))
+        print("still invalid")
+        print("Invalid sequence")
         logging.error("Invalid sequence: {}".format(s))
         sys.exit(0)
-
+   
     # Read in the tree
     phylo_tree = Phylo.read(settings.tree, 'newick', rooted=True)
     # logging.info("Phylogenetic tree: {}".format(args.tree))

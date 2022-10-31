@@ -12,6 +12,19 @@ TRANSITIONS_DICT = {'A': 'G', 'G': 'A', 'T': 'C', 'C': 'T'}
 
 NUCLEOTIDES = ['A', 'C', 'G', 'T']
 
+AMBIGUOUS_NUCLEOTIDES = { 'R': ['G', 'A'], # Purine
+                          'Y': ['C', 'T'], # Pyrimidine
+                          'K': ['G', 'T'], # Ketone
+                          'M': ['A', 'C'], # Amino
+                          'S': ['C', 'G'], # Strong
+                          'W': ['A', 'T'], # Weak
+                          'B': ['C', 'G', 'T'], # Not A
+                          'D': ['A', 'G', 'T'], # Not C
+                          'H': ['A', 'C', 'T'], # Not G
+                          'V': ['A', 'C', 'G'], # Not T
+                          'N': ['A', 'C', 'G', 'T'], # Any one base
+                        }
+
 COMPLEMENT_DICT = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A',
                    'W': 'W', 'R': 'Y', 'K': 'M', 'Y': 'R',
                    'S': 'S', 'M': 'K', 'B': 'V', 'D': 'H',
