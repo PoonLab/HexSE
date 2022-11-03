@@ -370,17 +370,12 @@ class Sequence:
                             orf_index = np.where(codon_orf==1)[0][0]  # The position with a 1 indicates the ORF for the codon
                             pos_in_codon = codon.nt_in_pos(nt)
                             
-                            # If mutation is non-synonymous, select one omega index to an omega_values for the orf
+                            # If mutation is non-synonymous, apply codon omega
                             if codon.is_nonsyn(pos_in_codon, to_nt):
-            
-                                omega_values = codon.orf['omega_values']
-                                
-                                #Randomly select one of the omegas
-                                omega_index = random.randrange(len(omega_values))
-                                chosen_omegas[orf_index] = omega_index
-                                computed_omega *= omega_values[omega_index]                          
+                                chosen_omegas[orf_index] = codon.omega
+                                computed_omega *= codon.omega                          
 
-                            # If mutation is synonymous, use a -1 to indicate that no omegas are selected
+                            # Use a -1 to indicate mutation is synonymous
                             else:
                                 chosen_omegas[orf_index] = -1
 
@@ -620,6 +615,7 @@ class Codon:
         self.frame = frame
         self.orf = orf
         self.nts_in_codon = nts_in_codon  # list of Nucleotide objects in the Codon
+        self.omega = self.select_omega()  # Asign non-syn mutation rate 
 
     def __repr__(self):
         return ''.join(str(nt) for nt in self.nts_in_codon)
@@ -634,6 +630,14 @@ class Codon:
         for idx, nt in enumerate(self.nts_in_codon):
             if query_nt is nt:
                 return idx
+    
+    def select_omega(self):
+        """
+        Set rate at which non-synonymous substitutions occur in the codon
+        """
+        omega_values = self.orf['omega_values']
+        codon_omega = random.choice(omega_values)
+        return(codon_omega)
 
     def mutate_codon(self, pos_in_codon, to_nt):
         """
@@ -685,7 +689,6 @@ class Codon:
             return codon == 'ATG' and self.nts_in_codon[0].pos_in_seq + 1 == self.orf['coords'][0][1]
             #return self.nts_in_codon[0].pos_in_seq + 1 == self.orf['coords'][0][1]
             
-
     def is_stop(self):
         """
         Checks if the codon is a STOP codon
