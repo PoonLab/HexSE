@@ -4,6 +4,7 @@ import sys
 import logging
 import pprint
 import random
+import json
 
 import numpy as np
 import scipy
@@ -44,6 +45,10 @@ def get_args(parser):
 
     parser.add_argument(
         '--logfile', default=None, help='Path to the log file; defaults to stdout.'
+    )
+
+    parser.add_argument(
+        '--ci', action='store_true', help='optional, return codon info.'
     )
 
     return parser.parse_args()
@@ -269,6 +274,22 @@ def find_ovrfs(orf_list):
 
     return overlaps
 
+def omegas_in_orf(seq):
+        """
+        From sequence object, get omega rates in each codon per orf
+        :param: Sequence object.
+        :return: dict, keyed by orf coordinates. Values are lists with omegas in orf
+        """
+        codons = seq.get_codons()
+        orf_omegas = {}
+        for codon in codons:
+            orf = str(codon.orf['coords'])
+            if orf not in orf_omegas:
+                orf_omegas[orf] = [codon.omega]
+            else:
+                orf_omegas[orf].append(codon.omega)
+
+        return orf_omegas
 
 def main():
     start_time = datetime.now()
@@ -398,6 +419,13 @@ def main():
     # Make Sequence object
     print("Creating root sequence")
     root_sequence = Sequence(s, orfs, kappa, global_rate, pi, mu_values)
+    if args.ci:
+        omegas = omegas_in_orf(root_sequence)
+        for coord, omega_list in omegas.items():
+            mean = sum(omega_list)/len(omega_list)
+            print(f"coordinates: {coord}, mean omega: {mean}")
+        with open(f"{args.outfile}.omegas", 'w+') as write_file:
+            json.dump(omegas, write_file, indent=4)
 
     print(f"Regions info:")
     pp.pprint(root_sequence.regions)

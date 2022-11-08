@@ -184,7 +184,7 @@ class SimulateOnBranch:
             
             if selected_nt.codons:
                 for codon in selected_nt.codons:
-                    codon.omega = codon.select_omega()
+                    # codon.omega = codon.select_omega()  # does mutations change the strength of selection against non-syn subs?
                     for adj_nt in codon.nts_in_codon:
                             # codons probably share nucleotides in common. Avoid to update them twice.
                             if adj_nt not in updated_nts:

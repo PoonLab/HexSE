@@ -167,6 +167,8 @@ class Sequence:
         # pp.pprint(self.event_tree)
         # pp.pprint(self.regions)
         # sys.exit()
+    def get_codons(self):
+        return self.__codons
 
     def all_syn_values(self, nonsyn_values):
         for nonsyn_val in nonsyn_values:
