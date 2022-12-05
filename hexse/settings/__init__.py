@@ -224,7 +224,7 @@ class Settings:
             orf['omega_shape'] = yaml['orfs'][raw_coord]['omega_shape']
             orf['omega_classes'] = yaml['orfs'][raw_coord]['omega_classes']
             dist = yaml['orfs'][raw_coord]['omega_dist']
-            orf['omega_scale'] = yaml['orfs'][raw_coord].get('omega_scale', None)  # Default sets scale = 1/shape
+            orf['omega_scale'] = yaml['orfs'][raw_coord].get('scale', None)  # Default sets scale = 1/shape
             dist = '%s%s' % ('ss.', dist)
             orf['omega_values'] = list(discretize(yaml['orfs'][raw_coord]['omega_shape'],
                                                   yaml['orfs'][raw_coord]['omega_classes'], 
