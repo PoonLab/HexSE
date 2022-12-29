@@ -45,6 +45,18 @@ $ python3 setup.py install
 $ python3 -m pip install --upgrade git+https://github.com/PoonLab/HexSE
 ```
 
+### Run `hexse` globaly
+To run `HexSE` from anywhere in your Linux or macOS system, you can add HexSE's `bin` folder to your `PATH` as following:
+```console
+$ PATH=<path_to_cloned_repository>/bin:$PATH
+```
+
+You should now be able to run your simulations from any directory on your system as:
+```console
+$ hexse <path_to_sequence_file> <path_to_phylogenetic_tree> <path_to_configuration_file> --outfile <path_to_alignment_file> --logfile <path_to_log_file>
+```
+
+
 ## Usage
 `HexSE` requires users to provide a nucleotide sequence (either in `fasta` or `genbank` format), a phylogenetic tree (in `newick` format), and a configuration file in [YAML](https://en.wikipedia.org/wiki/YAML) format specifying the substitution biases and the coordinates of the Open Reading Frames (ORFs) in the sequence.
 

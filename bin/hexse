@@ -1,0 +1,4 @@
+#!/bin/bash
+
+CWD=`dirname -- "$0"`
+PYTHONPATH=$CWD/.. python3 -m hexse.run_simulation $@
