@@ -7,6 +7,8 @@ import sys
 import numpy as np
 import pprint
 
+from tqdm import tqdm
+
 NUCLEOTIDES = ['A', 'C', 'G', 'T']
 
 def is_stop(to_nt, from_nt):
@@ -259,21 +261,28 @@ class SimulateOnTree:
         # Assign root_seq to root Clade
         self.phylo_tree.root.sequence = self.root_sequence
         root = self.phylo_tree.root
+        clades = self.phylo_tree.find_clades(order='level')
+        number_of_clades = sum(1 for _ in clades)
 
-        for clade in self.phylo_tree.find_clades(order='level'):
-            # skip the root
-            if clade is root:
-                continue
+        with tqdm(total=number_of_clades - 1, unit='clades') as pbar:
+            pbar.set_description("Traversing tree")
+            
+            for clade in self.phylo_tree.find_clades(order='level'):
+                # skip the root
+                if clade is root:
+                    continue
 
-            parent = self.get_parent_clade(clade)
+                parent = self.get_parent_clade(clade)
 
-            # Create a deep copy of the parent sequence
-            parent_sequence = copy.deepcopy(parent.sequence)
+                # Create a deep copy of the parent sequence
+                parent_sequence = copy.deepcopy(parent.sequence)
 
-            # Mutate sequence and store it on clade
-            # print("Simulating on Branch", clade)
-            simulation = SimulateOnBranch(parent_sequence, clade.branch_length)
-            clade.sequence = simulation.mutate_on_branch()
+                # Mutate sequence and store it on clade
+                # print("Simulating on Branch", clade)
+                simulation = SimulateOnBranch(parent_sequence, clade.branch_length)
+                clade.sequence = simulation.mutate_on_branch()
+            
+                pbar.update(1)
 
         return self.phylo_tree
 

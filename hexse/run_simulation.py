@@ -292,8 +292,6 @@ def omegas_in_orf(seq):
         return orf_omegas
 
 def main():
-    start_time = datetime.now()
-    print("\nStarted at: ", datetime.now())
 
     parser = argparse.ArgumentParser(
         description='Simulates and visualizes the evolution of a sequence through a phylogeny'
@@ -301,6 +299,9 @@ def main():
     args = get_args(parser)
     input = args.seq.lower()
 
+    start_time = datetime.now()
+    print("\nStarted at: ", datetime.now())
+    
     # Create log file
     file_name = input.split("/")[-1]
     LOG_FILENAME = args.logfile if args.logfile else (f'{file_name.split(".")[0]}_evol_simulation.log')
@@ -314,14 +315,13 @@ def main():
     s = resolve_ambiguities(str(settings.seq))
 
     # Get parameters for run
-    #TODO: Remove unncesary parameters
     pi = settings.pi
     global_rate = settings.global_rate
     kappa = settings.kappa
 
-    # mu information -> different categories for mutation rates. Will be stored on the Event Tree
+    # mu information: different categories for mutation rates. Will be stored on the Event Tree
     mu_info = settings.mu_info
-    if 'mu1' in mu_info.keys():  # mu values are specified
+    if 'mu1' in mu_info.keys():  # specific mu values were provided
         mu_values = mu_info
     else:  # Generate mu values from distribution
         # dict keyd by each mu and its value
@@ -414,7 +414,6 @@ def main():
    
     # Read in the tree
     phylo_tree = Phylo.read(settings.tree, 'newick', rooted=True)
-    # logging.info("Phylogenetic tree: {}".format(args.tree))
 
     # Make Sequence object
     print("Creating root sequence")
@@ -429,6 +428,7 @@ def main():
 
     print(f"Regions info:")
     pp.pprint(root_sequence.regions)
+    print("\n")
     logging.info(f"\n\nREGIONS\n{pp.pformat(root_sequence.regions)}\n")
 
     # Run simulation
