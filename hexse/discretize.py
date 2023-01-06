@@ -2,20 +2,16 @@ import scipy
 import numpy as np
 import scipy.stats as ss
 
-def discretize(alpha, ncat, dist, scale=None):
+def discretize(alpha, ncat, dist, scale):
     """
     Divide a distribution into a number of intervals with equal probability and get the mid point of those intervals
     From https://gist.github.com/kgori/95f604131ce92ec15f4338635a86dfb9
-    :param alpha: shape parameter
-    :param ncat: Number of categories
-    :param dist: distribution of probabilities, can be a string
-    :param scale: scale parameter of gamma or lognormal distribution, defaults to 1
+    :param alpha: int, shape parameter (in gamma), or mean (in lognorm)
+    :param ncat: int, Number of categories
+    :param dist: string, distribution of probabilities, can be a string
+    :param scale: int, scale parameter of the distributions
     :return: array with ncat number of values
     """
-    # In gamma, mean = shape*scale. 
-    # If neutral evolution, omega = 1; therefore scale should be 1/shape
-    if not scale:  
-        scale=1/alpha
 
     # Handle if distribution was specified from input file (parsed as a string)
     if dist == 'ss.gamma' or dist == 'gamma':
@@ -24,9 +20,16 @@ def discretize(alpha, ncat, dist, scale=None):
         dist = ss.lognorm
 
     if dist == ss.gamma:
+        # In gamma, mean = shape*scale. 
+        # If neutral evolution, omega = 1; therefore scale should be 1/shape
+        if not scale:  
+            scale=1/alpha
         dist = dist(alpha, scale=scale)
+
     elif dist == ss.lognorm:
-        dist = dist(s=alpha, scale=scale)  # scale=np.exp(0.05 * alpha**2)
+        if not scale:  
+            scale=1  # default to 1
+        dist = dist(s=alpha, scale=scale)
 
     quantiles = dist.ppf(np.arange(0, ncat) / ncat)
     rates = np.zeros(ncat, dtype=np.double)

@@ -7,6 +7,7 @@ import scipy.stats as ss
 import numpy as np
 
 import yaml
+import sys
 
 class Settings:
     """
@@ -30,14 +31,22 @@ class Settings:
         # Handling mu categories
         mu_keys = self.yaml['mu'].keys()
         if 'mu1' in mu_keys:  # mu values are specified as int
-            self.mu_info = self.yaml['mu']
+            self.mu_values = self.yaml['mu']
         else:  # mu values will be drawn from distribution
-            self.mu_info = {
-                            'classes': self.from_yaml('mu.classes', 4), 
-                            'dist': self.from_yaml('mu.dist', 'lognorm'), 
-                            'shape': self.from_yaml('mu.shape', 1.0),
-                            'scale': self.from_yaml('mu.scale', None)
+            mu_info = {
+                            'classes': self.from_yaml('classes', 4), 
+                            'dist': self.from_yaml('dist', 'lognorm'), 
+                            'shape': self.from_yaml('shape', 1.0),
+                            'scale': self.from_yaml('scale', None)
                             }
+        
+            self.mu_values = self.draw_mu_values(
+                                                mu_info['shape'], 
+                                                mu_info['classes'], 
+                                                "mu",
+                                                mu_info['dist'], 
+                                                mu_info['scale']
+                                                )
             
     def get_pi(self):
         if 'pi' in self.yaml.keys():
@@ -238,4 +247,22 @@ class Settings:
         # pp.pprint(orf_locations)
     
         return orf_locations
+
+    def draw_mu_values(self, alpha, ncat, key_name, dist, scale=None):
+        """
+        Creates dictionary with values (as rates) drawn from a discretized gamma or lognormal distribution
+        :param alpha: int, In the gamma distribution, alpha is the shape. In lognormal distribution shape is the mean
+        :param scale: int, Scale parameter
+        :param ncat: int, Number of categories
+        :param dist: str, the distribution (gamma or lognorm)
+        :param key_name: str, i.e., "mu" to create the keys of the dictionary
+        """
+
+        nt_categories = discretize(alpha, ncat, dist, scale)
+        nt_categories_dict = {}
+        for i, item in enumerate(nt_categories):
+            cat = f"{key_name}{i+1}"
+            nt_categories_dict[cat] = item
+
+        return nt_categories_dict
 

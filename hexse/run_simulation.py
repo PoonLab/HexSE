@@ -163,24 +163,6 @@ def sort_orfs(orf_locations):
     return sorted_orfs
 
 
-def create_values_dict(alpha, ncat, string, dist):
-    """
-    Creates dictionary with values (as rates) drawn from a discretized gamma distribution
-    :param alpha: shape parameter
-    :param ncat: Number of categories
-    :param dist: the distribution (gamma or log normal)
-    :param string: strings like "omega" or "mu" to name the keys of the dictionary
-    """
-
-    nt_categories = discretize(alpha, ncat, dist)
-    nt_categories_dict = {}
-    for i, item in enumerate(nt_categories):
-        cat = f"{string}{i+1}"
-        nt_categories_dict[cat] = item
-
-    return nt_categories_dict
-
-
 def set_global_omega_values(orf_locations, omega_values, omega_shape, omega_classes):
     """
     Sets the dN and dS values for each the reading frames
@@ -318,19 +300,8 @@ def main():
     pi = settings.pi
     global_rate = settings.global_rate
     kappa = settings.kappa
-
-    # mu information: different categories for mutation rates. Will be stored on the Event Tree
-    mu_info = settings.mu_info
-    if 'mu1' in mu_info.keys():  # specific mu values were provided
-        mu_values = mu_info
-    else:  # Generate mu values from distribution
-        # dict keyd by each mu and its value
-        mu_values = create_values_dict(mu_info['shape'], 
-                                       mu_info['classes'], 
-                                       "mu",
-                                       mu_info['dist'])
-        mu_info['values'] = mu_values
-    
+    mu_values = settings.mu_values
+    print(mu_values)
     
     pp = pprint.PrettyPrinter(indent=2)
     # Log global parameters
@@ -346,7 +317,7 @@ def main():
                     f"\tPi: {pi}\n"
                     f"\tGlobal rate: {global_rate}\n"
                     f"\tKappa: {kappa}\n"
-                    f"\tRate classes info: \n{pp.pformat(mu_info)}\n")
+                    f"\tRate classes info: \n{pp.pformat(mu_values)}\n")
     
     orf_locations = settings.orfs
     # Check if the ORFs are valid
