@@ -22,11 +22,10 @@ class Settings:
         self.file_paths = self.clean_file_paths([self.seq_path, args.config])
         self.yaml = self.read_settings_from_yaml(self.get_yaml_file_path(self.file_paths))
         self.tree = args.tree
-        self.omega_values = ''
         self.orfs = self.get_orfs()
         self.pi = self.get_pi()
-        self.kappa = self.from_yaml('kappa', 0.3)
-        self.global_rate = self.from_yaml('global_rate', 0.5)
+        self.kappa = self.yaml.get('kappa', 0.3)
+        self.global_rate = self.yaml.get('global_rate', 0.5)
 
         # Handling mu categories
         mu_keys = self.yaml['mu'].keys()
@@ -34,10 +33,10 @@ class Settings:
             self.mu_values = self.yaml['mu']
         else:  # mu values will be drawn from distribution
             mu_info = {
-                            'classes': self.from_yaml('classes', 4), 
-                            'dist': self.from_yaml('dist', 'lognorm'), 
-                            'shape': self.from_yaml('shape', 1.0),
-                            'scale': self.from_yaml('scale', None)
+                            'classes': self.yaml['mu'].get('classes', 4), 
+                            'dist': self.yaml['mu'].get('dist', 'gamma'), 
+                            'shape': self.yaml['mu'].get('shape', 1),
+                            'scale': self.yaml['mu'].get('scale', None)
                             }
         
             self.mu_values = self.draw_mu_values(
@@ -62,14 +61,7 @@ class Settings:
 
     def get_global_rate(self):
         return self.global_rate
-    
-    def from_yaml(self, key, default):
-        value = reduce(dict.get, key.split("."), self.yaml)
-        if value is None:
-            value = default
 
-        return value        
-    
     def get_orfs(self):
         orfs = {}
         if 'orfs' in self.yaml.keys():

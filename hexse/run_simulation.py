@@ -301,7 +301,6 @@ def main():
     global_rate = settings.global_rate
     kappa = settings.kappa
     mu_values = settings.mu_values
-    print(mu_values)
     
     pp = pprint.PrettyPrinter(indent=2)
     # Log global parameters

@@ -20,11 +20,6 @@ def settings_from_files(file_paths):
     # return parse_yaml(file)
     return settings
     
-def get_gb_file_path(file_paths):
-    for file_path in file_paths:
-        if file_path.lower().endswith('.gb') or file_path.lower().endswith('genbank'):
-            return file_path
-
 def get_yaml_file_path(file_paths):
     for file_path in file_paths:
         if file_path.lower().endswith('.yaml') or file_path.lower().endswith('.yml'):
