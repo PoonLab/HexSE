@@ -13,8 +13,8 @@ setup(
         'Operating System :: OS Independent'
     ],
     install_requires=[
-        'scipy>=1.5.3,<1.6.0',
-        'numpy>=1.19.2,<1.20.0',
+        'scipy',
+        'numpy',
         'biopython',
         'pyyaml', 
         'tqdm'

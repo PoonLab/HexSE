@@ -51,11 +51,15 @@ To run `HexSE` from anywhere in your Linux or macOS system, you can add HexSE's 
 $ PATH=<path_to_cloned_repository>/bin:$PATH
 ```
 
-You should now be able to run your simulations from any directory on your system as:
+You should now be able to run your simulations from any directory in your system the command `hexse`:
 ```console
 $ hexse <path_to_sequence_file> <path_to_phylogenetic_tree> <path_to_configuration_file> --outfile <path_to_alignment_file> --logfile <path_to_log_file>
 ```
 
+Alternatively, in Linux you can create a symbolic link to `hexse/bin/hexse/hexse.sh` in a folder from your `PATH` (find folders in your `PATH` with q`echo $PATH$`):
+```console
+ln -s <path_to_cloned_repository>/bin/hexse.sh hexse
+```
 
 ## Usage
 `HexSE` requires users to provide a nucleotide sequence (either in `fasta` or `genbank` format), a phylogenetic tree (in `newick` format), and a configuration file in [YAML](https://en.wikipedia.org/wiki/YAML) format specifying the substitution biases and the coordinates of the Open Reading Frames (ORFs) in the sequence.
