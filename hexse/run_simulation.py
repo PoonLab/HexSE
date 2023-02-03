@@ -21,7 +21,7 @@ from .settings import Settings
 from .discretize import discretize
 
 
-def get_args(parser):
+def get_args(parser: argparse.ArgumentParser) -> argparse.Namespace:
     # positional arguments (required)
     parser.add_argument(
         'seq',
@@ -54,7 +54,7 @@ def get_args(parser):
     return parser.parse_args()
 
 
-def valid_sequence(seq):
+def valid_sequence(seq: str) -> bool:
     """
     Verifies that the length of the input sequence is valid and the sequence is composed of only nucleotides.
     A valid sequence is assumed to be composed of a START codon, at least one amino acid codon, and a STOP codon.
@@ -78,7 +78,7 @@ def resolve_ambiguities(seq):
     return("".join(new_seq))
 
 
-def valid_orfs(orf_locations, seq_length):
+def valid_orfs(orf_locations: dict, seq_length: int): # -> tuple[dict, list]:
     """
     Verifies that the input ORFs are a list of tuples containing the start and end positions of ORFs.
     Example of valid input: [(1, 9), (27, 13)]
@@ -127,7 +127,7 @@ def valid_orfs(orf_locations, seq_length):
     return invalid_orfs, invalid_msg
 
 
-def sort_orfs(orf_locations):
+def sort_orfs(orf_locations: dict) -> dict:
     """
     Store ORFs in position according to plus zero ORF (first of the list).
     They will be classified as (+0, +1, +2, -0, -1, -2)
@@ -207,7 +207,7 @@ def codon_iterator(my_orf, start_pos, end_pos):
         i += 3
 
 
-def count_internal_stop_codons(cds):
+def count_internal_stop_codons(cds: str) -> int:
     """
     Look for stop codons inside the CDS
     :param cds: str, Coding Aequences (if on negative strand, cds must be the complement)

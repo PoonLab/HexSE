@@ -48,7 +48,7 @@ class TestValidORFs(unittest.TestCase):
         s = "ATGCGTAAACGGGCTAGAGCTAGCA"
         orf_locations = {'+': [{'coords': [(0, 9)], 'omega_values': [1.42, 0.67, 1.22, 0.74]}],
                          '-': []}  # 0-based exclusive indexing
-        expected = {'+': [], '-': []}
+        expected = ({'+': [], '-': []}, [])
         result = valid_orfs(orf_locations, len(s))
         self.assertEqual(expected, result)
 
@@ -56,8 +56,8 @@ class TestValidORFs(unittest.TestCase):
         s = "ATGCGCGCATGACGA"
         orfs = {'+': [{'coords': [(1, 1)], 'omega_values': [1.42, 0.67, 1.22, 0.74]}],
                 '-': []}
-        expected = {'+': [{'coords': [(1, 1)], 'omega_values': [1.42, 0.67, 1.22, 0.74]}],
-                    '-': []}
+        expected = ({'+': [{'coords': [(1, 1)], 'omega_values': [1.42, 0.67, 1.22, 0.74]}],
+                    '-': []}, [])
         result = valid_orfs(orfs, len(s))
         self.assertEqual(expected, result)
 
@@ -66,9 +66,9 @@ class TestValidORFs(unittest.TestCase):
         orfs = {'+': [{'coords': [(1, 1)], 'omega_values': [[1.42, 0.67, 1.22, 0.74]]},
                       {'coords': [(2, 4)], 'omega_values': [0.56, 0.89, 1.13]}],
                 '-': [{'coords': [(0, 1), (2, 3)], 'omega_values': [0.35, 0.78, 1.03, 1.43, 1.80]}]}
-        expected = {'+': [{'coords': [(1, 1)], 'omega_values': [[1.42, 0.67, 1.22, 0.74]]},
+        expected = ({'+': [{'coords': [(1, 1)], 'omega_values': [[1.42, 0.67, 1.22, 0.74]]},
                           {'coords': [(2, 4)], 'omega_values': [0.56, 0.89, 1.13]}],
-                    '-': [{'coords': [(0, 1), (2, 3)], 'omega_values': [0.35, 0.78, 1.03, 1.43, 1.80]}]}
+                    '-': [{'coords': [(0, 1), (2, 3)], 'omega_values': [0.35, 0.78, 1.03, 1.43, 1.80]}]}, [])
         result = valid_orfs(orfs, len(s))
         self.assertEqual(expected, result)
 
@@ -76,8 +76,8 @@ class TestValidORFs(unittest.TestCase):
         s = "ATGTCGATGCATGC"
         orfs = {'+': [{'coords': [(1, 11)], 'omega_values': [0.12, 0.54, 0.98, 1.26]}],
                 '-': []}
-        expected = {'+': [{'coords': [(1, 11)], 'omega_values': [0.12, 0.54, 0.98, 1.26]}],
-                    '-': []}
+        expected = ({'+': [{'coords': [(1, 11)], 'omega_values': [0.12, 0.54, 0.98, 1.26]}],
+                    '-': []}, [[(1, 11), 'Not multiple of three']])
         result = valid_orfs(orfs, len(s))
         self.assertEqual(expected, result)
 
@@ -85,8 +85,8 @@ class TestValidORFs(unittest.TestCase):
         s = "ATGTCGATGCATGC"
         orfs = {'+': [{'coords': [(0, 12)], 'omega_values': [1.42, 0.67, 1.22, 0.74]}],
                 '-': [{'coords': [(1, 20)], 'omega_values': [0.35, 0.78, 1.03, 1.43, 1.80]}]}
-        expected = {'+': [],
-                    '-': [{'coords': [(1, 20)], 'omega_values': [0.35, 0.78, 1.03, 1.43, 1.80]}]}
+        expected = ({'+': [],
+                    '-': [{'coords': [(1, 20)], 'omega_values': [0.35, 0.78, 1.03, 1.43, 1.80]}]}, [])
         result = valid_orfs(orfs, len(s))
         self.assertEqual(expected, result)
 
@@ -327,28 +327,28 @@ class TestDiscretize(unittest.TestCase):
         alpha = 1.25
         ncat = 4
         expected = np.array([0.09199853806558903, 0.27043066909631136, 0.5158061369385518, 1.1217646558655263])
-        result = discretize(alpha, ncat, dist=ss.gamma)
+        result = discretize(alpha, ncat, dist=ss.gamma, scale=0)
         self.assertEqual(expected.all(), result.all())
 
     def test_discertize_gamma_str(self):
         alpha = 1.25
         ncat = 4
         expected = np.array([0.09199853806558903, 0.27043066909631136, 0.5158061369385518, 1.1217646558655263])
-        result = discretize(alpha, ncat, dist='ss.gamma')
+        result = discretize(alpha, ncat, dist='ss.gamma', scale=0)
         self.assertEqual(expected.all(), result.all())
 
     def test_discretize_lognorm(self):
         alpha = 1.25
         ncat = 4
         expected = np.array([0.18399708, 0.54086134, 1.03161227, 2.24352931])
-        result = discretize(alpha, ncat, dist=ss.lognorm)
+        result = discretize(alpha, ncat, dist=ss.lognorm, scale=0)
         self.assertEqual(expected.all(), result.all())
 
     def test_discretize_lognorm_str(self):
         alpha = 1.25
         ncat = 4
         expected = np.array([0.18399708, 0.54086134, 1.03161227, 2.24352931])
-        result = discretize(alpha, ncat, dist='ss.lognorm')
+        result = discretize(alpha, ncat, dist='ss.lognorm', scale=0)
         self.assertEqual(expected.all(), result.all())
 
 
@@ -379,15 +379,15 @@ class TestReadOrfs(unittest.TestCase):
     def test_genbank_format(self):
         in_orfs = os.path.join(CURR_ABSPATH, 'fixtures/NC_003977.2_HBV.gb')
         exp_orfs = {'+': [{'coords': [(2308, 3182), (0, 1625)]},
-                          {'coords': [(2849, 3182), (0, 837)]},
-                          {'coords': [(3173, 3182), (0, 837)]},
-                          {'coords': [(156, 837)]},
-                          {'coords': [(1375, 1840)]},
-                          {'coords': [(1815, 2454)]},
-                          {'coords': [(1853, 1922)]},
-                          {'coords': [(1902, 2454)]}],
+                            {'coords': [(2849, 3182), (0, 837)]},
+                            {'coords': [(3173, 3182), (0, 837)]},
+                            {'coords': [(156, 837)]},
+                            {'coords': [(1375, 1840)]},
+                            {'coords': [(1815, 2454)]},
+                            {'coords': [(1853, 1922)]},
+                            {'coords': [(1902, 2454)]}],
                     '-': []}
-        res_orfs = parse_genbank_orfs(in_orfs)
+        res_orfs = Settings.parse_genbank_orfs(in_orfs)
         self.assertEqual(exp_orfs, res_orfs)
 
     @unittest.skip("parse_orfs_from_csv is no longer defined")
@@ -419,10 +419,15 @@ class TestReadOrfs(unittest.TestCase):
         self.assertEqual(exp_orfs, res_orfs)
 
     def test_yaml_format(self):
-        path = os.path.join(CURR_ABSPATH, 'fixtures/test_HBV.yaml')
+        seq = os.path.join(CURR_ABSPATH, 'fixtures/test_seq.fa')
+        tree = os.path.join(CURR_ABSPATH, 'fixtures/test_tree.txt')
+        config = os.path.join(CURR_ABSPATH, 'fixtures/test_HBV.yaml')
 
-        with open(path, 'r') as stream:
-            settings = yaml.safe_load(stream)
+        args = argparse.Namespace(seq=seq, tree=tree, config=config)
+        settings = Settings(args)
+
+        with open(config, 'r') as stream:
+            settings_yaml = yaml.safe_load(stream)
 
         exp_orfs = {'+': [{'coords': [[2849, 3182]], 'omega_classes': 3, 'omega_shape': 1.5,
                            'omega_values': [0.1708353283825978, 0.4810288100937172, 1.1481358615121404]},
@@ -449,7 +454,32 @@ class TestReadOrfs(unittest.TestCase):
                                             1.2223993729945162, 1.9969734953254998]}],
                     '-': []}
 
-        res_orfs = Settings.parse_orfs_from_yaml(settings)
+        exp_orfs = {'+': [{'coords': [[2849, 3182]], 'omega_shape': 1.5, 'omega_classes': 3, 'omega_scale': None, 
+                           'omega_values': [0.28472554730432975, 0.8017146834895289, 1.9135597691869002]}, 
+                          {'coords': [[0, 837]], 'omega_shape': 1.7, 'omega_classes': 4, 'omega_scale': None, 
+                           'omega_values': [0.2546315346928122, 0.6187820264159969, 
+                                            1.0602878358803063, 2.066298602998443]}, 
+                          {'coords': [[3173, 3182]], 'omega_shape': 1.9, 'omega_classes': 5, 'omega_scale': None, 
+                           'omega_values': [0.24299466301064465, 0.5367901643069017, 0.8347352424578409, 
+                                            1.232290499360166, 2.153189430839229]}, 
+                          {'coords': [[156, 837]], 'omega_shape': 1.2, 'omega_classes': 6, 'omega_scale': None, 
+                           'omega_values': [0.12024956490941223, 0.34220561109733705, 0.5945133970685264, 
+                                            0.9177008036588394, 1.3984361616412855, 2.6268944615728804]}, 
+                          {'coords': [[1375, 1840]], 'omega_shape': 1.3, 'omega_classes': 7, 'omega_scale': None, 
+                           'omega_values': [0.11904243326372371, 0.3154129285521276, 0.5206117248835243, 
+                                            0.761133505770069, 1.0697477104347362, 1.5271712900390908, 
+                                            2.686880407027805]}, 
+                          {'coords': [[1815, 2454]], 'omega_shape': 1.25, 'omega_classes': 3, 'omega_scale': None, 
+                           'omega_values': [0.2409026301066901, 0.7650856087860596, 1.9940117610865642]}, 
+                          {'coords': [[1853, 1922]], 'omega_shape': 1.87, 'omega_classes': 4, 'omega_scale': None, 
+                           'omega_values': [0.2772466012740689, 0.6404372134662386, 
+                                            1.0663680865428011, 2.0159480987088285]}, 
+                          {'coords': [[1902, 2454]], 'omega_shape': 2.5, 'omega_classes': 5, 'omega_scale': None, 
+                           'omega_values': [0.3075971532102495, 0.5999467116400771, 0.8730832667988613, 
+                                            1.222399372994519, 1.9969734953254998]}], 
+                    '-': []}
+
+        res_orfs = settings.parse_orfs_from_yaml(settings_yaml)
         self.maxDiff = None
         self.assertDictEqual(exp_orfs, res_orfs)
 
@@ -471,13 +501,13 @@ class TestHandleStopCodons(unittest.TestCase):
     def test_no_internal_stop_codons(self):
         expected = 0
         seq = 'ATGGGAGAACGGGCTAGAGCTAGCA'
-        result = count_internal_stop_codons(seq, '+', (0, 18))
+        result = count_internal_stop_codons(seq)
         self.assertEqual(expected, result)
 
     def test_internal_stop_codon(self):
         seq = "ATGTGATAA"
-        exp = 1
-        res = count_internal_stop_codons(seq, '+', (0, 9))
+        exp = 2
+        res = count_internal_stop_codons(seq)
         self.assertEqual(exp, res)
 
 

@@ -2,7 +2,7 @@ import scipy
 import numpy as np
 import scipy.stats as ss
 
-def discretize(alpha, ncat, dist, scale):
+def discretize(alpha: int, ncat: int, dist: str, scale: int) -> np.array:
     """
     Divide a distribution into a number of intervals with equal probability and get the mid point of those intervals
     From https://gist.github.com/kgori/95f604131ce92ec15f4338635a86dfb9
