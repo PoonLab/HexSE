@@ -71,11 +71,11 @@ class Settings:
         
         return orfs
 
-    def clean_file_paths(self, file_paths):
+    def clean_file_paths(self, file_paths: list) -> list:
         return [i for i in file_paths if i]
         
     @staticmethod
-    def parse_genbank_orfs(seq_path): #TODO: change name of input
+    def parse_genbank_orfs(seq_path: str) -> dict: #TODO: change name of input
         """
         Extract ORFs from the GenBank file
         """
@@ -109,7 +109,7 @@ class Settings:
 
 
     @staticmethod
-    def read_settings_from_yaml(yaml_path):
+    def read_settings_from_yaml(yaml_path: str) -> dict:
         """
         Parse the config file if it exists
         :param config_path: path to the configuration file
@@ -127,13 +127,13 @@ class Settings:
         return settings
     
     @staticmethod
-    def get_yaml_file_path(file_paths):
+    def get_yaml_file_path(file_paths: list) -> str:
         for file_path in file_paths:
             if file_path.lower().endswith('.yaml') or file_path.lower().endswith('.yml'):
                 return file_path
 
     @staticmethod
-    def read_sequence(seq_path):
+    def read_sequence(seq_path: str) -> str:
         """
         Extract the sequence from the input file
         :param in_file: path to the file containing the sequence.
@@ -166,7 +166,7 @@ class Settings:
         return seq
 
     @staticmethod
-    def calculate_pi(seq):
+    def calculate_pi(seq: str) -> dict:
         """
         Extracts the value of pi from the command line or a configuration file
         :param pi: the value of pi input from the command line, can be 'None'
@@ -188,7 +188,7 @@ class Settings:
 
         return strand
 
-    def parse_orfs_from_yaml(self, yaml):
+    def parse_orfs_from_yaml(self, yaml: dict) -> dict:
         """
         Reads ORFs from a YAML file containing the ORF coordinates and the parameters of the dN/dS distribution for each ORF
         :param settings: dictionary representation of YAML file

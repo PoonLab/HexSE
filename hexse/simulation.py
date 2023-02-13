@@ -43,7 +43,7 @@ class SimulateOnBranch:
             if None in keys:
                 print("KEYS FROM OMEGA TREE\n",keys)
 
-    def get_substitution(self):
+    def get_substitution(self) -> (str, str, str, tuple, tuple):
         """
         Select a substitution by moving over the event_tree according to the generation of random numbers
         """
@@ -117,7 +117,7 @@ class SimulateOnBranch:
 
 
     @staticmethod
-    def weighted_random_choice(dictionary, sum_values):
+    def weighted_random_choice(dictionary: dict, sum_values: float) -> str:
         """
         Randomly select a key on a dictionary where values correspond to the weight for the key
         :param dictionary: Dictionary to select the value from

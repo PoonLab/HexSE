@@ -64,7 +64,7 @@ def valid_sequence(seq: str) -> bool:
     return is_valid
 
 
-def resolve_ambiguities(seq):
+def resolve_ambiguities(seq: str) -> str:
     """
     Resolves ambiguous positions in nt seq by randomly selecting one of its posibilites
     :return: seq without ambiguities
@@ -78,7 +78,7 @@ def resolve_ambiguities(seq):
     return("".join(new_seq))
 
 
-def valid_orfs(orf_locations: dict, seq_length: int): # -> tuple[dict, list]:
+def valid_orfs(orf_locations: dict, seq_length: int) -> (dict, list):
     """
     Verifies that the input ORFs are a list of tuples containing the start and end positions of ORFs.
     Example of valid input: [(1, 9), (27, 13)]
@@ -163,7 +163,7 @@ def sort_orfs(orf_locations: dict) -> dict:
     return sorted_orfs
 
 
-def set_global_omega_values(orf_locations, omega_values, omega_shape, omega_classes):
+def set_global_omega_values(orf_locations: dict, omega_values: list, omega_shape: float, omega_classes: int) -> dict:
     """
     Sets the dN and dS values for each the reading frames
     :param orf_locations: dictionary of ORFs sorted by the strand
@@ -179,7 +179,7 @@ def set_global_omega_values(orf_locations, omega_values, omega_shape, omega_clas
 
     return orf_locations
 
-def create_log_file(input_file_name):
+def create_log_file(input_file_name: str) -> str:
     """
     Create a log file with information for the run
     """

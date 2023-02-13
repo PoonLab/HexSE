@@ -274,7 +274,7 @@ class Sequence:
         return self.event_tree
 
     @staticmethod
-    def complement(seq, rev=False):
+    def complement(seq: str, rev=False) -> str:
         """
         Generates the complement of a DNA sequence
         :param seq: the input sequence
@@ -293,7 +293,7 @@ class Sequence:
         return result
 
     @staticmethod
-    def get_frequency_rates(seq):
+    def get_frequency_rates(seq: str) -> dict:
         """
         Frequency of nucleotides in the DNA sequence
         :param seq: the DNA sequence
@@ -478,7 +478,7 @@ class Sequence:
             yield my_orf[i:i + 3]
             i += 3
 
-    def find_codons(self, frame, orf):
+    def find_codons(self, frame: str, orf: dict) -> list:
         """
         Gets the Codon sequence
         :param frame:  str, the frame of the ORF, e.g., "+1"

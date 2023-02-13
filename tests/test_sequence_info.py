@@ -1,5 +1,7 @@
 import random
 import unittest
+import sys
+import numpy as np
 
 from hexse.sequence_info import Sequence, Nucleotide
 
@@ -23,9 +25,10 @@ class TestSequence1(unittest.TestCase):
         self.maxDiff = MAX_DIFF
         random.seed(9001)     # Set seed for pseudo-random number generator
 
-        orfs = {'+0': [{'coords': [[0, 21]],
-                        'omega_classes': 3, 'omega_shape': 1.5,
-                        'omega_values': [0.1708353283825978, 0.4810288100937172, 1.1481358615121404]}],
+        orfs = {'+0': [{'coords': [[0, 21]], 
+                        'omega_classes': 3, 'omega_shape': 1.5, 
+                        'omega_values': [0.1708353283825978, 0.4810288100937172, 1.1481358615121404], 
+                        'orf_map': np.array([1])}], 
                 '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
 
         s1 = 'GTACGATCGATCGATGCTAGC'
@@ -50,7 +53,17 @@ class TestSequence1(unittest.TestCase):
         # Check that Sequences are different objects with the same attributes
         new_sequence1 = self.sequence1.__deepcopy__(memodict={})
         self.assertIsNot(self.sequence1, new_sequence1)
-        self.assertEqual(self.sequence1.orfs, new_sequence1.orfs)
+
+        # self.assertEqual(self.sequence1.orfs, new_sequence1.orfs) # This assertion fails if 'orf_map' np.array has more than one element
+        strands = ['+0', '+1', '+2', '-0', '-1', '-2']
+        for strand in strands:
+            for orf, new_orf in zip(self.sequence1.orfs[strand], new_sequence1.orfs[strand]):
+                self.assertEqual(orf['coords'], new_orf['coords'])
+                self.assertEqual(orf['omega_classes'], new_orf['omega_classes'])
+                self.assertEqual(orf['omega_shape'], new_orf['omega_shape'])
+                self.assertEqual(orf['omega_values'], new_orf['omega_values'])
+                self.assertTrue((orf['orf_map'] == new_orf['orf_map']).all())
+
         self.assertEqual(self.sequence1.kappa, new_sequence1.kappa)
         self.assertEqual(self.sequence1.global_rate, new_sequence1.global_rate)
         self.assertEqual(self.sequence1.pi, new_sequence1.pi)
@@ -78,7 +91,14 @@ class TestSequence1(unittest.TestCase):
             for i, codon in enumerate(nt.codons):
                 new_codon = new_nt.codons[i]
                 self.assertIsNot(codon, new_codon)
-                self.assertEqual(codon.orf, new_codon.orf)
+                # self.assertEqual(codon.orf, new_codon.orf) # This assertion fails if 'orf_map' np.array has more than one element
+
+                orf, new_orf = codon.orf, new_codon.orf
+                self.assertEqual(orf['coords'], new_orf['coords'])
+                self.assertEqual(orf['omega_classes'], new_orf['omega_classes'])
+                self.assertEqual(orf['omega_shape'], new_orf['omega_shape'])
+                self.assertEqual(orf['omega_values'], new_orf['omega_values'])
+                self.assertTrue((orf['orf_map'] == new_orf['orf_map']).all())
                 self.assertEqual(codon.frame, new_codon.frame)
                 self.assertEqual(str(codon.nts_in_codon), str(new_codon.nts_in_codon))
 
@@ -88,81 +108,93 @@ class TestSequence1(unittest.TestCase):
         self.assertEqual(expected, result)
 
     def testCreateEventTree(self):
-        expected = {'to_nt': {'A': {'from_nt': {'A': None,
-                                                'C': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'G': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'T': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}}}},
-                              'C': {'from_nt': {'A': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'C': None,
-                                                'G': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'T': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}}}},
-                              'G': {'from_nt': {'A': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'C': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'G': None,
-                                                'T': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}}}},
-                              'T': {'from_nt': {'A': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'C': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'G': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
+        expected = {'to_nt': {'A': {'from_nt': {'A': None, 
+                                                'C': {
+                                                    'mu1': {(1,): {}}, 
+                                                    'mu2': {(1,): {}}, 
+                                                    'mu3': {(1,): {}}, 
+                                                    'mu4': {(1,): {}}, 
+                                                    'mu5': {(1,): {}}, 
+                                                    'mu6': {(1,): {}}}, 
+                                                'G': {
+                                                    'mu1': {(1,): {}}, 
+                                                    'mu2': {(1,): {}}, 
+                                                    'mu3': {(1,): {}}, 
+                                                    'mu4': {(1,): {}}, 
+                                                    'mu5': {(1,): {}}, 
+                                                    'mu6': {(1,): {}}}, 
+                                                'T': {
+                                                    'mu1': {(1,): {}}, 
+                                                    'mu2': {(1,): {}}, 
+                                                    'mu3': {(1,): {}}, 
+                                                    'mu4': {(1,): {}}, 
+                                                    'mu5': {(1,): {}}, 
+                                                    'mu6': {(1,): {}}}}}, 
+                              'C': {'from_nt': {'A': {
+                                                    'mu1': {(1,): {}}, 
+                                                    'mu2': {(1,): {}}, 
+                                                    'mu3': {(1,): {}}, 
+                                                    'mu4': {(1,): {}}, 
+                                                    'mu5': {(1,): {}}, 
+                                                    'mu6': {(1,): {}}}, 
+                                                'C': None, 
+                                                'G': {
+                                                    'mu1': {(1,): {}}, 
+                                                    'mu2': {(1,): {}}, 
+                                                    'mu3': {(1,): {}}, 
+                                                    'mu4': {(1,): {}}, 
+                                                    'mu5': {(1,): {}}, 
+                                                    'mu6': {(1,): {}}}, 
+                                                'T': {
+                                                    'mu1': {(1,): {}}, 
+                                                    'mu2': {(1,): {}}, 
+                                                    'mu3': {(1,): {}}, 
+                                                    'mu4': {(1,): {}}, 
+                                                    'mu5': {(1,): {}}, 
+                                                    'mu6': {(1,): {}}}}}, 
+                              'G': {'from_nt': {'A': {
+                                                    'mu1': {(1,): {}}, 
+                                                    'mu2': {(1,): {}}, 
+                                                    'mu3': {(1,): {}}, 
+                                                    'mu4': {(1,): {}}, 
+                                                    'mu5': {(1,): {}}, 
+                                                    'mu6': {(1,): {}}}, 
+                                                'C': {
+                                                    'mu1': {(1,): {}}, 
+                                                    'mu2': {(1,): {}}, 
+                                                    'mu3': {(1,): {}}, 
+                                                    'mu4': {(1,): {}}, 
+                                                    'mu5': {(1,): {}}, 
+                                                    'mu6': {(1,): {}}}, 
+                                                'G': None, 
+                                                'T': {
+                                                    'mu1': {(1,): {}}, 
+                                                    'mu2': {(1,): {}}, 
+                                                    'mu3': {(1,): {}}, 
+                                                    'mu4': {(1,): {}}, 
+                                                    'mu5': {(1,): {}}, 
+                                                    'mu6': {(1,): {}}}}}, 
+                              'T': {'from_nt': {'A': {
+                                                    'mu1': {(1,): {}}, 
+                                                    'mu2': {(1,): {}}, 
+                                                    'mu3': {(1,): {}}, 
+                                                    'mu4': {(1,): {}}, 
+                                                    'mu5': {(1,): {}}, 
+                                                    'mu6': {(1,): {}}}, 
+                                                'C': {
+                                                    'mu1': {(1,): {}}, 
+                                                    'mu2': {(1,): {}}, 
+                                                    'mu3': {(1,): {}}, 
+                                                    'mu4': {(1,): {}}, 
+                                                    'mu5': {(1,): {}}, 
+                                                    'mu6': {(1,): {}}}, 
+                                                'G': {
+                                                    'mu1': {(1,): {}}, 
+                                                    'mu2': {(1,): {}}, 
+                                                    'mu3': {(1,): {}}, 
+                                                    'mu4': {(1,): {}}, 
+                                                    'mu5': {(1,): {}}, 
+                                                    'mu6': {(1,): {}}}, 
                                                 'T': None}}}}
         result = self.sequence1.create_event_tree()
         self.assertEqual(expected, result)
@@ -173,20 +205,21 @@ class TestSequence1(unittest.TestCase):
         nt = self.sequence1.nt_sequence[0]  # First nucleotide is G
         self.sequence1.set_substitution_rates(nt)
 
-        exp_sub_rates = {'A': 6.640901570929766e-06,
-                         'C': 1.082033797048673e-06,
-                         'G': None,
-                         'T': 1.3389485626674619e-05}
+        exp_sub_rates = {'A': 1.280932279322075e-06,
+                         'C': 1.9922704712789297e-06,
+                         'G': None, 
+                         'T': 1.9922704712789297e-06}
         self.assertEqual(exp_sub_rates, nt.rates)
-        exp_omegas = {'A': ((1, 0, 0, 0),), 'C': ((0, 1, 0, 0),), 'G': None, 'T': ((0, 0, 1, 0),)}
+        exp_omegas = {'A': (0.1708353283825978,), 'C': (0.1708353283825978,), 'G': None, 'T': (0.1708353283825978,)}
         self.assertEqual(exp_omegas, nt.omega_keys)
-        exp_cat_keys = {'A': 'mu3', 'C': 'mu1', 'T': 'mu3'}
+        exp_cat_keys = {'A': 'mu1', 'C': 'mu3', 'T': 'mu3'}
         self.assertEqual(exp_cat_keys, nt.cat_keys)
-        exp_total_rate = 2.1112420994653056e-05
+        exp_total_rate = 5.265473221879935e-06
         self.assertEqual(exp_total_rate, nt.mutation_rate)
-        exp_total_omegas = {((0, 0, 1, 0),): 1.1481358615121404,
-                            ((0, 1, 0, 0),): 0.4810288100937172,
-                            ((1, 0, 0, 0),): 0.1708353283825978}
+        exp_total_omegas = {(0.1708353283825978,): {'value': 0.1708353283825978, 'nt_events': 1},
+                            (-1,): {'value': 1, 'nt_events': 1},
+                            (0.4810288100937172,): {'value': 0.4810288100937172, 'nt_events': 1}, 
+                            (1.1481358615121404,): {'value': 1.1481358615121404, 'nt_events': 1}}
         self.assertEqual(exp_total_omegas, self.sequence1.total_omegas)
 
     def testIsTransv(self):
@@ -235,6 +268,7 @@ class TestSequence1(unittest.TestCase):
         result = self.sequence1.is_start_stop_codon(nt, 'C')
         self.assertEqual(expected, result)
 
+    @unittest.skip('create_probability_tree is no longer defined')
     def testCreateProbabilityTree(self):
         expected = {'to_nt': {'A': {'number_of_events': 0,
                                     'from_nt': {'A': None,
@@ -343,107 +377,406 @@ class TestSequence1(unittest.TestCase):
         g19 = self.sequence1.nt_sequence[19]
         c20 = self.sequence1.nt_sequence[20]
 
-        exp_event_tree = {'to_nt': {'A': {'from_nt': {'A': None,
-                                                      'C': {'category': {'mu1': {((0, 0, 0, 1),): [c11],
-                                                                                 ((0, 1, 0, 0),): [c16]},
-                                                                         'mu2': {},
-                                                                         'mu3': {},
-                                                                         'mu4': {},
-                                                                         'mu5': {((0, 0, 0, 1),): [c3]},
-                                                                         'mu6': {((0, 1, 0, 0),): [c20]}}},
-                                                      'G': {'category': {'mu1': {((0, 1, 0, 0),): [g15]},
-                                                                         'mu2': {},
-                                                                         'mu3': {((0, 0, 1, 0),): [g12,
-                                                                                                   g19],
-                                                                                 ((1, 0, 0, 0),): [g0]},
-                                                                         'mu4': {((0, 0, 0, 1),): [g8]},
-                                                                         'mu5': {((0, 0, 1, 0),): [g4]},
-                                                                         'mu6': {}}},
-                                                      'T': {'category': {'mu1': {((0, 0, 0, 1),): [t17]},
-                                                                         'mu2': {},
-                                                                         'mu3': {},
-                                                                         'mu4': {((0, 0, 1, 0),): [t6]},
-                                                                         'mu5': {((0, 0, 1, 0),): [t1,
-                                                                                                   t10]},
-                                                                         'mu6': {((0, 0, 1, 0),): [t14]}}}}},
-                                    'C': {'from_nt': {'A': {'category': {'mu1': {((0, 0, 1, 0),): [a18]},
-                                                                         'mu2': {((0, 0, 0, 1),): [a5],
-                                                                                 ((0, 1, 0, 0),): [a9]},
-                                                                         'mu3': {((0, 0, 0, 1),): [a2]},
-                                                                         'mu4': {},
-                                                                         'mu5': {((1, 0, 0, 0),): [a13]},
-                                                                         'mu6': {}}},
-                                                      'C': None,
-                                                      'G': {'category': {'mu1': {((0, 1, 0, 0),): [g0]},
-                                                                         'mu2': {},
-                                                                         'mu3': {},
-                                                                         'mu4': {((0, 1, 0, 0),): [g19],
-                                                                                 ((1, 0, 0, 0),): [g12]},
-                                                                         'mu5': {((0, 0, 0, 1),): [g8],
-                                                                                 ((1, 0, 0, 0),): [g4]},
-                                                                         'mu6': {((0, 0, 1, 0),): [g15]}}},
-                                                      'T': {'category': {'mu1': {((0, 0, 1, 0),): [t1]},
-                                                                         'mu2': {((0, 0, 0, 1),): [t17],
-                                                                                 ((1, 0, 0, 0),): [t6]},
-                                                                         'mu3': {},
-                                                                         'mu4': {},
-                                                                         'mu5': {},
-                                                                         'mu6': {((0, 0, 0, 1),): [t14],
-                                                                                 ((1, 0, 0, 0),): [t10]}}}}},
-                                    'G': {'from_nt': {'A': {'category': {'mu1': {},
-                                                                         'mu2': {},
-                                                                         'mu3': {},
-                                                                         'mu4': {((0, 1, 0, 0),): [a9]},
-                                                                         'mu5': {((0, 0, 0, 1),): [a2,
-                                                                                                   a5],
-                                                                                 ((1, 0, 0, 0),): [a18]},
-                                                                         'mu6': {((0, 0, 1, 0),): [a13]}}},
-                                                      'C': {'category': {'mu1': {},
-                                                                         'mu2': {((0, 0, 1, 0),): [c20],
-                                                                                 ((1, 0, 0, 0),): [c7]},
-                                                                         'mu3': {((0, 0, 1, 0),): [c3]},
-                                                                         'mu4': {((0, 1, 0, 0),): [c16]},
-                                                                         'mu5': {((0, 1, 0, 0),): [c11]},
-                                                                         'mu6': {}}},
-                                                      'G': None,
-                                                      'T': {'category': {'mu1': {},
-                                                                         'mu2': {((0, 1, 0, 0),): [t6]},
-                                                                         'mu3': {((0, 1, 0, 0),): [t14]},
-                                                                         'mu4': {((0, 0, 0, 1),): [t17]},
-                                                                         'mu5': {},
-                                                                         'mu6': {((0, 0, 1, 0),): [t1],
-                                                                                 ((1, 0, 0, 0),): [t10]}}}}},
-                                    'T': {'from_nt': {'A': {'category': {'mu1': {},
-                                                                         'mu2': {((1, 0, 0, 0),): [a18]},
-                                                                         'mu3': {((1, 0, 0, 0),): [a13]},
-                                                                         'mu4': {((0, 0, 0, 1),): [a5],
-                                                                                 ((1, 0, 0, 0),): [a9]},
-                                                                         'mu5': {},
-                                                                         'mu6': {((0, 0, 0, 1),): [a2]}}},
-                                                      'C': {'category': {'mu1': {},
-                                                                         'mu2': {},
-                                                                         'mu3': {((0, 0, 0, 1),): [c20]},
-                                                                         'mu4': {((0, 0, 1, 0),): [c16]},
-                                                                         'mu5': {},
-                                                                         'mu6': {((0, 0, 0, 1),): [c11],
-                                                                                 ((0, 1, 0, 0),): [c7]}}},
-                                                      'G': {'category': {'mu1': {},
-                                                                         'mu2': {},
-                                                                         'mu3': {((0, 0, 1, 0),): [g0,
-                                                                                                   g12,
-                                                                                                   g15]},
-                                                                         'mu4': {},
-                                                                         'mu5': {((0, 0, 0, 1),): [g8],
-                                                                                 ((1, 0, 0, 0),): [g19]},
-                                                                         'mu6': {((0, 1, 0, 0),): [g4]}}},
-                                                      'T': None}}}}
+        exp_event_tree = \
+                        {"to_nt": {"A": {"from_nt": {"A": None,
+                                                                "C": {"mu1": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                                        "mu2": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                                        "mu3": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                                        "mu4": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                                        "mu5": {(1,): {(1.1481358615121404,): [c20],
+                                                                                    "nt_events": 1, "region_weight": 1.1481358615121404,},
+                                                                                    "nt_events": 1,},
+                                                                        "mu6": {(1,): {(-1,): [c3, c11], (0.4810288100937172,): [c16],
+                                                                                    "nt_events": 3, "region_weight": 2.4810288100937172,},
+                                                                                    "nt_events": 3,},
+                                                                                    "nt_events": 4,},
+                                                                    "G": {
+                                                                        "mu1": {
+                                                                            (1,): {
+                                                                                (0.4810288100937172,): [g15],
+                                                                                "nt_events": 1,
+                                                                                "region_weight": 0.4810288100937172,
+                                                                            },
+                                                                            "nt_events": 1,
+                                                                        },
+                                                                        "mu2": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                                        "mu3": {
+                                                                            (1,): {
+                                                                                (0.4810288100937172,): [g4],
+                                                                                "nt_events": 1,
+                                                                                "region_weight": 0.4810288100937172,
+                                                                            },
+                                                                            "nt_events": 1,
+                                                                        },
+                                                                        "mu4": {
+                                                                            (1,): {(-1,): [g8], "nt_events": 1, "region_weight": 1},
+                                                                            "nt_events": 1,
+                                                                        },
+                                                                        "mu5": {
+                                                                            (1,): {
+                                                                                (0.1708353283825978,): [g0, g0],
+                                                                                (1.1481358615121404,): [g12, g19],
+                                                                                "nt_events": 3,
+                                                                                "region_weight": 2.4671070514068787,
+                                                                            },
+                                                                            "nt_events": 3,
+                                                                        },
+                                                                        "mu6": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                                        "nt_events": 6,
+                                                                    },
+                                                                    "T": {
+                                                                        "mu1": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                                        "mu2": {
+                                                                            (1,): {
+                                                                                (0.1708353283825978,): [t10],
+                                                                                "nt_events": 1,
+                                                                                "region_weight": 0.1708353283825978,
+                                                                            },
+                                                                            "nt_events": 1,
+                                                                        },
+                                                                        "mu3": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                                        "mu4": {
+                                                                            (1,): {
+                                                                                (1.1481358615121404,): [t14],
+                                                                                "nt_events": 1,
+                                                                                "region_weight": 1.1481358615121404,
+                                                                            },
+                                                                            "nt_events": 1,
+                                                                        },
+                                                                        "mu5": {
+                                                                            (1,): {(-1,): [t17], "nt_events": 1, "region_weight": 1},
+                                                                            "nt_events": 1,
+                                                                        },
+                                                                        "mu6": {
+                                                                            (1,): {
+                                                                                (0.1708353283825978,): [t1],
+                                                                                (0.4810288100937172,): [t6],
+                                                                                "nt_events": 2,
+                                                                                "region_weight": 0.651864138476315,
+                                                                            },
+                                                                            "nt_events": 2,
+                                                                        },
+                                                                        "nt_events": 5,
+                                                                    },
+                                                                },
+                                                                "nt_events": 15,
+                                                            },
+                                                            "C": {
+                                                                "from_nt": {
+                                                                    "A": {
+                                                                        "mu1": {
+                                                                            (1,): {(-1,): [a5], "nt_events": 1, "region_weight": 1},
+                                                                            "nt_events": 1,
+                                                                        },
+                                                                        "mu2": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                                        "mu3": {
+                                                                            (1,): {
+                                                                                (1.1481358615121404,): [a13, a18],
+                                                                                "nt_events": 2,
+                                                                                "region_weight": 2.296271723024281,
+                                                                            },
+                                                                            "nt_events": 2,
+                                                                        },
+                                                                        "mu4": {
+                                                                            (1,): {
+                                                                                (0.1708353283825978,): [a9],
+                                                                                "nt_events": 1,
+                                                                                "region_weight": 0.1708353283825978,
+                                                                            },
+                                                                            "nt_events": 1,
+                                                                        },
+                                                                        "mu5": {
+                                                                            (1,): {(-1,): [a2], "nt_events": 1, "region_weight": 1},
+                                                                            "nt_events": 1,
+                                                                        },
+                                                                        "mu6": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                                        "nt_events": 5,
+                                                                    },
+                                                                    "C": None,
+                                                                    "G": {
+                                                                        "mu1": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                                        "mu2": {
+                                                                            (1,): {(-1,): [g8], "nt_events": 1, "region_weight": 1},
+                                                                            "nt_events": 1,
+                                                                        },
+                                                                        "mu3": {
+                                                                            (1,): {
+                                                                                (1.1481358615121404,): [g12, g19],
+                                                                                "nt_events": 2,
+                                                                                "region_weight": 2.296271723024281,
+                                                                            },
+                                                                            "nt_events": 2,
+                                                                        },
+                                                                        "mu4": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                                        "mu5": {
+                                                                            (1,): {
+                                                                                (0.1708353283825978,): [g0, g0],
+                                                                                (0.4810288100937172,): [g4],
+                                                                                "nt_events": 2,
+                                                                                "region_weight": 0.651864138476315,
+                                                                            },
+                                                                            "nt_events": 2,
+                                                                        },
+                                                                        "mu6": {
+                                                                            (1,): {
+                                                                                (0.4810288100937172,): [g15],
+                                                                                "nt_events": 1,
+                                                                                "region_weight": 0.4810288100937172,
+                                                                            },
+                                                                            "nt_events": 1,
+                                                                        },
+                                                                        "nt_events": 6,
+                                                                    },
+                                                                    "T": {
+                                                                        "mu1": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                                        "mu2": {
+                                                                            (1,): {
+                                                                                (0.4810288100937172,): [t6],
+                                                                                (0.1708353283825978,): [t10],
+                                                                                "nt_events": 2,
+                                                                                "region_weight": 0.651864138476315,
+                                                                            },
+                                                                            "nt_events": 2,
+                                                                        },
+                                                                        "mu3": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                                        "mu4": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                                        "mu5": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                                        "mu6": {
+                                                                            (1,): {
+                                                                                (0.1708353283825978,): [t1],
+                                                                                (-1,): [t14, t17],
+                                                                                "nt_events": 3,
+                                                                                "region_weight": 2.170835328382598,
+                                                                            },
+                                                                            "nt_events": 3,
+                                                                        },
+                                                                        "nt_events": 5,
+                                                                    },
+                                                                },
+                                                                "nt_events": 16,
+                                                            },
+                                                            "G": {
+                                                                "from_nt": {
+                                                                    "A": {
+                                                                        "mu1": {
+                                                                            (1,): {
+                                                                                (1.1481358615121404,): [a18],
+                                                                                "nt_events": 1,
+                                                                                "region_weight": 1.1481358615121404,
+                                                                            },
+                                                                            "nt_events": 1,
+                                                                        },
+                                                                        "mu2": {
+                                                                            (1,): {
+                                                                                (0.1708353283825978,): [a9],
+                                                                                "nt_events": 1,
+                                                                                "region_weight": 0.1708353283825978,
+                                                                            },
+                                                                            "nt_events": 1,
+                                                                        },
+                                                                        "mu3": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                                        "mu4": {
+                                                                            (1,): {
+                                                                                (1.1481358615121404,): [a13],
+                                                                                "nt_events": 1,
+                                                                                "region_weight": 1.1481358615121404,
+                                                                            },
+                                                                            "nt_events": 1,
+                                                                        },
+                                                                        "mu5": {
+                                                                            (1,): {(-1,): [a5], "nt_events": 1, "region_weight": 1},
+                                                                            "nt_events": 1,
+                                                                        },
+                                                                        "mu6": {
+                                                                            (1,): {(-1,): [a2], "nt_events": 1, "region_weight": 1},
+                                                                            "nt_events": 1,
+                                                                        },
+                                                                        "nt_events": 5,
+                                                                    },
+                                                                    "C": {
+                                                                        "mu1": {
+                                                                            (1,): {
+                                                                                (0.4810288100937172,): [c16],
+                                                                                "nt_events": 1,
+                                                                                "region_weight": 0.4810288100937172,
+                                                                            },
+                                                                            "nt_events": 1,
+                                                                        },
+                                                                        "mu2": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                                        "mu3": {
+                                                                            (1,): {
+                                                                                (0.4810288100937172,): [c3],
+                                                                                "nt_events": 1,
+                                                                                "region_weight": 0.4810288100937172,
+                                                                            },
+                                                                            "nt_events": 1,
+                                                                        },
+                                                                        "mu4": {
+                                                                            (1,): {
+                                                                                (0.4810288100937172,): [c7],
+                                                                                (0.1708353283825978,): [c11],
+                                                                                "nt_events": 2,
+                                                                                "region_weight": 0.651864138476315,
+                                                                            },
+                                                                            "nt_events": 2,
+                                                                        },
+                                                                        "mu5": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                                        "mu6": {
+                                                                            (1,): {
+                                                                                (1.1481358615121404,): [c20],
+                                                                                "nt_events": 1,
+                                                                                "region_weight": 1.1481358615121404,
+                                                                            },
+                                                                            "nt_events": 1,
+                                                                        },
+                                                                        "nt_events": 5,
+                                                                    },
+                                                                    "G": None,
+                                                                    "T": {
+                                                                        "mu1": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                                        "mu2": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                                        "mu3": {
+                                                                            (1,): {
+                                                                                (0.1708353283825978,): [t1],
+                                                                                "nt_events": 1,
+                                                                                "region_weight": 0.1708353283825978,
+                                                                            },
+                                                                            "nt_events": 1,
+                                                                        },
+                                                                        "mu4": {
+                                                                            (1,): {
+                                                                                (0.1708353283825978,): [t10],
+                                                                                "nt_events": 1,
+                                                                                "region_weight": 0.1708353283825978,
+                                                                            },
+                                                                            "nt_events": 1,
+                                                                        },
+                                                                        "mu5": {
+                                                                            (1,): {
+                                                                                (0.4810288100937172,): [t6],
+                                                                                (1.1481358615121404,): [t14],
+                                                                                (-1,): [t17],
+                                                                                "nt_events": 3,
+                                                                                "region_weight": 2.6291646716058574,
+                                                                            },
+                                                                            "nt_events": 3,
+                                                                        },
+                                                                        "mu6": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                                        "nt_events": 5,
+                                                                    },
+                                                                },
+                                                                "nt_events": 15,
+                                                            },
+                                                            "T": {
+                                                                "from_nt": {
+                                                                    "A": {
+                                                                        "mu1": {
+                                                                            (1,): {
+                                                                                (1.1481358615121404,): [a13],
+                                                                                "nt_events": 1,
+                                                                                "region_weight": 1.1481358615121404,
+                                                                            },
+                                                                            "nt_events": 1,
+                                                                        },
+                                                                        "mu2": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                                        "mu3": {
+                                                                            (1,): {
+                                                                                (0.1708353283825978,): [a9],
+                                                                                "nt_events": 1,
+                                                                                "region_weight": 0.1708353283825978,
+                                                                            },
+                                                                            "nt_events": 1,
+                                                                        },
+                                                                        "mu4": {
+                                                                            (1,): {
+                                                                                (-1,): [a5],
+                                                                                (1.1481358615121404,): [a18],
+                                                                                "nt_events": 2,
+                                                                                "region_weight": 2.1481358615121406,
+                                                                            },
+                                                                            "nt_events": 2,
+                                                                        },
+                                                                        "mu5": {
+                                                                            (1,): {(-1,): [a2], "nt_events": 1, "region_weight": 1},
+                                                                            "nt_events": 1,
+                                                                        },
+                                                                        "mu6": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                                        "nt_events": 5,
+                                                                    },
+                                                                    "C": {
+                                                                        "mu1": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                                        "mu2": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                                        "mu3": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                                        "mu4": {
+                                                                            (1,): {
+                                                                                (0.4810288100937172,): [c16],
+                                                                                "nt_events": 1,
+                                                                                "region_weight": 0.4810288100937172,
+                                                                            },
+                                                                            "nt_events": 1,
+                                                                        },
+                                                                        "mu5": {
+                                                                            (1,): {(-1,): [c11], "nt_events": 1, "region_weight": 1},
+                                                                            "nt_events": 1,
+                                                                        },
+                                                                        "mu6": {
+                                                                            (1,): {
+                                                                                (0.4810288100937172,): [c7],
+                                                                                (-1,): [c20],
+                                                                                "nt_events": 2,
+                                                                                "region_weight": 1.4810288100937172,
+                                                                            },
+                                                                            "nt_events": 2,
+                                                                        },
+                                                                        "nt_events": 4,
+                                                                    },
+                                                                    "G": {
+                                                                        "mu1": {
+                                                                            (1,): {
+                                                                                (0.1708353283825978,): [g0, g0],
+                                                                                (1.1481358615121404,): [g19],
+                                                                                "nt_events": 2,
+                                                                                "region_weight": 1.3189711898947383,
+                                                                            },
+                                                                            "nt_events": 2,
+                                                                        },
+                                                                        "mu2": {
+                                                                            (1,): {
+                                                                                (-1,): [g8],
+                                                                                (1.1481358615121404,): [g12],
+                                                                                (0.4810288100937172,): [g15],
+                                                                                "nt_events": 3,
+                                                                                "region_weight": 2.629164671605858,
+                                                                            },
+                                                                            "nt_events": 3,
+                                                                        },
+                                                                        "mu3": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                                        "mu4": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                                        "mu5": {
+                                                                            (1,): {
+                                                                                (0.4810288100937172,): [g4],
+                                                                                "nt_events": 1,
+                                                                                "region_weight": 0.4810288100937172,
+                                                                            },
+                                                                            "nt_events": 1,
+                                                                        },
+                                                                        "mu6": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                                        "nt_events": 6,
+                                                                    },
+                                                                    "T": None,
+                                                                },
+                                                                "nt_events": 15,
+                                                        },
+                                                    }
+                                                }
 
         res_omega_key = self.sequence1.nt_in_event_tree(g0)
         self.assertEqual(exp_event_tree, self.sequence1.event_tree)
 
         # No new omega keys are created initially
-        self.assertEqual({}, res_omega_key)
+        self.assertEqual(None, res_omega_key)
 
+    @unittest.skip('count_nts_on_event_tree is no longer defined')
     def testCountNtsOnEventTree(self):
         exp_count = 61
         res_count = self.sequence1.count_nts_on_event_tree()
@@ -458,50 +791,50 @@ class TestSequence1(unittest.TestCase):
 
     def testCheckMutationRates(self):
         exp_sub_rates = [
-            {'A': 6.640901570929766e-06, 'C': 1.082033797048673e-06, 'G': None, 'T': 1.3389485626674619e-05},
-            {'A': 2.6629007650064053e-05, 'C': 7.1245101429805794e-06, 'G': 5.065369013827426e-05, 'T': None},
-            {'A': None, 'C': 9.651256435350337e-06, 'G': 7.73108495336449e-05, 'T': 4.4118202240945026e-05},
-            {'A': 2.3193254860093468e-05, 'C': None, 'G': 1.1080953622075548e-05, 'T': 0.0},
-            {'A': 0.00010725572525720243, 'C': 4.787691333261464e-06, 'G': None, 'T': 2.5643402645651533e-05},
-            {'A': None, 'C': 5.46517972935242e-06, 'G': 7.73108495336449e-05, 'T': 1.5070521255236873e-05},
-            {'A': 1.730300590481841e-05, 'C': 3.112152579112792e-06, 'G': 2.628908902158698e-06, 'T': None},
-            {'A': 0.0, 'C': None, 'G': 9.336457737338375e-07, 'T': 7.074042109145251e-05},
-            {'A': 6.070071061137074e-05, 'C': 2.8025182955946275e-05, 'G': None, 'T': 2.8025182955946275e-05},
-            {'A': None, 'C': 2.628908902158698e-06, 'G': 2.4164516356328888e-05, 'T': 2.574577447535311e-06},
-            {'A': 2.6629007650064053e-05, 'C': 2.512315855827235e-05, 'G': 7.536947567481705e-06, 'T': None},
-            {'A': 1.8615854748053904e-06, 'C': None, 'G': 1.1156623787551084e-05, 'T': 0.00014706067413648342},
-            {'A': 4.463161875558207e-05, 'C': 3.1109477491051676e-06, 'G': None, 'T': 1.3389485626674619e-05},
-            {'A': None, 'C': 3.96222731028535e-06, 'G': 0.00016884563379424754, 'T': 1.648775562437735e-06},
-            {'A': 5.065369013827426e-05, 'C': 0.00014706067413648342, 'G': 4.642532399005903e-06, 'T': None},
-            {'A': 3.606779323495576e-06, 'C': 6.120654225041473e-05, 'G': None, 'T': 1.3389485626674619e-05},
-            {'A': 8.954762458333844e-07, 'C': None, 'G': 7.2493549068986665e-06, 'T': 5.7676686349394705e-05},
-            {'A': 1.8615854748053904e-06, 'C': 1.8217265764508066e-05, 'G': 1.5070521255236873e-05, 'T': None},
-            {'A': None, 'C': 2.137353042894174e-06, 'G': 1.3207424367617833e-05, 'T': 9.336457737338375e-07},
-            {'A': 4.463161875558207e-05, 'C': 8.759637179169221e-06, 'G': None, 'T': 4.787691333261464e-06},
-            {'A': 2.1222126327435754e-05, 'C': None, 'G': 6.274768836878727e-06, 'T': 3.217085478450112e-05},
-        ]
+            {'A': 1.595897111087155e-05, 'C': 4.787691333261464e-06, 'G': None, 'T': 3.8427968379662253e-07},
+            {'A': 7.536947567481705e-06, 'C': 2.512315855827235e-05, 'G': 1.648775562437735e-06, 'T': None},
+            {'A': None, 'C': 2.3193254860093468e-05, 'G': 0.00014706067413648342, 'T': 2.3193254860093468e-05},
+            {'A': 4.4118202240945026e-05, 'C': None, 'G': 4.642532399005903e-06, 'T': None},
+            {'A': 1.869908882932933e-05, 'C': 1.348092040995756e-05, 'G': None, 'T': 1.348092040995756e-05},
+            {'A': None, 'C': 1.8615854748053904e-06, 'G': 7.73108495336449e-05, 'T': 1.5070521255236873e-05},
+            {'A': 2.1222126327435754e-05, 'C': 8.763029673862326e-06, 'G': 1.1156623787551084e-05, 'T': None},
+            {'A': None, 'C': None, 'G': 7.2493549068986665e-06, 'T': 7.074042109145251e-05},
+            {'A': 6.070071061137074e-05, 'C': 6.603758839634174e-06, 'G': None, 'T': 6.603758839634174e-06},
+            {'A': None, 'C': 2.574577447535311e-06, 'G': 3.112152579112792e-06, 'T': 1.648775562437735e-06},
+            {'A': 9.336457737338377e-07, 'C': 3.112152579112792e-06, 'G': 2.574577447535311e-06, 'T': None},
+            {'A': 4.4118202240945026e-05, 'C': None, 'G': 2.574577447535311e-06, 'T': 7.73108495336449e-05},
+            {'A': 0.00010725572525720244, 'C': 1.338948562667462e-05, 'G': None, 'T': 7.582012344561795e-06},
+            {'A': None, 'C': 1.1080953622075548e-05, 'G': 5.7676686349394705e-05, 'T': 2.137353042894174e-06},
+            {'A': 1.7303005904818413e-05, 'C': 0.00014706067413648342, 'G': 2.6629007650064053e-05, 'T': None},
+            {'A': 3.606779323495576e-06, 'C': 2.5643402645651533e-05, 'G': None, 'T': 3.1765982567750934e-06},
+            {'A': 2.1222126327435754e-05, 'C': None, 'G': 8.954762458333844e-07, 'T': 2.4164516356328888e-05},
+            {'A': 2.3193254860093468e-05, 'C': 0.00014706067413648342, 'G': 2.3193254860093468e-05, 'T': None},
+            {'A': None, 'C': 1.1080953622075548e-05, 'G': 7.1245101429805794e-06, 'T': 1.7303005904818413e-05},
+            {'A': 0.00010725572525720244, 'C': 1.338948562667462e-05, 'G': None, 'T': 2.5826349268304602e-06},
+            {'A': 2.6629007650064053e-05, 'C': None, 'G': 5.0653690138274265e-05, 'T': 0.00014706067413648342}
+            ]
 
-        exp_total_rates = [2.1112420994653056e-05,
-                           8.440720793131888e-05,
-                           0.00013108030820994026,
-                           3.427420848216902e-05,
-                           0.00013768681923611542,
-                           9.78465505182342e-05,
-                           2.30440673860899e-05,
-                           7.167406686518635e-05,
-                           0.00011675107652326329,
-                           2.9368002706022896e-05,
-                           5.928911377581811e-05,
-                           0.00016007888339883989,
-                           6.113205213136186e-05,
-                           0.00017445663666697063,
-                           0.00020235689667376356,
-                           7.820280720058493e-05,
-                           6.582151750212676e-05,
-                           3.5149372494550326e-05,
-                           1.6278423184245844e-05,
-                           5.817894726801275e-05,
-                           5.96677499488156e-05]
+        exp_total_rates = [2.1130942127929635e-05,
+                           3.430888168819179e-05,
+                           0.00019344718385667036,
+                           4.876073463995093e-05,
+                           4.5660929649244447e-05,
+                           9.424295626368716e-05,
+                           4.1141779788849165e-05,
+                           7.798977599835118e-05,
+                           7.390822829063909e-05,
+                           7.3355055890858385e-06,
+                           6.62037580038194e-06,
+                           0.00012400362922212525,
+                           0.00012822722322843884,
+                           7.089499301436444e-05,
+                           0.0001909926876913659,
+                           3.2426780225922204e-05,
+                           4.6282118929598024e-05,
+                           0.00019344718385667036,
+                           3.550846966987454e-05,
+                           0.00012322784581070753,
+                           0.00022434337192482173]
 
         for pos, nt in enumerate(self.sequence1.nt_sequence):
             self.assertEqual(exp_sub_rates[pos], nt.rates)
@@ -569,6 +902,23 @@ class TestSequence1(unittest.TestCase):
         expected = False
         self.assertEqual(expected, result)
 
+    def testGetCodons(self):
+        expected = self.seq1_codons
+        result = self.sequence1.get_codons()
+        self.assertEqual(expected, result)
+
+    def testGetRightNT(self):
+        nts = [Nucleotide(nt, pos) for pos, nt in enumerate("GTACGATCGATCGATGCTAGC")]
+        for pos, nt in enumerate(nts):
+            result = self.sequence1.get_right_nt(pos)
+            self.assertEqual(result, nts[pos + 1])
+
+    def testGetLeftNT(self):
+        nts = [Nucleotide(nt, pos) for pos, nt in enumerate("GTACGATCGATCGATGCTAGC")]
+        for pos, nt in enumerate(nts):
+            result = self.sequence1.get_left_nt(pos)
+            self.assertEqual(result, nts[pos - 1])
+
 
 class TestSequence2(unittest.TestCase):
     """
@@ -586,12 +936,15 @@ class TestSequence2(unittest.TestCase):
 
         orfs = {'+0': [{'coords': [[0, 21]],
                         'omega_classes': 3, 'omega_shape': 1.5,
-                        'omega_values': [0.1708353283825978, 0.4810288100937172, 1.1481358615121404]}],
+                        'omega_values': [0.1708353283825978, 0.4810288100937172, 1.1481358615121404],
+                        'orf_map': np.array([1, 0])}],
                 '+1': [], '+2': [], '-0': [], '-1': [],
                 '-2': [{'coords': [[3, 15]],
                         'omega_classes': 4, 'omega_shape': 1.25,
                         'omega_values': [0.09199853806558903, 0.27043066909631136,
-                                         0.5158061369385518, 1.1217646558655263]}]}
+                                         0.5158061369385518, 1.1217646558655263], 
+                        'orf_map': np.array([0, 1])}]}
+
         s2 = 'ATGAATAAACCCGTATGA'
         pi2 = Sequence.get_frequency_rates(s2)
         self.sequence2 = Sequence(s2, orfs, KAPPA, GLOBAL_RATE, pi2, CAT_VALUES)
@@ -619,7 +972,17 @@ class TestSequence2(unittest.TestCase):
         # Check that Sequences are different objects with the same attributes
         new_sequence2 = self.sequence2.__deepcopy__(memodict={})
         self.assertIsNot(self.sequence2, new_sequence2)
-        self.assertEqual(self.sequence2.orfs, new_sequence2.orfs)
+
+        # self.assertEqual(self.sequence2.orfs, new_sequence2.orfs) # This assertion fails if 'orf_map' np.array has more than one element
+        strands = ['+0', '+1', '+2', '-0', '-1', '-2']
+        for strand in strands:
+            for orf, new_orf in zip(self.sequence2.orfs[strand], new_sequence2.orfs[strand]):
+                self.assertEqual(orf['coords'], new_orf['coords'])
+                self.assertEqual(orf['omega_classes'], new_orf['omega_classes'])
+                self.assertEqual(orf['omega_shape'], new_orf['omega_shape'])
+                self.assertEqual(orf['omega_values'], new_orf['omega_values'])
+                self.assertTrue((orf['orf_map'] == new_orf['orf_map']).all())
+
         self.assertEqual(self.sequence2.kappa, new_sequence2.kappa)
         self.assertEqual(self.sequence2.global_rate, new_sequence2.global_rate)
         self.assertEqual(self.sequence2.pi, new_sequence2.pi)
@@ -647,87 +1010,140 @@ class TestSequence2(unittest.TestCase):
             for i, codon in enumerate(nt.codons):
                 new_codon = new_nt.codons[i]
                 self.assertIsNot(codon, new_codon)
-                self.assertEqual(codon.orf, new_codon.orf)
+                # self.assertEqual(codon.orf, new_codon.orf) # This assertion fails if 'orf_map' np.array has more than one element
+
+                orf, new_orf = codon.orf, new_codon.orf
+                self.assertEqual(orf['coords'], new_orf['coords'])
+                self.assertEqual(orf['omega_classes'], new_orf['omega_classes'])
+                self.assertEqual(orf['omega_shape'], new_orf['omega_shape'])
+                self.assertEqual(orf['omega_values'], new_orf['omega_values'])
+                self.assertTrue((orf['orf_map'] == new_orf['orf_map']).all())
                 self.assertEqual(codon.frame, new_codon.frame)
                 self.assertEqual(str(codon.nts_in_codon), str(new_codon.nts_in_codon))
 
     def testCreateEventTree(self):
-        expected = {'to_nt': {'A': {'from_nt': {'A': None,
-                                                'C': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'G': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'T': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}}}},
-                              'C': {'from_nt': {'A': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'C': None,
-                                                'G': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'T': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}}}},
-                              'G': {'from_nt': {'A': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'C': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'G': None,
-                                                'T': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}}}},
-                              'T': {'from_nt': {'A': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'C': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'G': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'T': None}}}}
+        expected = \
+                    {
+                        "to_nt": {
+                            "A": {
+                                "from_nt": {
+                                    "A": None,
+                                    "C": {
+                                        "mu1": {(1, 0): {}, (1, 1): {}},
+                                        "mu2": {(1, 0): {}, (1, 1): {}},
+                                        "mu3": {(1, 0): {}, (1, 1): {}},
+                                        "mu4": {(1, 0): {}, (1, 1): {}},
+                                        "mu5": {(1, 0): {}, (1, 1): {}},
+                                        "mu6": {(1, 0): {}, (1, 1): {}},
+                                    },
+                                    "G": {
+                                        "mu1": {(1, 0): {}, (1, 1): {}},
+                                        "mu2": {(1, 0): {}, (1, 1): {}},
+                                        "mu3": {(1, 0): {}, (1, 1): {}},
+                                        "mu4": {(1, 0): {}, (1, 1): {}},
+                                        "mu5": {(1, 0): {}, (1, 1): {}},
+                                        "mu6": {(1, 0): {}, (1, 1): {}},
+                                    },
+                                    "T": {
+                                        "mu1": {(1, 0): {}, (1, 1): {}},
+                                        "mu2": {(1, 0): {}, (1, 1): {}},
+                                        "mu3": {(1, 0): {}, (1, 1): {}},
+                                        "mu4": {(1, 0): {}, (1, 1): {}},
+                                        "mu5": {(1, 0): {}, (1, 1): {}},
+                                        "mu6": {(1, 0): {}, (1, 1): {}},
+                                    },
+                                }
+                            },
+                            "C": {
+                                "from_nt": {
+                                    "A": {
+                                        "mu1": {(1, 0): {}, (1, 1): {}},
+                                        "mu2": {(1, 0): {}, (1, 1): {}},
+                                        "mu3": {(1, 0): {}, (1, 1): {}},
+                                        "mu4": {(1, 0): {}, (1, 1): {}},
+                                        "mu5": {(1, 0): {}, (1, 1): {}},
+                                        "mu6": {(1, 0): {}, (1, 1): {}},
+                                    },
+                                    "C": None,
+                                    "G": {
+                                        "mu1": {(1, 0): {}, (1, 1): {}},
+                                        "mu2": {(1, 0): {}, (1, 1): {}},
+                                        "mu3": {(1, 0): {}, (1, 1): {}},
+                                        "mu4": {(1, 0): {}, (1, 1): {}},
+                                        "mu5": {(1, 0): {}, (1, 1): {}},
+                                        "mu6": {(1, 0): {}, (1, 1): {}},
+                                    },
+                                    "T": {
+                                        "mu1": {(1, 0): {}, (1, 1): {}},
+                                        "mu2": {(1, 0): {}, (1, 1): {}},
+                                        "mu3": {(1, 0): {}, (1, 1): {}},
+                                        "mu4": {(1, 0): {}, (1, 1): {}},
+                                        "mu5": {(1, 0): {}, (1, 1): {}},
+                                        "mu6": {(1, 0): {}, (1, 1): {}},
+                                    },
+                                }
+                            },
+                            "G": {
+                                "from_nt": {
+                                    "A": {
+                                        "mu1": {(1, 0): {}, (1, 1): {}},
+                                        "mu2": {(1, 0): {}, (1, 1): {}},
+                                        "mu3": {(1, 0): {}, (1, 1): {}},
+                                        "mu4": {(1, 0): {}, (1, 1): {}},
+                                        "mu5": {(1, 0): {}, (1, 1): {}},
+                                        "mu6": {(1, 0): {}, (1, 1): {}},
+                                    },
+                                    "C": {
+                                        "mu1": {(1, 0): {}, (1, 1): {}},
+                                        "mu2": {(1, 0): {}, (1, 1): {}},
+                                        "mu3": {(1, 0): {}, (1, 1): {}},
+                                        "mu4": {(1, 0): {}, (1, 1): {}},
+                                        "mu5": {(1, 0): {}, (1, 1): {}},
+                                        "mu6": {(1, 0): {}, (1, 1): {}},
+                                    },
+                                    "G": None,
+                                    "T": {
+                                        "mu1": {(1, 0): {}, (1, 1): {}},
+                                        "mu2": {(1, 0): {}, (1, 1): {}},
+                                        "mu3": {(1, 0): {}, (1, 1): {}},
+                                        "mu4": {(1, 0): {}, (1, 1): {}},
+                                        "mu5": {(1, 0): {}, (1, 1): {}},
+                                        "mu6": {(1, 0): {}, (1, 1): {}},
+                                    },
+                                }
+                            },
+                            "T": {
+                                "from_nt": {
+                                    "A": {
+                                        "mu1": {(1, 0): {}, (1, 1): {}},
+                                        "mu2": {(1, 0): {}, (1, 1): {}},
+                                        "mu3": {(1, 0): {}, (1, 1): {}},
+                                        "mu4": {(1, 0): {}, (1, 1): {}},
+                                        "mu5": {(1, 0): {}, (1, 1): {}},
+                                        "mu6": {(1, 0): {}, (1, 1): {}},
+                                    },
+                                    "C": {
+                                        "mu1": {(1, 0): {}, (1, 1): {}},
+                                        "mu2": {(1, 0): {}, (1, 1): {}},
+                                        "mu3": {(1, 0): {}, (1, 1): {}},
+                                        "mu4": {(1, 0): {}, (1, 1): {}},
+                                        "mu5": {(1, 0): {}, (1, 1): {}},
+                                        "mu6": {(1, 0): {}, (1, 1): {}},
+                                    },
+                                    "G": {
+                                        "mu1": {(1, 0): {}, (1, 1): {}},
+                                        "mu2": {(1, 0): {}, (1, 1): {}},
+                                        "mu3": {(1, 0): {}, (1, 1): {}},
+                                        "mu4": {(1, 0): {}, (1, 1): {}},
+                                        "mu5": {(1, 0): {}, (1, 1): {}},
+                                        "mu6": {(1, 0): {}, (1, 1): {}},
+                                    },
+                                    "T": None,
+                                }
+                            },
+                        }
+                    }
+
         result = self.sequence2.create_event_tree()
         self.assertEqual(expected, result)
 
@@ -743,50 +1159,47 @@ class TestSequence2(unittest.TestCase):
         nt = self.sequence2.nt_sequence[11]
         self.sequence2.set_substitution_rates(nt)
 
-        exp_sub_rates = {'A': 3.5055586634238734e-05, 'C': None, 'G': 2.886834562234422e-06, 'T': 9.62278187411474e-06}
+        exp_sub_rates = {'A': 1.1974784480129713e-05, 'C': None, 'G': 3.5055586634238734e-05, 'T': 1.4475135109970076e-05}
         self.assertEqual(exp_sub_rates, nt.rates)
 
-        exp_omega_keys = {'A': ((0, 0, 0, 1), (0, 0, 0, 1, 0)),
-                          'C': None,
-                          'G': ((0, 0, 0, 1), (0, 1, 0, 0, 0)),
-                          'T': ((0, 0, 0, 1), (0, 1, 0, 0, 0))}
+        exp_omega_keys = {'A': (-1, 1.1217646558655263), 'C': None, 'G': (-1, 1.1217646558655263), 'T': (-1, 1.1217646558655263)}
         self.assertEqual(exp_omega_keys, nt.omega_keys)
 
-        exp_cat_keys = {'A': 'mu6', 'G': 'mu4', 'T': 'mu4'}
+        exp_cat_keys = {'A': 'mu4', 'G': 'mu6', 'T': 'mu2'}
         self.assertEqual(exp_cat_keys, nt.cat_keys)
 
-        exp_total_rate = 4.7565203070587895e-05
+        exp_total_rate = 6.150550622433852e-05
         self.assertEqual(exp_total_rate, nt.mutation_rate)
 
-        exp_total_omegas = {((0, 0, 0, 1), (0, 0, 0, 1, 0)): 1.1217646558655263,
-                            ((0, 0, 0, 1), (0, 0, 1, 0, 0)): 0.5158061369385518,
-                            ((0, 0, 0, 1), (0, 1, 0, 0, 0)): 0.27043066909631136,
-                            ((0, 0, 0, 1), (1, 0, 0, 0, 0)): 0.09199853806558903,
-                            ((0, 0, 1, 0), (0, 0, 0, 0, 1)): 1.1481358615121404,
-                            ((0, 0, 1, 0), (0, 0, 0, 1, 0)): 1.1217646558655263,
-                            ((0, 0, 1, 0), (0, 0, 1, 0, 0)): 0.5158061369385518,
-                            ((0, 1, 0, 0), (0, 0, 0, 0, 1)): 0.4810288100937172,
-                            ((0, 1, 0, 0), (0, 1, 0, 0, 0)): 0.27043066909631136,
-                            ((0, 1, 0, 0), (1, 0, 0, 0, 0)): 0.09199853806558903,
-                            ((1, 0, 0, 0), (0, 0, 0, 1, 0)): 1.1217646558655263,
-                            ((1, 0, 0, 0), (1, 0, 0, 0, 0)): 0.09199853806558903}
+        exp_total_omegas = {
+                                (0.1708353283825978, 0.27043066909631136): {
+                                    "value": 0.04619911215979399,
+                                    "nt_events": 1,
+                                },
+                                (0.1708353283825978, -1): {"value": 0.1708353283825978, "nt_events": 1},
+                                (-1, 0.27043066909631136): {"value": 0.27043066909631136, "nt_events": 1},
+                                (0.4810288100937172, -1): {"value": 0.4810288100937172, "nt_events": 1},
+                                (0.4810288100937172, 1.1217646558655263): {
+                                    "value": 0.5396011176161822,
+                                    "nt_events": 1,
+                                },
+                                (-1, 1.1217646558655263): {"value": 1.1217646558655263, "nt_events": 1},
+                            }
+
         self.assertEqual(exp_total_omegas, self.sequence2.total_omegas)
 
         # Mutation would destroy START CODON
         nt = self.sequence2.nt_sequence[0]
         self.sequence2.set_substitution_rates(nt)
 
-        exp_sub_rates = {'A': None, 'C': 0.0, 'G': 0.0, 'T': 0.0}
+        exp_sub_rates = {'A': None, 'C': None, 'G': None, 'T': None}
         self.assertEqual(exp_sub_rates, nt.rates)
 
         # Tuples are of length 1 because the nucleotide is part of only 1 ORF
-        exp_omega_keys = {'A': None,
-                          'C': ((0, 0, 0, 0),),
-                          'G': ((0, 0, 0, 0),),
-                          'T': ((0, 0, 0, 0),)}
+        exp_omega_keys = {'A': None, 'C': None, 'G': None, 'T': None}
         self.assertEqual(exp_omega_keys, nt.omega_keys)
 
-        exp_cat_keys = {'C': 'mu4', 'G': 'mu6', 'T': 'mu6'}
+        exp_cat_keys = {'C': None, 'G': None, 'T': None}
         self.assertEqual(exp_cat_keys, nt.cat_keys)
 
         exp_total_rate = 0
@@ -797,56 +1210,52 @@ class TestSequence2(unittest.TestCase):
         nt = self.sequence2.nt_sequence[4]
         self.sequence2.set_substitution_rates(nt)
 
-        exp_sub_rates = {'A': None, 'C': 0.0, 'G': 0.0, 'T': 0.0}
+        exp_sub_rates = {'A': None, 'C': None, 'G': None, 'T': None}
         self.assertEqual(exp_sub_rates, nt.rates)
 
         # Tuples are of length 2 because the nucleotide is part of 2 ORFs
-        exp_omega_keys = {'A': None,
-                          'C': ((0, 0, 0, 0), (0, 0, 0, 0, 0)),
-                          'G': ((0, 0, 0, 0), (0, 0, 0, 0, 0)),
-                          'T': ((0, 0, 0, 0), (0, 0, 0, 0, 0))}
+        exp_omega_keys = {'A': None, 'C': None, 'G': None, 'T': None}
         self.assertEqual(exp_omega_keys, nt.omega_keys)
 
-        exp_cat_keys = {'C': 'mu4', 'G': 'mu6', 'T': 'mu5'}
+        exp_cat_keys = {'C': None, 'G': None, 'T': None}
         self.assertEqual(exp_cat_keys, nt.cat_keys)
 
-        exp_total_rate = 0.0
+        exp_total_rate = 0
         self.assertEqual(exp_total_rate, nt.mutation_rate)
         self.assertEqual(exp_total_omegas, self.sequence2.total_omegas)
 
         # Non-synonymous mutation in both (+) and (-) strands
+        random.seed(4001)
         nt = self.sequence2.nt_sequence[10]
         self.sequence2.set_substitution_rates(nt)
 
-        exp_sub_rates = {'A': 1.4476499901684232e-06, 'C': None, 'G': 1.6862747125805073e-05, 'T': 5.717766785346913e-07}
-        self.assertEqual(exp_sub_rates, nt.rates)
+        exp_sub_rates = {'A': 5.760216329605508e-06, 'C': None, 'G': 1.6862747125805073e-05, 'T': 6.962957017894693e-06}
+        self.assertEqual(exp_sub_rates, nt.rates) # AssertionError
 
-        exp_omega_keys = {'A': ((1, 0, 0, 0), (0, 0, 1, 0, 0)),
-                          'C': None,
-                          'G': ((0, 1, 0, 0), (0, 0, 0, 1, 0)),
-                          'T': ((0, 1, 0, 0), (0, 1, 0, 0, 0))}
+        exp_omega_keys = {'A': (0.4810288100937172, 1.1217646558655263), 'C': None, 'G': (0.4810288100937172, 1.1217646558655263), 'T': (0.4810288100937172, 1.1217646558655263)}
         self.assertEqual(exp_omega_keys, nt.omega_keys)
 
-        exp_cat_keys = {'A': 'mu5', 'G': 'mu6', 'T': 'mu1'}
-        self.assertEqual(exp_cat_keys, nt.cat_keys)
+        exp_cat_keys = {'A': 'mu4', 'G': 'mu6', 'T': 'mu2'}
+        self.assertEqual(exp_cat_keys, nt.cat_keys) # AssertionError
 
-        exp_total_rate = 1.8882173794508187e-05
-        self.assertEqual(exp_total_rate, nt.mutation_rate)
+        exp_total_rate = 2.9585920473305272e-05
+        self.assertEqual(exp_total_rate, nt.mutation_rate) # AssertionError
 
-        exp_total_omegas = {((0, 0, 0, 1), (0, 0, 0, 1, 0)): 1.1217646558655263,
-                            ((0, 0, 0, 1), (0, 0, 1, 0, 0)): 0.5158061369385518,
-                            ((0, 0, 0, 1), (0, 1, 0, 0, 0)): 0.27043066909631136,
-                            ((0, 0, 0, 1), (1, 0, 0, 0, 0)): 0.09199853806558903,
-                            ((0, 0, 1, 0), (0, 0, 0, 0, 1)): 1.1481358615121404,
-                            ((0, 0, 1, 0), (0, 0, 0, 1, 0)): 1.1217646558655263,
-                            ((0, 0, 1, 0), (0, 0, 1, 0, 0)): 0.5158061369385518,
-                            ((0, 1, 0, 0), (0, 0, 0, 0, 1)): 0.4810288100937172,
-                            ((0, 1, 0, 0), (0, 0, 0, 1, 0)): 1.1217646558655263,
-                            ((0, 1, 0, 0), (0, 1, 0, 0, 0)): 0.27043066909631136,
-                            ((0, 1, 0, 0), (1, 0, 0, 0, 0)): 0.09199853806558903,
-                            ((1, 0, 0, 0), (0, 0, 0, 1, 0)): 1.1217646558655263,
-                            ((1, 0, 0, 0), (0, 0, 1, 0, 0)): 0.5158061369385518,
-                            ((1, 0, 0, 0), (1, 0, 0, 0, 0)): 0.09199853806558903}
+        exp_total_omegas = {
+                                (0.1708353283825978, 0.27043066909631136): {
+                                    "value": 0.04619911215979399,
+                                    "nt_events": 1,
+                                },
+                                (0.1708353283825978, -1): {"value": 0.1708353283825978, "nt_events": 1},
+                                (-1, 0.27043066909631136): {"value": 0.27043066909631136, "nt_events": 1},
+                                (0.4810288100937172, -1): {"value": 0.4810288100937172, "nt_events": 1},
+                                (0.4810288100937172, 1.1217646558655263): {
+                                    "value": 0.5396011176161822,
+                                    "nt_events": 1,
+                                },
+                                (-1, 1.1217646558655263): {"value": 1.1217646558655263, "nt_events": 1},
+                            }
+
         self.assertEqual(exp_total_omegas, self.sequence2.total_omegas)
 
     def testIsTransv(self):
@@ -899,6 +1308,7 @@ class TestSequence2(unittest.TestCase):
         result = self.sequence2.is_start_stop_codon(nt, 'C')
         self.assertEqual(expected, result)
 
+    @unittest.skip('create_probability_tree is no longer defined')
     def testCreateProbabilityTree(self):
         expected = {'to_nt': {'A': {'number_of_events': 0,
                                     'from_nt': {'A': None,
@@ -995,92 +1405,497 @@ class TestSequence2(unittest.TestCase):
         c10 = self.sequence2.nt_sequence[10]
         c11 = self.sequence2.nt_sequence[11]
 
-        exp_event_tree = {'to_nt': {'A': {'from_nt': {'A': None,
-                                                      'C': {'category': {'mu1': {((0, 1, 0, 0), (0, 0, 0, 0, 1)): [c9]},
-                                                                         'mu2': {},
-                                                                         'mu3': {},
-                                                                         'mu4': {},
-                                                                         'mu5': {},
-                                                                         'mu6': {((0, 0, 0, 1), (0, 1, 0, 0, 0)): [c11],
-                                                                                 ((0, 1, 0, 0), (0, 1, 0, 0, 0)): [c10]}}},
-                                                      'G': {'category': {'mu1': {},
-                                                                         'mu2': {},
-                                                                         'mu3': {},
-                                                                         'mu4': {},
-                                                                         'mu5': {},
-                                                                         'mu6': {}}},
-                                                      'T': {'category': {'mu1': {},
-                                                                         'mu2': {},
-                                                                         'mu3': {},
-                                                                         'mu4': {},
-                                                                         'mu5': {},
-                                                                         'mu6': {}}}}},
-                                    'C': {'from_nt': {'A': {'category': {'mu1': {((0, 1, 0, 0), (0, 1, 0, 0, 0)): [a6]},
-                                                                         'mu2': {},
-                                                                         'mu3': {((0, 1, 0, 0), (1, 0, 0, 0, 0)): [a8]},
-                                                                         'mu4': {},
-                                                                         'mu5': {((1, 0, 0, 0), (1, 0, 0, 0, 0)): [a7]},
-                                                                         'mu6': {}}},
-                                                      'C': None,
-                                                      'G': {'category': {'mu1': {},
-                                                                         'mu2': {},
-                                                                         'mu3': {},
-                                                                         'mu4': {},
-                                                                         'mu5': {},
-                                                                         'mu6': {}}},
-                                                      'T': {'category': {'mu1': {},
-                                                                         'mu2': {},
-                                                                         'mu3': {},
-                                                                         'mu4': {},
-                                                                         'mu5': {},
-                                                                         'mu6': {}}}}},
-                                    'G': {'from_nt': {'A': {'category': {'mu1': {((0, 0, 0, 1), (0, 0, 1, 0, 0)): [a8],
-                                                                                 ((0, 0, 1, 0), (0, 0, 0, 0, 1)): [a6]},
-                                                                         'mu2': {((0, 0, 1, 0), (0, 0, 1, 0, 0)): [a7]},
-                                                                         'mu3': {},
-                                                                         'mu4': {},
-                                                                         'mu5': {},
-                                                                         'mu6': {}}},
-                                                      'C': {'category': {'mu1': {((1, 0, 0, 0), (0, 0, 0, 1, 0)): [c10]},
-                                                                         'mu2': {((0, 0, 0, 1), (0, 0, 1, 0, 0)): [c11],
-                                                                                 ((0, 1, 0, 0), (0, 0, 0, 0, 1)): [c9]},
-                                                                         'mu3': {},
-                                                                         'mu4': {},
-                                                                         'mu5': {},
-                                                                         'mu6': {}}},
-                                                      'G': None,
-                                                      'T': {'category': {'mu1': {},
-                                                                         'mu2': {},
-                                                                         'mu3': {},
-                                                                         'mu4': {},
-                                                                         'mu5': {},
-                                                                         'mu6': {}}}}},
-                                    'T': {'from_nt': {'A': {'category': {'mu1': {},
-                                                                         'mu2': {((1, 0, 0, 0), (1, 0, 0, 0, 0)): [a7]},
-                                                                         'mu3': {},
-                                                                         'mu4': {},
-                                                                         'mu5': {},
-                                                                         'mu6': {}}},
-                                                      'C': {'category': {'mu1': {((0, 0, 1, 0), (0, 0, 0, 1, 0)): [c10]},
-                                                                         'mu2': {},
-                                                                         'mu3': {},
-                                                                         'mu4': {},
-                                                                         'mu5': {((0, 0, 1, 0), (0, 0, 0, 0, 1)): [c9]},
-                                                                         'mu6': {((0, 0, 0, 1), (1, 0, 0, 0, 0)): [c11]}}},
-                                                      'G': {'category': {'mu1': {},
-                                                                         'mu2': {},
-                                                                         'mu3': {},
-                                                                         'mu4': {},
-                                                                         'mu5': {},
-                                                                         'mu6': {}}},
-                                                      'T': None}}}}
+        exp_event_tree = \
+                          {
+                            "to_nt": {
+                                "A": {
+                                    "from_nt": {
+                                        "A": None,
+                                        "C": {
+                                            "mu1": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {
+                                                    (0.4810288100937172, 1.1217646558655263): [c10],
+                                                    "nt_events": 1,
+                                                    "region_weight": 0.5396011176161822,
+                                                },
+                                                "nt_events": 1,
+                                            },
+                                            "mu2": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu3": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu4": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu5": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu6": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {
+                                                    (0.4810288100937172, -1): [c9],
+                                                    (-1, 1.1217646558655263): [c11, c11],
+                                                    "nt_events": 2,
+                                                    "region_weight": 1.6027934659592435,
+                                                },
+                                                "nt_events": 2,
+                                            },
+                                            "nt_events": 3,
+                                        },
+                                        "G": {
+                                            "mu1": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu2": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu3": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu4": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu5": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu6": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "nt_events": 0,
+                                        },
+                                        "T": {
+                                            "mu1": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu2": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu3": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu4": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu5": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu6": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "nt_events": 0,
+                                        },
+                                    },
+                                    "nt_events": 3,
+                                },
+                                "C": {
+                                    "from_nt": {
+                                        "A": {
+                                            "mu1": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu2": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {
+                                                    (0.1708353283825978, 0.27043066909631136): [a8],
+                                                    "nt_events": 1,
+                                                    "region_weight": 0.04619911215979399,
+                                                },
+                                                "nt_events": 1,
+                                            },
+                                            "mu3": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu4": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {
+                                                    (0.1708353283825978, 0.27043066909631136): [a7],
+                                                    "nt_events": 1,
+                                                    "region_weight": 0.04619911215979399,
+                                                },
+                                                "nt_events": 1,
+                                            },
+                                            "mu5": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {
+                                                    (0.1708353283825978, 0.27043066909631136): [a6],
+                                                    "nt_events": 1,
+                                                    "region_weight": 0.04619911215979399,
+                                                },
+                                                "nt_events": 1,
+                                            },
+                                            "mu6": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "nt_events": 3,
+                                        },
+                                        "C": None,
+                                        "G": {
+                                            "mu1": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu2": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu3": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu4": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu5": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu6": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "nt_events": 0,
+                                        },
+                                        "T": {
+                                            "mu1": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu2": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu3": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu4": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu5": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu6": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "nt_events": 0,
+                                        },
+                                    },
+                                    "nt_events": 3,
+                                },
+                                "G": {
+                                    "from_nt": {
+                                        "A": {
+                                            "mu1": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {
+                                                    (-1, 0.27043066909631136): [a8],
+                                                    "nt_events": 1,
+                                                    "region_weight": 0.27043066909631136,
+                                                },
+                                                "nt_events": 1,
+                                            },
+                                            "mu2": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu3": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu4": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {
+                                                    (0.1708353283825978, -1): [a6],
+                                                    "nt_events": 1,
+                                                    "region_weight": 0.1708353283825978,
+                                                },
+                                                "nt_events": 1,
+                                            },
+                                            "mu5": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu6": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {
+                                                    (0.1708353283825978, 0.27043066909631136): [a7],
+                                                    "nt_events": 1,
+                                                    "region_weight": 0.04619911215979399,
+                                                },
+                                                "nt_events": 1,
+                                            },
+                                            "nt_events": 3,
+                                        },
+                                        "C": {
+                                            "mu1": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {
+                                                    (0.4810288100937172, -1): [c9],
+                                                    (0.4810288100937172, 1.1217646558655263): [c10],
+                                                    "nt_events": 2,
+                                                    "region_weight": 1.0206299277098994,
+                                                },
+                                                "nt_events": 2,
+                                            },
+                                            "mu2": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu3": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu4": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu5": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {
+                                                    (-1, 1.1217646558655263): [c11, c11],
+                                                    "nt_events": 1,
+                                                    "region_weight": 1.1217646558655263,
+                                                },
+                                                "nt_events": 1,
+                                            },
+                                            "mu6": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "nt_events": 3,
+                                        },
+                                        "G": None,
+                                        "T": {
+                                            "mu1": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu2": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu3": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu4": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu5": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu6": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "nt_events": 0,
+                                        },
+                                    },
+                                    "nt_events": 6,
+                                },
+                                "T": {
+                                    "from_nt": {
+                                        "A": {
+                                            "mu1": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu2": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu3": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {
+                                                    (0.1708353283825978, 0.27043066909631136): [a7],
+                                                    "nt_events": 1,
+                                                    "region_weight": 0.04619911215979399,
+                                                },
+                                                "nt_events": 1,
+                                            },
+                                            "mu4": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu5": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu6": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "nt_events": 1,
+                                        },
+                                        "C": {
+                                            "mu1": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu2": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu3": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu4": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {
+                                                    (0.4810288100937172, -1): [c9],
+                                                    "nt_events": 1,
+                                                    "region_weight": 0.4810288100937172,
+                                                },
+                                                "nt_events": 1,
+                                            },
+                                            "mu5": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {
+                                                    (0.4810288100937172, 1.1217646558655263): [c10],
+                                                    "nt_events": 1,
+                                                    "region_weight": 0.5396011176161822,
+                                                },
+                                                "nt_events": 1,
+                                            },
+                                            "mu6": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {
+                                                    (-1, 1.1217646558655263): [c11, c11],
+                                                    "nt_events": 1,
+                                                    "region_weight": 1.1217646558655263,
+                                                },
+                                                "nt_events": 1,
+                                            },
+                                            "nt_events": 3,
+                                        },
+                                        "G": {
+                                            "mu1": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu2": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu3": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu4": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu5": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu6": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "nt_events": 0,
+                                        },
+                                        "T": None,
+                                    },
+                                    "nt_events": 4,
+                                },
+                            }
+                        }
 
         res_omega_key = self.sequence2.nt_in_event_tree(c11)
         self.assertEqual(exp_event_tree, self.sequence2.event_tree)
 
         # No new omega keys are created initially
-        self.assertEqual({}, res_omega_key)
+        self.assertEqual(None, res_omega_key)
 
+    @unittest.skip('count_nts_on_event_tree is no longer defined')
     def testCountNtsOnEventTree(self):
         exp_count = 16
         res_count = self.sequence2.count_nts_on_event_tree()
@@ -1095,24 +1910,24 @@ class TestSequence2(unittest.TestCase):
 
     def testCheckMutationRates(self):
         exp_sub_rates = [
-            {'A': None, 'C': 0.0, 'G': 0.0, 'T': 0.0},
-            {'A': 0.0, 'C': 0.0, 'G': 0.0, 'T': None},
-            {'A': 0.0, 'C': 0.0, 'G': None, 'T': 0.0},
-            {'A': None, 'C': 0.0, 'G': 0.0, 'T': 0.0},
-            {'A': None, 'C': 0.0, 'G': 0.0, 'T': 0.0},
-            {'A': 0.0, 'C': 0.0, 'G': 0.0, 'T': None},
-            {'A': None, 'C': 4.439677739210545e-07, 'G': 1.3061601928797729e-05, 'T': 0.0},
-            {'A': None, 'C': 6.682850533879727e-07, 'G': 1.977900389625616e-05, 'T': 1.574724181334861e-07},
-            {'A': None, 'C': 7.830280216562374e-07, 'G': 5.867994075412873e-06, 'T': 0.0},
-            {'A': 6.342956741319806e-07, 'C': None, 'G': 1.8621438056957443e-06, 'T': 6.287404584042902e-05},
-            {'A': 4.065205624182217e-06, 'C': None, 'G': 2.5269700838806675e-07, 'T': 5.661016765365336e-06},
-            {'A': 8.451064757202812e-06, 'C': None, 'G': 1.996772714409441e-06, 'T': 9.583301644476654e-06},
-            {'A': 0.0, 'C': 0.0, 'G': None, 'T': 0.0},
-            {'A': 0.0, 'C': 0.0, 'G': 0.0, 'T': None},
-            {'A': None, 'C': 0.0, 'G': 0.0, 'T': 0.0},
-            {'A': 0.0, 'C': 0.0, 'G': 0.0, 'T': None},
-            {'A': 0.0, 'C': 0.0, 'G': None, 'T': 0.0},
-            {'A': None, 'C': 0.0, 'G': 0.0, 'T': 0.0}
+            {'A': None, 'C': None, 'G': None, 'T': None},
+            {'A': None, 'C': None, 'G': None, 'T': None},
+            {'A': None, 'C': None, 'G': None, 'T': None},
+            {'A': None, 'C': None, 'G': None, 'T': None},
+            {'A': None, 'C': None, 'G': None, 'T': None},
+            {'A': None, 'C': None, 'G': None, 'T': None},
+            {'A': None, 'C': 1.9644309348256e-06, 'G': 1.5733528846049123e-05, 'T': None},
+            {'A': None, 'C': 1.276448619924954e-06, 'G': 1.2455799727664908e-05, 'T': 8.17445710656087e-07},
+            {'A': None, 'C': 4.6289182736460586e-07, 'G': 3.0765154782486437e-06, 'T': None},
+            {'A': 1.5032339481933658e-05, 'C': None, 'G': 6.342956741319806e-07, 'T': 1.7116532419066297e-05},
+            {'A': 7.115304686096532e-07, 'C': None, 'G': 7.115304686096532e-07, 'T': 2.9549556408649665e-05},
+            {'A': 3.5055586634238734e-05, 'C': None, 'G': 1.8428972935878388e-05, 'T': 0.00011685195544746245},
+            {'A': None, 'C': None, 'G': None, 'T': None},
+            {'A': None, 'C': None, 'G': None, 'T': None},
+            {'A': None, 'C': None, 'G': None, 'T': None},
+            {'A': None, 'C': None, 'G': None, 'T': None},
+            {'A': None, 'C': None, 'G': None, 'T': None},
+            {'A': None, 'C': None, 'G': None, 'T': None},
         ]
 
         exp_total_rates = [
@@ -1122,12 +1937,12 @@ class TestSequence2(unittest.TestCase):
             0,
             0,
             0,
-            1.3505569702718784e-05,
-            2.060476136777762e-05,
-            6.65102209706911e-06,
-            6.537048532025675e-05,
-            9.97891939793562e-06,
-            2.0031139116088907e-05,
+            1.7697959780874724e-05,
+            1.4549694058245949e-05,
+            3.5394073056132494e-06,
+            3.2783167575131933e-05,
+            3.097261734586897e-05,
+            0.00017033651501757957,
             0,
             0,
             0,
@@ -1211,6 +2026,23 @@ class TestSequence2(unittest.TestCase):
         result = codon.creates_stop(2, 'A')
         self.assertEqual(exp, result)
 
+    def testGetCodons(self):
+        expected = self.plus_0_codons
+        result = self.sequence2.get_codons()
+        self.assertEqual(expected, result)
+
+    def testGetRightNT(self):
+        nts = [Nucleotide(nt, pos) for pos, nt in enumerate("ATGAATAAACCCGTATGA")]
+        for pos, nt in enumerate(nts):
+            result = self.sequence2.get_right_nt(pos)
+            self.assertEqual(result, nts[pos + 1])
+
+    def testGetLeftNT(self):
+        nts = [Nucleotide(nt, pos) for pos, nt in enumerate("ATGAATAAACCCGTATGA")]
+        for pos, nt in enumerate(nts):
+            result = self.sequence2.get_left_nt(pos)
+            self.assertEqual(result, nts[pos - 1])
+
 
 class TestSequence3(unittest.TestCase):
     """
@@ -1228,8 +2060,9 @@ class TestSequence3(unittest.TestCase):
         s3 = 'ATGACGTGGTGA'
         sorted_orfs = {'+0': [{'coords': [[0, 12]],
                                'omega_classes': 3, 'omega_shape': 1.5,
-                               'omega_values': [0.1708353283825978, 0.4810288100937172, 1.1481358615121404]}],
-                       '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
+                               'omega_values': [0.1708353283825978, 0.4810288100937172, 1.1481358615121404],
+                               'orf_map': np.array([1])}],
+                        '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
         pi3 = Sequence.get_frequency_rates(s3)
         self.sequence3 = Sequence(s3, sorted_orfs, KAPPA, GLOBAL_RATE, pi3, CAT_VALUES)
         self.seq3_codons = self.sequence3.find_codons('+0', {'coords': [[0, 12]],
@@ -1248,21 +2081,31 @@ class TestSequence3(unittest.TestCase):
 
     def testDeepcopy(self):
         # Check that Sequences are different objects with the same attributes
-        new_sequence1 = self.sequence3.__deepcopy__(memodict={})
-        self.assertIsNot(self.sequence3, new_sequence1)
-        self.assertEqual(self.sequence3.orfs, new_sequence1.orfs)
-        self.assertEqual(self.sequence3.kappa, new_sequence1.kappa)
-        self.assertEqual(self.sequence3.global_rate, new_sequence1.global_rate)
-        self.assertEqual(self.sequence3.pi, new_sequence1.pi)
-        self.assertEqual(self.sequence3.is_circular, new_sequence1.is_circular)
+        new_sequence3 = self.sequence3.__deepcopy__(memodict={})
+        self.assertIsNot(self.sequence3, new_sequence3)
+
+        # self.assertEqual(self.sequence3.orfs, new_sequence3.orfs) # This assertion fails if 'orf_map' np.array has more than one element
+        strands = ['+0', '+1', '+2', '-0', '-1', '-2']
+        for strand in strands:
+            for orf, new_orf in zip(self.sequence3.orfs[strand], new_sequence3.orfs[strand]):
+                self.assertEqual(orf['coords'], new_orf['coords'])
+                self.assertEqual(orf['omega_classes'], new_orf['omega_classes'])
+                self.assertEqual(orf['omega_shape'], new_orf['omega_shape'])
+                self.assertEqual(orf['omega_values'], new_orf['omega_values'])
+                self.assertTrue((orf['orf_map'] == new_orf['orf_map']).all())
+
+        self.assertEqual(self.sequence3.kappa, new_sequence3.kappa)
+        self.assertEqual(self.sequence3.global_rate, new_sequence3.global_rate)
+        self.assertEqual(self.sequence3.pi, new_sequence3.pi)
+        self.assertEqual(self.sequence3.is_circular, new_sequence3.is_circular)
 
         # Event trees reference different Nucleotides, but the Nucleotides have the same states
-        self.assertNotEqual(self.sequence3.event_tree, new_sequence1.event_tree)
-        self.assertCountEqual(self.sequence3.event_tree, new_sequence1.event_tree)
+        self.assertNotEqual(self.sequence3.event_tree, new_sequence3.event_tree)
+        self.assertCountEqual(self.sequence3.event_tree, new_sequence3.event_tree)
 
         # Check that Nucleotides are different objects with the same attributes
         for pos, nt in enumerate(self.sequence3.nt_sequence):
-            new_nt = new_sequence1.nt_sequence[pos]
+            new_nt = new_sequence3.nt_sequence[pos]
             self.assertIsNot(nt, new_nt)
 
             self.assertEqual(nt.state, new_nt.state)
@@ -1278,7 +2121,14 @@ class TestSequence3(unittest.TestCase):
             for i, codon in enumerate(nt.codons):
                 new_codon = new_nt.codons[i]
                 self.assertIsNot(codon, new_codon)
-                self.assertEqual(codon.orf, new_codon.orf)
+                # self.assertEqual(codon.orf, new_codon.orf) # This assertion fails if 'orf_map' np.array has more than one element
+
+                orf, new_orf = codon.orf, new_codon.orf
+                self.assertEqual(orf['coords'], new_orf['coords'])
+                self.assertEqual(orf['omega_classes'], new_orf['omega_classes'])
+                self.assertEqual(orf['omega_shape'], new_orf['omega_shape'])
+                self.assertEqual(orf['omega_values'], new_orf['omega_values'])
+                self.assertTrue((orf['orf_map'] == new_orf['orf_map']).all())
                 self.assertEqual(codon.frame, new_codon.frame)
                 self.assertEqual(str(codon.nts_in_codon), str(new_codon.nts_in_codon))
 
@@ -1288,82 +2138,7 @@ class TestSequence3(unittest.TestCase):
         self.assertEqual(expected, result)
 
     def testCreateEventTree(self):
-        expected = {'to_nt': {'A': {'from_nt': {'A': None,
-                                                'C': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'G': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'T': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}}}},
-                              'C': {'from_nt': {'A': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'C': None,
-                                                'G': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'T': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}}}},
-                              'G': {'from_nt': {'A': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'C': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'G': None,
-                                                'T': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}}}},
-                              'T': {'from_nt': {'A': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'C': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'G': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'T': None}}}}
+        expected = {'to_nt': {'A': {'from_nt': {'A': None, 'C': {'mu1': {(1,): {}}, 'mu2': {(1,): {}}, 'mu3': {(1,): {}}, 'mu4': {(1,): {}}, 'mu5': {(1,): {}}, 'mu6': {(1,): {}}}, 'G': {'mu1': {(1,): {}}, 'mu2': {(1,): {}}, 'mu3': {(1,): {}}, 'mu4': {(1,): {}}, 'mu5': {(1,): {}}, 'mu6': {(1,): {}}}, 'T': {'mu1': {(1,): {}}, 'mu2': {(1,): {}}, 'mu3': {(1,): {}}, 'mu4': {(1,): {}}, 'mu5': {(1,): {}}, 'mu6': {(1,): {}}}}}, 'C': {'from_nt': {'A': {'mu1': {(1,): {}}, 'mu2': {(1,): {}}, 'mu3': {(1,): {}}, 'mu4': {(1,): {}}, 'mu5': {(1,): {}}, 'mu6': {(1,): {}}}, 'C': None, 'G': {'mu1': {(1,): {}}, 'mu2': {(1,): {}}, 'mu3': {(1,): {}}, 'mu4': {(1,): {}}, 'mu5': {(1,): {}}, 'mu6': {(1,): {}}}, 'T': {'mu1': {(1,): {}}, 'mu2': {(1,): {}}, 'mu3': {(1,): {}}, 'mu4': {(1,): {}}, 'mu5': {(1,): {}}, 'mu6': {(1,): {}}}}}, 'G': {'from_nt': {'A': {'mu1': {(1,): {}}, 'mu2': {(1,): {}}, 'mu3': {(1,): {}}, 'mu4': {(1,): {}}, 'mu5': {(1,): {}}, 'mu6': {(1,): {}}}, 'C': {'mu1': {(1,): {}}, 'mu2': {(1,): {}}, 'mu3': {(1,): {}}, 'mu4': {(1,): {}}, 'mu5': {(1,): {}}, 'mu6': {(1,): {}}}, 'G': None, 'T': {'mu1': {(1,): {}}, 'mu2': {(1,): {}}, 'mu3': {(1,): {}}, 'mu4': {(1,): {}}, 'mu5': {(1,): {}}, 'mu6': {(1,): {}}}}}, 'T': {'from_nt': {'A': {'mu1': {(1,): {}}, 'mu2': {(1,): {}}, 'mu3': {(1,): {}}, 'mu4': {(1,): {}}, 'mu5': {(1,): {}}, 'mu6': {(1,): {}}}, 'C': {'mu1': {(1,): {}}, 'mu2': {(1,): {}}, 'mu3': {(1,): {}}, 'mu4': {(1,): {}}, 'mu5': {(1,): {}}, 'mu6': {(1,): {}}}, 'G': {'mu1': {(1,): {}}, 'mu2': {(1,): {}}, 'mu3': {(1,): {}}, 'mu4': {(1,): {}}, 'mu5': {(1,): {}}, 'mu6': {(1,): {}}}, 'T': None}}}}
         result = self.sequence3.create_event_tree()
         self.assertEqual(expected, result)
 
@@ -1372,20 +2147,18 @@ class TestSequence3(unittest.TestCase):
         nt = self.sequence3.nt_sequence[9]
         self.sequence3.set_substitution_rates(nt)
 
-        exp_sub_rates = {'A': 0.0, 'C': 0.0, 'G': 0.0, 'T': None}
+        exp_sub_rates = {'A': None, 'C': None, 'G': None, 'T': None}
         self.assertEqual(exp_sub_rates, nt.rates)
 
-        exp_omega_keys = {'A': ((0, 0, 0, 0),), 'C': ((0, 0, 0, 0),), 'G': ((0, 0, 0, 0),), 'T': None}
+        exp_omega_keys = {'A': None, 'C': None, 'G': None, 'T': None}
         self.assertEqual(exp_omega_keys, nt.omega_keys)
 
-        exp_cat_keys = {'A': 'mu2', 'C': 'mu3', 'G': 'mu2'}
+        exp_cat_keys = {'A': None, 'C': None, 'G': None}
         self.assertEqual(exp_cat_keys, nt.cat_keys)
 
         exp_total_rate = 0
         self.assertEqual(exp_total_rate, nt.mutation_rate)
-        exp_total_omegas = {((0, 0, 1, 0),): 1.1481358615121404,
-                            ((0, 1, 0, 0),): 0.4810288100937172,
-                            ((1, 0, 0, 0),): 0.1708353283825978}
+        exp_total_omegas = {(0.4810288100937172,): {'value': 0.4810288100937172, 'nt_events': 1}, (-1,): {'value': 1, 'nt_events': 1}, (0.1708353283825978,): {'value': 0.1708353283825978, 'nt_events': 1}}
         self.assertEqual(exp_total_omegas, self.sequence3.total_omegas)
 
         # Tests a synonymous mutation
@@ -1393,13 +2166,10 @@ class TestSequence3(unittest.TestCase):
         nt = self.sequence3.nt_sequence[5]
         self.sequence3.set_substitution_rates(nt)
 
-        exp_sub_rates = {'A': 3.1880215087889116e-05,
-                         'C': 1.688969876186309e-05,
-                         'G': None,
-                         'T': 9.564064526366735e-06}
+        exp_sub_rates = {'A': 3.1880215087889116e-05, 'C': 1.688969876186309e-05, 'G': None, 'T': 9.564064526366735e-06}
         self.assertEqual(exp_sub_rates, nt.rates)
 
-        exp_omega_keys = {'A': ((0, 0, 0, 1),), 'C': ((0, 0, 0, 1),), 'G': None, 'T': ((0, 0, 0, 1),)}  # Synonymous
+        exp_omega_keys = {'A': (-1,), 'C': (-1,), 'G': None, 'T': (-1,)}
         self.assertEqual(exp_omega_keys, nt.omega_keys)
 
         exp_cat_keys = {'A': 'mu2', 'C': 'mu3', 'T': 'mu2'}
@@ -1414,13 +2184,13 @@ class TestSequence3(unittest.TestCase):
         nt = self.sequence3.nt_sequence[9]
         self.sequence3.set_substitution_rates(nt)
 
-        exp_sub_rates = {'A': 0.0, 'C': 0.0, 'G': 0.0, 'T': None}
+        exp_sub_rates = {'A': None, 'C': None, 'G': None, 'T': None}
         self.assertEqual(exp_sub_rates, nt.rates)
 
-        exp_omega_keys = {'A': ((0, 0, 0, 0),), 'C': ((0, 0, 0, 0),), 'G': ((0, 0, 0, 0),), 'T': None}
+        exp_omega_keys = {'A': None, 'C': None, 'G': None, 'T': None}
         self.assertEqual(exp_omega_keys, nt.omega_keys)
 
-        exp_cat_keys = {'A': 'mu2', 'C': 'mu3', 'G': 'mu2'}
+        exp_cat_keys = {'A': None, 'C': None, 'G': None}
         self.assertEqual(exp_cat_keys, nt.cat_keys)
 
         exp_total_rate = 0
@@ -1473,6 +2243,7 @@ class TestSequence3(unittest.TestCase):
         result = self.sequence3.is_start_stop_codon(nt, 'A')
         self.assertEqual(expected, result)
 
+    @unittest.skip('create_probability_tree is no longer defined')
     def testCreateProbabilityTree(self):
         expected = {'to_nt': {'A': {'number_of_events': 0,
                                     'from_nt': {'A': None,
@@ -1568,89 +2339,250 @@ class TestSequence3(unittest.TestCase):
         g7 = self.sequence3.nt_sequence[7]
         g8 = self.sequence3.nt_sequence[8]
 
-        exp_event_tree = {'to_nt': {'A': {'from_nt': {'A': None,
-                                                      'C': {'category': {'mu1': {((0, 1, 0, 0),): [c4]},
-                                                                         'mu2': {},
-                                                                         'mu3': {},
-                                                                         'mu4': {},
-                                                                         'mu5': {},
-                                                                         'mu6': {}}},
-                                                      'G': {'category': {'mu1': {},
-                                                                         'mu2': {},
-                                                                         'mu3': {},
-                                                                         'mu4': {((0, 0, 0, 1),): [g5]},
-                                                                         'mu5': {},
-                                                                         'mu6': {}}},
-                                                      'T': {'category': {'mu1': {((0, 0, 1, 0),): [t6]},
-                                                                         'mu2': {},
-                                                                         'mu3': {},
-                                                                         'mu4': {},
-                                                                         'mu5': {},
-                                                                         'mu6': {}}}}},
-                                    'C': {'from_nt': {'A': {'category': {'mu1': {},
-                                                                         'mu2': {((0, 1, 0, 0),): [a3]},
-                                                                         'mu3': {},
-                                                                         'mu4': {},
-                                                                         'mu5': {},
-                                                                         'mu6': {}}},
-                                                      'C': None,
-                                                      'G': {'category': {'mu1': {((0, 0, 0, 1),): [g5]},
-                                                                         'mu2': {},
-                                                                         'mu3': {},
-                                                                         'mu4': {},
-                                                                         'mu5': {((0, 1, 0, 0),): [g7]},
-                                                                         'mu6': {((0, 0, 1, 0),): [g8]}}},
-                                                      'T': {'category': {'mu1': {},
-                                                                         'mu2': {},
-                                                                         'mu3': {((1, 0, 0, 0),): [t6]},
-                                                                         'mu4': {},
-                                                                         'mu5': {},
-                                                                         'mu6': {}}}}},
-                                    'G': {'from_nt': {'A': {'category': {'mu1': {},
-                                                                         'mu2': {},
-                                                                         'mu3': {},
-                                                                         'mu4': {},
-                                                                         'mu5': {},
-                                                                         'mu6': {((0, 0, 1, 0),): [a3]}}},
-                                                      'C': {'category': {'mu1': {},
-                                                                         'mu2': {},
-                                                                         'mu3': {},
-                                                                         'mu4': {},
-                                                                         'mu5': {((1, 0, 0, 0),): [c4]},
-                                                                         'mu6': {}}},
-                                                      'G': None,
-                                                      'T': {'category': {'mu1': {},
-                                                                         'mu2': {},
-                                                                         'mu3': {},
-                                                                         'mu4': {},
-                                                                         'mu5': {((0, 0, 1, 0),): [t6]},
-                                                                         'mu6': {}}}}},
-                                    'T': {'from_nt': {'A': {'category': {'mu1': {},
-                                                                         'mu2': {},
-                                                                         'mu3': {},
-                                                                         'mu4': {},
-                                                                         'mu5': {((0, 1, 0, 0),): [a3]},
-                                                                         'mu6': {}}},
-                                                      'C': {'category': {'mu1': {},
-                                                                         'mu2': {},
-                                                                         'mu3': {},
-                                                                         'mu4': {((1, 0, 0, 0),): [c4]},
-                                                                         'mu5': {},
-                                                                         'mu6': {}}},
-                                                      'G': {'category': {'mu1': {((0, 0, 0, 1),): [g5]},
-                                                                         'mu2': {},
-                                                                         'mu3': {((0, 1, 0, 0),): [g7]},
-                                                                         'mu4': {},
-                                                                         'mu5': {((1, 0, 0, 0),): [g8]},
-                                                                         'mu6': {}}},
-                                                      'T': None}}}}
+        exp_event_tree = \
+                            {
+                                "to_nt": {
+                                    "A": {
+                                        "from_nt": {
+                                            "A": None,
+                                            "C": {
+                                                "mu1": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu2": {
+                                                    (1,): {
+                                                        (0.4810288100937172,): [c4],
+                                                        "nt_events": 1,
+                                                        "region_weight": 0.4810288100937172,
+                                                    },
+                                                    "nt_events": 1,
+                                                },
+                                                "mu3": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu4": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu5": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu6": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "nt_events": 1,
+                                            },
+                                            "G": {
+                                                "mu1": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu2": {
+                                                    (1,): {(-1,): [g5], "nt_events": 1, "region_weight": 1},
+                                                    "nt_events": 1,
+                                                },
+                                                "mu3": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu4": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu5": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu6": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "nt_events": 1,
+                                            },
+                                            "T": {
+                                                "mu1": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu2": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu3": {
+                                                    (1,): {
+                                                        (0.1708353283825978,): [t6],
+                                                        "nt_events": 1,
+                                                        "region_weight": 0.1708353283825978,
+                                                    },
+                                                    "nt_events": 1,
+                                                },
+                                                "mu4": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu5": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu6": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "nt_events": 1,
+                                            },
+                                        },
+                                        "nt_events": 3,
+                                    },
+                                    "C": {
+                                        "from_nt": {
+                                            "A": {
+                                                "mu1": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu2": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu3": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu4": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu5": {
+                                                    (1,): {
+                                                        (0.4810288100937172,): [a3, a3],
+                                                        "nt_events": 1,
+                                                        "region_weight": 0.4810288100937172,
+                                                    },
+                                                    "nt_events": 1,
+                                                },
+                                                "mu6": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "nt_events": 1,
+                                            },
+                                            "C": None,
+                                            "G": {
+                                                "mu1": {
+                                                    (1,): {
+                                                        (0.1708353283825978,): [g7],
+                                                        "nt_events": 1,
+                                                        "region_weight": 0.1708353283825978,
+                                                    },
+                                                    "nt_events": 1,
+                                                },
+                                                "mu2": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu3": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu4": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu5": {
+                                                    (1,): {
+                                                        (-1,): [g5],
+                                                        (0.1708353283825978,): [g8],
+                                                        "nt_events": 2,
+                                                        "region_weight": 1.1708353283825979,
+                                                    },
+                                                    "nt_events": 2,
+                                                },
+                                                "mu6": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "nt_events": 3,
+                                            },
+                                            "T": {
+                                                "mu1": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu2": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu3": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu4": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu5": {
+                                                    (1,): {
+                                                        (0.1708353283825978,): [t6],
+                                                        "nt_events": 1,
+                                                        "region_weight": 0.1708353283825978,
+                                                    },
+                                                    "nt_events": 1,
+                                                },
+                                                "mu6": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "nt_events": 1,
+                                            },
+                                        },
+                                        "nt_events": 5,
+                                    },
+                                    "G": {
+                                        "from_nt": {
+                                            "A": {
+                                                "mu1": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu2": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu3": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu4": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu5": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu6": {
+                                                    (1,): {
+                                                        (0.4810288100937172,): [a3, a3],
+                                                        "nt_events": 1,
+                                                        "region_weight": 0.4810288100937172,
+                                                    },
+                                                    "nt_events": 1,
+                                                },
+                                                "nt_events": 1,
+                                            },
+                                            "C": {
+                                                "mu1": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu2": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu3": {
+                                                    (1,): {
+                                                        (0.4810288100937172,): [c4],
+                                                        "nt_events": 1,
+                                                        "region_weight": 0.4810288100937172,
+                                                    },
+                                                    "nt_events": 1,
+                                                },
+                                                "mu4": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu5": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu6": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "nt_events": 1,
+                                            },
+                                            "G": None,
+                                            "T": {
+                                                "mu1": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu2": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu3": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu4": {
+                                                    (1,): {
+                                                        (0.1708353283825978,): [t6],
+                                                        "nt_events": 1,
+                                                        "region_weight": 0.1708353283825978,
+                                                    },
+                                                    "nt_events": 1,
+                                                },
+                                                "mu5": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu6": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "nt_events": 1,
+                                            },
+                                        },
+                                        "nt_events": 3,
+                                    },
+                                    "T": {
+                                        "from_nt": {
+                                            "A": {
+                                                "mu1": {
+                                                    (1,): {
+                                                        (0.4810288100937172,): [a3, a3],
+                                                        "nt_events": 1,
+                                                        "region_weight": 0.4810288100937172,
+                                                    },
+                                                    "nt_events": 1,
+                                                },
+                                                "mu2": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu3": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu4": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu5": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu6": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "nt_events": 1,
+                                            },
+                                            "C": {
+                                                "mu1": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu2": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu3": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu4": {
+                                                    (1,): {
+                                                        (0.4810288100937172,): [c4],
+                                                        "nt_events": 1,
+                                                        "region_weight": 0.4810288100937172,
+                                                    },
+                                                    "nt_events": 1,
+                                                },
+                                                "mu5": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu6": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "nt_events": 1,
+                                            },
+                                            "G": {
+                                                "mu1": {
+                                                    (1,): {
+                                                        (0.1708353283825978,): [g8],
+                                                        "nt_events": 1,
+                                                        "region_weight": 0.1708353283825978,
+                                                    },
+                                                    "nt_events": 1,
+                                                },
+                                                "mu2": {
+                                                    (1,): {
+                                                        (0.1708353283825978,): [g7],
+                                                        "nt_events": 1,
+                                                        "region_weight": 0.1708353283825978,
+                                                    },
+                                                    "nt_events": 1,
+                                                },
+                                                "mu3": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu4": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu5": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu6": {
+                                                    (1,): {(-1,): [g5], "nt_events": 1, "region_weight": 1},
+                                                    "nt_events": 1,
+                                                },
+                                                "nt_events": 3,
+                                            },
+                                            "T": None,
+                                        },
+                                        "nt_events": 5,
+                                    },
+                                }
+                            }
+
 
         res_omega_key = self.sequence3.nt_in_event_tree(a3)
         self.assertEqual(exp_event_tree, self.sequence3.event_tree)
 
         # No new omega keys are created initially
-        self.assertEqual({}, res_omega_key)
+        self.assertEqual(None, res_omega_key)
 
+    @unittest.skip('count_nts_on_event_tree is no longer defined')
     def testCountNtsOnEventTree(self):
         exp_count = 16
         res_count = self.sequence3.count_nts_on_event_tree()
@@ -1665,32 +2597,32 @@ class TestSequence3(unittest.TestCase):
 
     def testCheckMutationRates(self):
         exp_sub_rates = [
-            {'A': None, 'C': 0.0, 'G': 0.0, 'T': 0.0},
-            {'A': 0.0, 'C': 0.0, 'G': 0.0, 'T': None},
-            {'A': 0.0, 'C': 0.0, 'G': None, 'T': 0.0},
-            {'A': None, 'C': 2.7384467730819763e-06, 'G': 0.0001758808685356745, 'T': 1.1621483112032378e-05},
-            {'A': 2.984920819444615e-07, 'C': None, 'G': 1.3207424367617832e-06, 'T': 2.8606416083725682e-06},
-            {'A': 8.791137398888177e-05, 'C': 3.257774580909433e-06, 'G': None, 'T': 3.257774580909433e-06},
-            {'A': 2.2264094196814308e-06, 'C': 5.724915147353247e-06, 'G': 2.7738549635483385e-05, 'T': None},
-            {'A': 0.0, 'C': 1.9524091628214396e-05, 'G': None, 'T': 8.124431698260329e-06},
-            {'A': 0.0, 'C': 8.864395774197996e-05, 'G': None, 'T': 6.933897792999363e-06},
-            {'A': 0.0, 'C': 0.0, 'G': 0.0, 'T': None},
-            {'A': 0.0, 'C': 0.0, 'G': None, 'T': 0.0},
-            {'A': None, 'C': 0.0, 'G': 0.0, 'T': 0.0}
+            {'A': None, 'C': None, 'G': None, 'T': None},
+            {'A': None, 'C': None, 'G': None, 'T': None},
+            {'A': None, 'C': None, 'G': None, 'T': None},
+            {'A': None, 'C': 1.162148311203238e-05, 'G': 7.368793863692968e-05, 'T': 9.327877560764421e-07},
+            {'A': 8.763029673862327e-07, 'C': None, 'G': 1.5475107996686342e-06, 'T': 8.054838785442963e-06},
+            {'A': 3.1880215087889116e-05, 'C': 4.058819600516357e-05, 'G': None, 'T': 7.72068539216538e-05},
+            {'A': 1.717474544205974e-06, 'C': 1.3757733716268578e-05, 'G': 2.6818515078492823e-06, 'T': None},
+            {'A': None, 'C': 5.565429903261429e-07, 'G': None, 'T': 1.6338801040342159e-06},
+            {'A': None, 'C': 6.933897792999362e-06, 'G': None, 'T': 5.565429903261429e-07},
+            {'A': None, 'C': None, 'G': None, 'T': None},
+            {'A': None, 'C': None, 'G': None, 'T': None},
+            {'A': None, 'C': None, 'G': None, 'T': None}
         ]
 
         exp_total_rates = [0,
-                           0,
-                           0,
-                           0.00019024079842078887,
-                           4.4798761270788134e-06,
-                           9.442692315070064e-05,
-                           3.5689874202518064e-05,
-                           2.7648523326474725e-05,
-                           9.557785553497932e-05,
-                           0,
-                           0,
-                           0]
+            0,
+            0,
+            8.624220950503851e-05,
+            1.047865255249783e-05,
+            0.00014967526501470646,
+            1.815705976832383e-05,
+            2.1904230943603587e-06,
+            7.490440783325505e-06,
+            0,
+            0,
+            0]
 
         for pos, nt in enumerate(self.sequence3.nt_sequence):
             self.assertEqual(exp_sub_rates[pos], nt.rates)
@@ -1748,6 +2680,23 @@ class TestSequence3(unittest.TestCase):
         result = codon.creates_stop(1, 'C')  # Creates TCG
         self.assertEqual(exp, result)
 
+    def testGetCodons(self):
+        expected = self.seq3_codons
+        result = self.sequence3.get_codons()
+        self.assertEqual(expected, result)
+
+    def testGetRightNT(self):
+        nts = [Nucleotide(nt, pos) for pos, nt in enumerate("ATGACGTGGTGA")]
+        for pos, nt in enumerate(nts):
+            result = self.sequence3.get_right_nt(pos)
+            self.assertEqual(result, nts[pos + 1])
+
+    def testGetLeftNT(self):
+        nts = [Nucleotide(nt, pos) for pos, nt in enumerate("ATGACGTGGTGA")]
+        for pos, nt in enumerate(nts):
+            result = self.sequence3.get_left_nt(pos)
+            self.assertEqual(result, nts[pos - 1])
+
 
 class TestSequence4(unittest.TestCase):
     """
@@ -1764,8 +2713,9 @@ class TestSequence4(unittest.TestCase):
 
         s4 = 'ATGATGCCCTAA'
         sorted_orfs = {'+0': [{'coords': [[0, 12]],
-                               'omega_classes': 3, 'omega_shape': 1.5,
-                               'omega_values': [0.1708353283825978, 0.4810288100937172, 1.1481358615121404]}],
+                               'omega_classes': 3, 'omega_shape': 1.5, 
+                               'omega_values': [0.1708353283825978, 0.4810288100937172, 1.1481358615121404],
+                               'orf_map': np.array([1])}],
                        '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
         pi4 = Sequence.get_frequency_rates(s4)
         random.seed(4000)
@@ -1786,21 +2736,31 @@ class TestSequence4(unittest.TestCase):
 
     def testDeepcopy(self):
         # Check that Sequences are different objects with the same attributes
-        new_sequence1 = self.sequence4.__deepcopy__(memodict={})
-        self.assertIsNot(self.sequence4, new_sequence1)
-        self.assertEqual(self.sequence4.orfs, new_sequence1.orfs)
-        self.assertEqual(self.sequence4.kappa, new_sequence1.kappa)
-        self.assertEqual(self.sequence4.global_rate, new_sequence1.global_rate)
-        self.assertEqual(self.sequence4.pi, new_sequence1.pi)
-        self.assertEqual(self.sequence4.is_circular, new_sequence1.is_circular)
+        new_sequence4 = self.sequence4.__deepcopy__(memodict={})
+        self.assertIsNot(self.sequence4, new_sequence4)
+
+        # self.assertEqual(self.sequence4.orfs, new_sequence4.orfs) # This assertion fails if 'orf_map' np.array has more than one element
+        strands = ['+0', '+1', '+2', '-0', '-1', '-2']
+        for strand in strands:
+            for orf, new_orf in zip(self.sequence4.orfs[strand], new_sequence4.orfs[strand]):
+                self.assertEqual(orf['coords'], new_orf['coords'])
+                self.assertEqual(orf['omega_classes'], new_orf['omega_classes'])
+                self.assertEqual(orf['omega_shape'], new_orf['omega_shape'])
+                self.assertEqual(orf['omega_values'], new_orf['omega_values'])
+                self.assertTrue((orf['orf_map'] == new_orf['orf_map']).all())
+
+        self.assertEqual(self.sequence4.kappa, new_sequence4.kappa)
+        self.assertEqual(self.sequence4.global_rate, new_sequence4.global_rate)
+        self.assertEqual(self.sequence4.pi, new_sequence4.pi)
+        self.assertEqual(self.sequence4.is_circular, new_sequence4.is_circular)
 
         # Event trees reference different Nucleotides, but the Nucleotides have the same states
-        self.assertNotEqual(self.sequence4.event_tree, new_sequence1.event_tree)
-        self.assertCountEqual(self.sequence4.event_tree, new_sequence1.event_tree)
+        self.assertNotEqual(self.sequence4.event_tree, new_sequence4.event_tree)
+        self.assertCountEqual(self.sequence4.event_tree, new_sequence4.event_tree)
 
         # Check that Nucleotides are different objects with the same attributes
         for pos, nt in enumerate(self.sequence4.nt_sequence):
-            new_nt = new_sequence1.nt_sequence[pos]
+            new_nt = new_sequence4.nt_sequence[pos]
             self.assertIsNot(nt, new_nt)
 
             self.assertEqual(nt.state, new_nt.state)
@@ -1816,7 +2776,14 @@ class TestSequence4(unittest.TestCase):
             for i, codon in enumerate(nt.codons):
                 new_codon = new_nt.codons[i]
                 self.assertIsNot(codon, new_codon)
-                self.assertEqual(codon.orf, new_codon.orf)
+                # self.assertEqual(codon.orf, new_codon.orf) # This assertion fails if 'orf_map' np.array has more than one element
+
+                orf, new_orf = codon.orf, new_codon.orf
+                self.assertEqual(orf['coords'], new_orf['coords'])
+                self.assertEqual(orf['omega_classes'], new_orf['omega_classes'])
+                self.assertEqual(orf['omega_shape'], new_orf['omega_shape'])
+                self.assertEqual(orf['omega_values'], new_orf['omega_values'])
+                self.assertTrue((orf['orf_map'] == new_orf['orf_map']).all())
                 self.assertEqual(codon.frame, new_codon.frame)
                 self.assertEqual(str(codon.nts_in_codon), str(new_codon.nts_in_codon))
 
@@ -1826,82 +2793,129 @@ class TestSequence4(unittest.TestCase):
         self.assertEqual(expected, result)
 
     def testCreateEventTree(self):
-        expected = {'to_nt': {'A': {'from_nt': {'A': None,
-                                                'C': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'G': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'T': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}}}},
-                              'C': {'from_nt': {'A': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'C': None,
-                                                'G': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'T': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}}}},
-                              'G': {'from_nt': {'A': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'C': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'G': None,
-                                                'T': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}}}},
-                              'T': {'from_nt': {'A': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'C': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'G': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'T': None}}}}
+        expected = \
+                    {
+                        "to_nt": {
+                            "A": {
+                                "from_nt": {
+                                    "A": None,
+                                    "C": {
+                                        "mu1": {(1,): {}},
+                                        "mu2": {(1,): {}},
+                                        "mu3": {(1,): {}},
+                                        "mu4": {(1,): {}},
+                                        "mu5": {(1,): {}},
+                                        "mu6": {(1,): {}},
+                                    },
+                                    "G": {
+                                        "mu1": {(1,): {}},
+                                        "mu2": {(1,): {}},
+                                        "mu3": {(1,): {}},
+                                        "mu4": {(1,): {}},
+                                        "mu5": {(1,): {}},
+                                        "mu6": {(1,): {}},
+                                    },
+                                    "T": {
+                                        "mu1": {(1,): {}},
+                                        "mu2": {(1,): {}},
+                                        "mu3": {(1,): {}},
+                                        "mu4": {(1,): {}},
+                                        "mu5": {(1,): {}},
+                                        "mu6": {(1,): {}},
+                                    },
+                                }
+                            },
+                            "C": {
+                                "from_nt": {
+                                    "A": {
+                                        "mu1": {(1,): {}},
+                                        "mu2": {(1,): {}},
+                                        "mu3": {(1,): {}},
+                                        "mu4": {(1,): {}},
+                                        "mu5": {(1,): {}},
+                                        "mu6": {(1,): {}},
+                                    },
+                                    "C": None,
+                                    "G": {
+                                        "mu1": {(1,): {}},
+                                        "mu2": {(1,): {}},
+                                        "mu3": {(1,): {}},
+                                        "mu4": {(1,): {}},
+                                        "mu5": {(1,): {}},
+                                        "mu6": {(1,): {}},
+                                    },
+                                    "T": {
+                                        "mu1": {(1,): {}},
+                                        "mu2": {(1,): {}},
+                                        "mu3": {(1,): {}},
+                                        "mu4": {(1,): {}},
+                                        "mu5": {(1,): {}},
+                                        "mu6": {(1,): {}},
+                                    },
+                                }
+                            },
+                            "G": {
+                                "from_nt": {
+                                    "A": {
+                                        "mu1": {(1,): {}},
+                                        "mu2": {(1,): {}},
+                                        "mu3": {(1,): {}},
+                                        "mu4": {(1,): {}},
+                                        "mu5": {(1,): {}},
+                                        "mu6": {(1,): {}},
+                                    },
+                                    "C": {
+                                        "mu1": {(1,): {}},
+                                        "mu2": {(1,): {}},
+                                        "mu3": {(1,): {}},
+                                        "mu4": {(1,): {}},
+                                        "mu5": {(1,): {}},
+                                        "mu6": {(1,): {}},
+                                    },
+                                    "G": None,
+                                    "T": {
+                                        "mu1": {(1,): {}},
+                                        "mu2": {(1,): {}},
+                                        "mu3": {(1,): {}},
+                                        "mu4": {(1,): {}},
+                                        "mu5": {(1,): {}},
+                                        "mu6": {(1,): {}},
+                                    },
+                                }
+                            },
+                            "T": {
+                                "from_nt": {
+                                    "A": {
+                                        "mu1": {(1,): {}},
+                                        "mu2": {(1,): {}},
+                                        "mu3": {(1,): {}},
+                                        "mu4": {(1,): {}},
+                                        "mu5": {(1,): {}},
+                                        "mu6": {(1,): {}},
+                                    },
+                                    "C": {
+                                        "mu1": {(1,): {}},
+                                        "mu2": {(1,): {}},
+                                        "mu3": {(1,): {}},
+                                        "mu4": {(1,): {}},
+                                        "mu5": {(1,): {}},
+                                        "mu6": {(1,): {}},
+                                    },
+                                    "G": {
+                                        "mu1": {(1,): {}},
+                                        "mu2": {(1,): {}},
+                                        "mu3": {(1,): {}},
+                                        "mu4": {(1,): {}},
+                                        "mu5": {(1,): {}},
+                                        "mu6": {(1,): {}},
+                                    },
+                                    "T": None,
+                                }
+                            },
+                        }
+                    }
+
+
         result = self.sequence4.create_event_tree()
         self.assertEqual(expected, result)
 
@@ -1909,21 +2923,19 @@ class TestSequence4(unittest.TestCase):
         random.seed(5001)
 
         # Only 3 possible omegas because there is only 1 ORF
-        exp_total_omegas = {((0, 0, 1, 0),): 1.1481358615121404,
-                            ((0, 1, 0, 0),): 0.4810288100937172,
-                            ((1, 0, 0, 0),): 0.1708353283825978}
+        exp_total_omegas = {(0.4810288100937172,): {'value': 0.4810288100937172, 'nt_events': 1}, (-1,): {'value': 1, 'nt_events': 1}}
 
         # Tests nucleotide involved in a stop codon
         nt = self.sequence4.nt_sequence[11]
         self.sequence4.set_substitution_rates(nt)
 
-        exp_sub_rates = {'A': None, 'C': 0.0, 'G': 0.0, 'T': 0.0}
+        exp_sub_rates = {'A': None, 'C': None, 'G': None, 'T': None}
         self.assertEqual(exp_sub_rates, nt.rates)
 
-        exp_omega_keys = {'A': None, 'C': ((0, 0, 0, 0),), 'G': ((0, 0, 0, 0),), 'T': ((0, 0, 0, 0),)}
+        exp_omega_keys = {'A': None, 'C': None, 'G': None, 'T': None}
         self.assertEqual(exp_omega_keys, nt.omega_keys)
 
-        exp_cat_keys = {'C': 'mu5', 'G': 'mu3', 'T': 'mu6'}
+        exp_cat_keys = {'C': None, 'G': None, 'T': None}
         self.assertEqual(exp_cat_keys, nt.cat_keys)
 
         exp_total_rate = 0
@@ -1934,19 +2946,16 @@ class TestSequence4(unittest.TestCase):
         nt = self.sequence4.nt_sequence[3]
         self.sequence4.set_substitution_rates(nt)
 
-        exp_sub_rates = {'A': None,
-                         'C': 2.918042370022416e-05,
-                         'G': 0.00012204961839612692,
-                         'T': 4.37283778113398e-07}
+        exp_sub_rates = {'A': None, 'C': 1.534035770788274e-05, 'G': 2.1278273495443722e-05, 'T': 2.9180423700224156e-05}
         self.assertEqual(exp_sub_rates, nt.rates)
 
-        exp_omega_keys = {'A': None, 'C': ((0, 1, 0, 0),), 'G': ((0, 0, 1, 0),), 'T': ((1, 0, 0, 0),)}
+        exp_omega_keys = {'A': None, 'C': (0.4810288100937172,), 'G': (0.4810288100937172,), 'T': (0.4810288100937172,)}
         self.assertEqual(exp_omega_keys, nt.omega_keys)
 
-        exp_cat_keys = {'C': 'mu6', 'G': 'mu5', 'T': 'mu1'}
+        exp_cat_keys = {'C': 'mu5', 'G': 'mu3', 'T': 'mu6'}
         self.assertEqual(exp_cat_keys, nt.cat_keys)
 
-        exp_total_rate = 0.00015166732587446445
+        exp_total_rate = 6.579905490355062e-05
         self.assertEqual(exp_total_rate, nt.mutation_rate)
         self.assertEqual(exp_total_omegas, self.sequence4.total_omegas)
 
@@ -1986,6 +2995,7 @@ class TestSequence4(unittest.TestCase):
         result = self.sequence4.is_start_stop_codon(nt, 'C')
         self.assertEqual(expected, result)
 
+    @unittest.skip('create_probability_tree is no longer defined')
     def testCreateProbabilityTree(self):
         expected = {'to_nt': {'A': {'number_of_events': 0,
                                     'from_nt': {'A': None,
@@ -2080,89 +3090,256 @@ class TestSequence4(unittest.TestCase):
         c7 = self.sequence4.nt_sequence[7]
         c8 = self.sequence4.nt_sequence[8]
 
-        exp_event_tree = {'to_nt': {'A': {'from_nt': {'A': None,
-                                                      'C': {'category': {'mu1': {((0, 0, 1, 0),): [c7]},
-                                                                         'mu2': {},
-                                                                         'mu3': {},
-                                                                         'mu4': {((1, 0, 0, 0),): [c6]},
-                                                                         'mu5': {((0, 0, 0, 1),): [c8]},
-                                                                         'mu6': {}}},
-                                                      'G': {'category': {'mu1': {},
-                                                                         'mu2': {},
-                                                                         'mu3': {},
-                                                                         'mu4': {},
-                                                                         'mu5': {},
-                                                                         'mu6': {((0, 0, 1, 0),): [g5]}}},
-                                                      'T': {'category': {'mu1': {((0, 1, 0, 0),): [t4]},
-                                                                         'mu2': {},
-                                                                         'mu3': {},
-                                                                         'mu4': {},
-                                                                         'mu5': {},
-                                                                         'mu6': {}}}}},
-                                    'C': {'from_nt': {'A': {'category': {'mu1': {},
-                                                                         'mu2': {},
-                                                                         'mu3': {},
-                                                                         'mu4': {((0, 1, 0, 0),): [a3]},
-                                                                         'mu5': {},
-                                                                         'mu6': {}}},
-                                                      'C': None,
-                                                      'G': {'category': {'mu1': {},
-                                                                         'mu2': {},
-                                                                         'mu3': {((0, 0, 1, 0),): [g5]},
-                                                                         'mu4': {},
-                                                                         'mu5': {},
-                                                                         'mu6': {}}},
-                                                      'T': {'category': {'mu1': {((0, 1, 0, 0),): [t4]},
-                                                                         'mu2': {},
-                                                                         'mu3': {},
-                                                                         'mu4': {},
-                                                                         'mu5': {},
-                                                                         'mu6': {}}}}},
-                                    'G': {'from_nt': {'A': {'category': {'mu1': {((0, 0, 1, 0),): [a3]},
-                                                                         'mu2': {},
-                                                                         'mu3': {},
-                                                                         'mu4': {},
-                                                                         'mu5': {},
-                                                                         'mu6': {}}},
-                                                      'C': {'category': {'mu1': {((0, 1, 0, 0),): [c7]},
-                                                                         'mu2': {},
-                                                                         'mu3': {},
-                                                                         'mu4': {((0, 1, 0, 0),): [c6]},
-                                                                         'mu5': {((0, 0, 0, 1),): [c8]},
-                                                                         'mu6': {}}},
-                                                      'G': None,
-                                                      'T': {'category': {'mu1': {},
-                                                                         'mu2': {},
-                                                                         'mu3': {},
-                                                                         'mu4': {((1, 0, 0, 0),): [t4]},
-                                                                         'mu5': {},
-                                                                         'mu6': {}}}}},
-                                    'T': {'from_nt': {'A': {'category': {'mu1': {},
-                                                                         'mu2': {},
-                                                                         'mu3': {((0, 1, 0, 0),): [a3]},
-                                                                         'mu4': {},
-                                                                         'mu5': {},
-                                                                         'mu6': {}}},
-                                                      'C': {'category': {'mu1': {},
-                                                                         'mu2': {},
-                                                                         'mu3': {((0, 1, 0, 0),): [c7]},
-                                                                         'mu4': {},
-                                                                         'mu5': {((0, 1, 0, 0),): [c6]},
-                                                                         'mu6': {((0, 0, 0, 1),): [c8]}}},
-                                                      'G': {'category': {'mu1': {((1, 0, 0, 0),): [g5]},
-                                                                         'mu2': {},
-                                                                         'mu3': {},
-                                                                         'mu4': {},
-                                                                         'mu5': {},
-                                                                         'mu6': {}}},
-                                                      'T': None}}}}
+        exp_event_tree = \
+                            {
+                                "to_nt": {
+                                    "A": {
+                                        "from_nt": {
+                                            "A": None,
+                                            "C": {
+                                                "mu1": {
+                                                    (1,): {
+                                                        (0.4810288100937172,): [c7],
+                                                        (-1,): [c8],
+                                                        "nt_events": 2,
+                                                        "region_weight": 1.4810288100937172,
+                                                    },
+                                                    "nt_events": 2,
+                                                },
+                                                "mu2": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu3": {
+                                                    (1,): {
+                                                        (0.4810288100937172,): [c6],
+                                                        "nt_events": 1,
+                                                        "region_weight": 0.4810288100937172,
+                                                    },
+                                                    "nt_events": 1,
+                                                },
+                                                "mu4": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu5": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu6": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "nt_events": 3,
+                                            },
+                                            "G": {
+                                                "mu1": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu2": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu3": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu4": {
+                                                    (1,): {
+                                                        (0.4810288100937172,): [g5],
+                                                        "nt_events": 1,
+                                                        "region_weight": 0.4810288100937172,
+                                                    },
+                                                    "nt_events": 1,
+                                                },
+                                                "mu5": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu6": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "nt_events": 1,
+                                            },
+                                            "T": {
+                                                "mu1": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu2": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu3": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu4": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu5": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu6": {
+                                                    (1,): {
+                                                        (0.4810288100937172,): [t4],
+                                                        "nt_events": 1,
+                                                        "region_weight": 0.4810288100937172,
+                                                    },
+                                                    "nt_events": 1,
+                                                },
+                                                "nt_events": 1,
+                                            },
+                                        },
+                                        "nt_events": 5,
+                                    },
+                                    "C": {
+                                        "from_nt": {
+                                            "A": {
+                                                "mu1": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu2": {
+                                                    (1,): {
+                                                        (0.4810288100937172,): [a3, a3],
+                                                        "nt_events": 1,
+                                                        "region_weight": 0.4810288100937172,
+                                                    },
+                                                    "nt_events": 1,
+                                                },
+                                                "mu3": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu4": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu5": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu6": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "nt_events": 1,
+                                            },
+                                            "C": None,
+                                            "G": {
+                                                "mu1": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu2": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu3": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu4": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu5": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu6": {
+                                                    (1,): {
+                                                        (0.4810288100937172,): [g5],
+                                                        "nt_events": 1,
+                                                        "region_weight": 0.4810288100937172,
+                                                    },
+                                                    "nt_events": 1,
+                                                },
+                                                "nt_events": 1,
+                                            },
+                                            "T": {
+                                                "mu1": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu2": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu3": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu4": {
+                                                    (1,): {
+                                                        (0.4810288100937172,): [t4],
+                                                        "nt_events": 1,
+                                                        "region_weight": 0.4810288100937172,
+                                                    },
+                                                    "nt_events": 1,
+                                                },
+                                                "mu5": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu6": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "nt_events": 1,
+                                            },
+                                        },
+                                        "nt_events": 3,
+                                    },
+                                    "G": {
+                                        "from_nt": {
+                                            "A": {
+                                                "mu1": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu2": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu3": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu4": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu5": {
+                                                    (1,): {
+                                                        (0.4810288100937172,): [a3, a3],
+                                                        "nt_events": 1,
+                                                        "region_weight": 0.4810288100937172,
+                                                    },
+                                                    "nt_events": 1,
+                                                },
+                                                "mu6": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "nt_events": 1,
+                                            },
+                                            "C": {
+                                                "mu1": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu2": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu3": {
+                                                    (1,): {
+                                                        (0.4810288100937172,): [c6, c7],
+                                                        "nt_events": 2,
+                                                        "region_weight": 0.9620576201874343,
+                                                    },
+                                                    "nt_events": 2,
+                                                },
+                                                "mu4": {
+                                                    (1,): {(-1,): [c8], "nt_events": 1, "region_weight": 1},
+                                                    "nt_events": 1,
+                                                },
+                                                "mu5": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu6": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "nt_events": 3,
+                                            },
+                                            "G": None,
+                                            "T": {
+                                                "mu1": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu2": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu3": {
+                                                    (1,): {
+                                                        (0.4810288100937172,): [t4],
+                                                        "nt_events": 1,
+                                                        "region_weight": 0.4810288100937172,
+                                                    },
+                                                    "nt_events": 1,
+                                                },
+                                                "mu4": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu5": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu6": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "nt_events": 1,
+                                            },
+                                        },
+                                        "nt_events": 5,
+                                    },
+                                    "T": {
+                                        "from_nt": {
+                                            "A": {
+                                                "mu1": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu2": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu3": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu4": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu5": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu6": {
+                                                    (1,): {
+                                                        (0.4810288100937172,): [a3, a3],
+                                                        "nt_events": 1,
+                                                        "region_weight": 0.4810288100937172,
+                                                    },
+                                                    "nt_events": 1,
+                                                },
+                                                "nt_events": 1,
+                                            },
+                                            "C": {
+                                                "mu1": {
+                                                    (1,): {
+                                                        (0.4810288100937172,): [c7],
+                                                        "nt_events": 1,
+                                                        "region_weight": 0.4810288100937172,
+                                                    },
+                                                    "nt_events": 1,
+                                                },
+                                                "mu2": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu3": {
+                                                    (1,): {
+                                                        (0.4810288100937172,): [c6],
+                                                        "nt_events": 1,
+                                                        "region_weight": 0.4810288100937172,
+                                                    },
+                                                    "nt_events": 1,
+                                                },
+                                                "mu4": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu5": {
+                                                    (1,): {(-1,): [c8], "nt_events": 1, "region_weight": 1},
+                                                    "nt_events": 1,
+                                                },
+                                                "mu6": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "nt_events": 3,
+                                            },
+                                            "G": {
+                                                "mu1": {
+                                                    (1,): {
+                                                        (0.4810288100937172,): [g5],
+                                                        "nt_events": 1,
+                                                        "region_weight": 0.4810288100937172,
+                                                    },
+                                                    "nt_events": 1,
+                                                },
+                                                "mu2": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu3": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu4": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu5": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "mu6": {(1,): {"nt_events": 0, "region_weight": 0}, "nt_events": 0},
+                                                "nt_events": 1,
+                                            },
+                                            "T": None,
+                                        },
+                                        "nt_events": 5,
+                                    },
+                                }
+                            }
 
         res_omega_key = self.sequence4.nt_in_event_tree(a3)
         self.assertEqual(exp_event_tree, self.sequence4.event_tree)
 
         # No new omega keys are created initially
-        self.assertEqual({}, res_omega_key)
+        self.assertEqual(None, res_omega_key)
 
+    @unittest.skip('count_nts_on_event_tree is no longer defined')
     def testCountNtsOnEventTree(self):
         exp_count = 18
         res_count = self.sequence4.count_nts_on_event_tree()
@@ -2177,29 +3354,29 @@ class TestSequence4(unittest.TestCase):
 
     def testCheckMutationRates(self):
         exp_sub_rates = [
-            {'A': None, 'C': 0.0, 'G': 0.0, 'T': 0.0},
-            {'A': 0.0, 'C': 0.0, 'G': 0.0, 'T': None},
-            {'A': 0.0, 'C': 0.0, 'G': None, 'T': 0.0},
-            {'A': None, 'C': 9.967862996985666e-06, 'G': 9.796201446598298e-06, 'T': 6.3834820486331165e-06},
-            {'A': 9.32787756076442e-07, 'C': 3.1092925202548074e-06, 'G': 2.6818515078492823e-06, 'T': None},
-            {'A': 0.00011959899060425867, 'C': 7.849008815636847e-06, 'G': None, 'T': 2.2526740084629595e-07},
-            {'A': 2.6818515078492823e-06, 'C': None, 'G': 7.551411361352776e-06, 'T': 3.873827704010793e-05},
-            {'A': 2.2264094196814308e-06, 'C': None, 'G': 9.32787756076442e-07, 'T': 1.611990416321494e-05},
-            {'A': 2.415964047926403e-05, 'C': None, 'G': 2.415964047926403e-05, 'T': 0.00015318820222550355},
-            {'A': 0.0, 'C': 0.0, 'G': 0.0, 'T': None},
-            {'A': None, 'C': 0.0, 'G': 0.0, 'T': 0.0},
-            {'A': None, 'C': 0.0, 'G': 0.0, 'T': 0.0}
+            {'A': None, 'C': None, 'G': None, 'T': None},
+            {'A': None, 'C': None, 'G': None, 'T': None},
+            {'A': None, 'C': None, 'G': None, 'T': None},
+            {'A': None, 'C': 3.6147497404682092e-06, 'G': 5.1134525692942473e-05, 'T': 2.9180423700224156e-05},
+            {'A': 2.2106381591078907e-05, 'C': 2.5171371204509256e-05, 'G': 4.8359712489644815e-06, 'T': None},
+            {'A': 1.7116532419066297e-05, 'C': 1.5032339481933658e-05, 'G': None, 'T': 6.342956741319806e-07},
+            {'A': 4.8359712489644815e-06, 'C': None, 'G': 4.8359712489644815e-06, 'T': 1.611990416321494e-05},
+            {'A': 9.327877560764421e-07, 'C': None, 'G': 4.8359712489644815e-06, 'T': 3.109292520254807e-06},
+            {'A': 1.939151536255615e-06, 'C': None, 'G': 1.569845964087174e-05, 'T': 8.05321349308801e-05},
+            {'A': None, 'C': None, 'G': None, 'T': None},
+            {'A': None, 'C': None, 'G': None, 'T': None},
+            {'A': None, 'C': None, 'G': None, 'T': None}
         ]
 
         exp_total_rates = [0,
                            0,
                            0,
-                           2.614754649221708e-05,
-                           6.723931784180533e-06,
-                           0.00012767326682074182,
-                           4.8971539909309985e-05,
-                           1.9279101338972813e-05,
-                           0.0002015074831840316,
+                           8.392969913363484e-05,
+                           5.211372404455265e-05,
+                           3.278316757513194e-05,
+                           2.57918466611439e-05,
+                           8.87805152529573e-06,
+                           9.816974610800746e-05,
                            0,
                            0,
                            0]
@@ -2266,6 +3443,23 @@ class TestSequence4(unittest.TestCase):
         result = codon.creates_stop(2, 'A')  # Creates ATA
         self.assertEqual(exp, result)
 
+    def testGetCodons(self):
+        expected = self.seq4_codons
+        result = self.sequence4.get_codons()
+        self.assertEqual(expected, result)
+
+    def testGetRightNT(self):
+        nts = [Nucleotide(nt, pos) for pos, nt in enumerate("ATGATGCCCTAA")]
+        for pos, nt in enumerate(nts):
+            result = self.sequence4.get_right_nt(pos)
+            self.assertEqual(result, nts[pos + 1])
+
+    def testGetLeftNT(self):
+        nts = [Nucleotide(nt, pos) for pos, nt in enumerate("ATGATGCCCTAA")]
+        for pos, nt in enumerate(nts):
+            result = self.sequence4.get_left_nt(pos)
+            self.assertEqual(result, nts[pos - 1])
+
 
 class TestSequence5(unittest.TestCase):
     """
@@ -2284,12 +3478,15 @@ class TestSequence5(unittest.TestCase):
         s5 = 'ATGAATGCCTGACTAA'
         sorted_orfs = {'+0': [{'coords': [[0, 12]],
                                'omega_classes': 3, 'omega_shape': 1.5,
-                               'omega_values': [0.1708353283825978, 0.4810288100937172, 1.1481358615121404]}],
-                       '+1': [{'coords': [[4, 16]],
-                               'omega_classes': 4, 'omega_shape': 1.25,
-                               'omega_values': [0.09199853806558903, 0.27043066909631136,
-                                                0.5158061369385518, 1.1217646558655263]}],
-                       '+2': [], '-0': [], '-1': [], '-2': []}
+                               'omega_values': [0.1708353283825978, 0.4810288100937172, 1.1481358615121404],
+                               'orf_map': np.array([1, 0])}],
+                        '+1': [{'coords': [[4, 16]],
+                                'omega_classes': 4, 'omega_shape': 1.25,
+                                'omega_values': [0.09199853806558903, 0.27043066909631136,
+                                                 0.5158061369385518, 1.1217646558655263],
+                                'orf_map': np.array([0, 1])}],
+                        '+2': [], '-0': [], '-1': [], '-2': []}
+
         pi5 = Sequence.get_frequency_rates(s5)
         self.sequence5 = Sequence(s5, sorted_orfs, KAPPA, GLOBAL_RATE, pi5, CAT_VALUES)
 
@@ -2313,21 +3510,31 @@ class TestSequence5(unittest.TestCase):
 
     def testDeepcopy(self):
         # Check that Sequences are different objects with the same attributes
-        new_sequence1 = self.sequence5.__deepcopy__(memodict={})
-        self.assertIsNot(self.sequence5, new_sequence1)
-        self.assertEqual(self.sequence5.orfs, new_sequence1.orfs)
-        self.assertEqual(self.sequence5.kappa, new_sequence1.kappa)
-        self.assertEqual(self.sequence5.global_rate, new_sequence1.global_rate)
-        self.assertEqual(self.sequence5.pi, new_sequence1.pi)
-        self.assertEqual(self.sequence5.is_circular, new_sequence1.is_circular)
+        new_sequence5 = self.sequence5.__deepcopy__(memodict={})
+        self.assertIsNot(self.sequence5, new_sequence5)
+
+        # self.assertEqual(self.sequence5.orfs, new_sequence5.orfs) # This assertion fails if 'orf_map' np.array has more than one element
+        strands = ['+0', '+1', '+2', '-0', '-1', '-2']
+        for strand in strands:
+            for orf, new_orf in zip(self.sequence5.orfs[strand], new_sequence5.orfs[strand]):
+                self.assertEqual(orf['coords'], new_orf['coords'])
+                self.assertEqual(orf['omega_classes'], new_orf['omega_classes'])
+                self.assertEqual(orf['omega_shape'], new_orf['omega_shape'])
+                self.assertEqual(orf['omega_values'], new_orf['omega_values'])
+                self.assertTrue((orf['orf_map'] == new_orf['orf_map']).all())
+
+        self.assertEqual(self.sequence5.kappa, new_sequence5.kappa)
+        self.assertEqual(self.sequence5.global_rate, new_sequence5.global_rate)
+        self.assertEqual(self.sequence5.pi, new_sequence5.pi)
+        self.assertEqual(self.sequence5.is_circular, new_sequence5.is_circular)
 
         # Event trees reference different Nucleotides, but the Nucleotides have the same states
-        self.assertNotEqual(self.sequence5.event_tree, new_sequence1.event_tree)
-        self.assertCountEqual(self.sequence5.event_tree, new_sequence1.event_tree)
+        self.assertNotEqual(self.sequence5.event_tree, new_sequence5.event_tree)
+        self.assertCountEqual(self.sequence5.event_tree, new_sequence5.event_tree)
 
         # Check that Nucleotides are different objects with the same attributes
         for pos, nt in enumerate(self.sequence5.nt_sequence):
-            new_nt = new_sequence1.nt_sequence[pos]
+            new_nt = new_sequence5.nt_sequence[pos]
             self.assertIsNot(nt, new_nt)
 
             self.assertEqual(nt.state, new_nt.state)
@@ -2343,7 +3550,14 @@ class TestSequence5(unittest.TestCase):
             for i, codon in enumerate(nt.codons):
                 new_codon = new_nt.codons[i]
                 self.assertIsNot(codon, new_codon)
-                self.assertEqual(codon.orf, new_codon.orf)
+                # self.assertEqual(codon.orf, new_codon.orf) # This assertion fails if 'orf_map' np.array has more than one element
+
+                orf, new_orf = codon.orf, new_codon.orf
+                self.assertEqual(orf['coords'], new_orf['coords'])
+                self.assertEqual(orf['omega_classes'], new_orf['omega_classes'])
+                self.assertEqual(orf['omega_shape'], new_orf['omega_shape'])
+                self.assertEqual(orf['omega_values'], new_orf['omega_values'])
+                self.assertTrue((orf['orf_map'] == new_orf['orf_map']).all())
                 self.assertEqual(codon.frame, new_codon.frame)
                 self.assertEqual(str(codon.nts_in_codon), str(new_codon.nts_in_codon))
 
@@ -2353,82 +3567,128 @@ class TestSequence5(unittest.TestCase):
         self.assertEqual(expected, result)
 
     def testCreateEventTree(self):
-        expected = {'to_nt': {'A': {'from_nt': {'A': None,
-                                                'C': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'G': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'T': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}}}},
-                              'C': {'from_nt': {'A': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'C': None,
-                                                'G': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'T': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}}}},
-                              'G': {'from_nt': {'A': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'C': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'G': None,
-                                                'T': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}}}},
-                              'T': {'from_nt': {'A': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'C': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'G': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'T': None}}}}
+        expected = \
+                    {
+                        "to_nt": {
+                            "A": {
+                                "from_nt": {
+                                    "A": None,
+                                    "C": {
+                                        "mu1": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu2": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu3": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu4": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu5": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu6": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                    },
+                                    "G": {
+                                        "mu1": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu2": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu3": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu4": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu5": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu6": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                    },
+                                    "T": {
+                                        "mu1": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu2": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu3": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu4": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu5": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu6": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                    },
+                                }
+                            },
+                            "C": {
+                                "from_nt": {
+                                    "A": {
+                                        "mu1": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu2": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu3": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu4": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu5": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu6": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                    },
+                                    "C": None,
+                                    "G": {
+                                        "mu1": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu2": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu3": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu4": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu5": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu6": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                    },
+                                    "T": {
+                                        "mu1": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu2": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu3": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu4": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu5": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu6": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                    },
+                                }
+                            },
+                            "G": {
+                                "from_nt": {
+                                    "A": {
+                                        "mu1": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu2": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu3": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu4": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu5": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu6": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                    },
+                                    "C": {
+                                        "mu1": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu2": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu3": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu4": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu5": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu6": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                    },
+                                    "G": None,
+                                    "T": {
+                                        "mu1": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu2": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu3": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu4": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu5": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu6": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                    },
+                                }
+                            },
+                            "T": {
+                                "from_nt": {
+                                    "A": {
+                                        "mu1": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu2": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu3": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu4": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu5": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu6": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                    },
+                                    "C": {
+                                        "mu1": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu2": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu3": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu4": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu5": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu6": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                    },
+                                    "G": {
+                                        "mu1": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu2": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu3": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu4": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu5": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                        "mu6": {(1, 0): {}, (1, 1): {}, (0, 1): {}},
+                                    },
+                                    "T": None,
+                                }
+                            },
+                        }
+                    }
+
         result = self.sequence5.create_event_tree()
         self.assertEqual(expected, result)
 
@@ -2436,30 +3696,29 @@ class TestSequence5(unittest.TestCase):
         # Tests a nucleotide that is involved in multiple codons, one of which is a start codon
         random.seed(9991)
 
-        exp_all_omegas = {((0, 0, 0, 1), (0, 0, 1, 0, 0)): 0.5158061369385518,
-                          ((0, 0, 0, 1), (0, 1, 0, 0, 0)): 0.27043066909631136,
-                          ((0, 0, 1, 0),): 1.1481358615121404,
-                          ((0, 0, 1, 0), (0, 0, 0, 1, 0)): 1.1217646558655263,
-                          ((0, 0, 1, 0, 0),): 0.5158061369385518,
-                          ((0, 1, 0, 0), (0, 0, 0, 1, 0)): 1.1217646558655263,
-                          ((0, 1, 0, 0, 0),): 0.27043066909631136,
-                          ((1, 0, 0, 0),): 0.1708353283825978,
-                          ((1, 0, 0, 0), (0, 0, 0, 1, 0)): 1.1217646558655263}
+        exp_all_omegas = {
+                            (0.1708353283825978, None): {"value": 0.1708353283825978, "nt_events": 1},
+                            (0.1708353283825978, 0.09199853806558903): {
+                                "value": 0.015716600461153824,
+                                "nt_events": 1,
+                            },
+                            (-1, 0.09199853806558903): {"value": 0.09199853806558903, "nt_events": 1},
+                            (None, 0.27043066909631136): {"value": 0.27043066909631136, "nt_events": 1},
+                            (None, -1): {"value": 1, "nt_events": 1},
+                        }
+
 
         # Tests a nucleotide that is involved in multiple codons, one of which is a start codon
         nt = self.sequence5.nt_sequence[4]
         self.sequence5.set_substitution_rates(nt)
 
-        exp_sub_rates = {'A': None, 'C': 0.0, 'G': 0.0, 'T': 0.0}
+        exp_sub_rates = {'A': None, 'C': None, 'G': None, 'T': None}
         self.assertEqual(exp_sub_rates, nt.rates)
 
-        exp_omega_keys = {'A': None,
-                          'C': ((0, 0, 0, 0), (0, 0, 0, 0, 0)),
-                          'G': ((0, 0, 0, 0), (0, 0, 0, 0, 0)),
-                          'T': ((0, 0, 0, 0), (0, 0, 0, 0, 0))}
+        exp_omega_keys = {'A': None, 'C': None, 'G': None, 'T': None}
         self.assertEqual(exp_omega_keys, nt.omega_keys)
 
-        exp_cat_keys = {'C': 'mu1', 'G': 'mu1', 'T': 'mu1'}
+        exp_cat_keys = {'C': None, 'G': None, 'T': None}
         self.assertEqual(exp_cat_keys, nt.cat_keys)
 
         exp_total_rate = 0
@@ -2469,68 +3728,58 @@ class TestSequence5(unittest.TestCase):
         # Tests mutations that would destroy a stop codon in +1 frame
         random.seed(9991)
         nt = self.sequence5.nt_sequence[9]
-        self.sequence5.set_substitution_rates(nt)
-
-        exp_sub_rates = {'A': 0.0, 'C': 0.0, 'G': 0.0, 'T': None}
+        exp_sub_rates = {'A': None, 'C': None, 'G': None, 'T': None}
         self.assertEqual(exp_sub_rates, nt.rates)
 
-        exp_omega_keys = {'A': ((0, 0, 0, 0), (0, 0, 0, 0, 0)),
-                          'C': ((0, 0, 0, 0), (0, 0, 0, 0, 0)),
-                          'G': ((0, 0, 0, 0), (0, 0, 0, 0, 0)),
-                          'T': None}
+        exp_omega_keys = {'A': None, 'C': None, 'G': None, 'T': None}
         self.assertEqual(exp_omega_keys, nt.omega_keys)
 
-        exp_cat_keys = {'A': 'mu1', 'C': 'mu1', 'G': 'mu1'}
+        exp_cat_keys = {'A': None, 'C': None, 'G': None}
         self.assertEqual(exp_cat_keys, nt.cat_keys)
 
         exp_total_rate = 0
         self.assertEqual(exp_total_rate, nt.mutation_rate)
 
-        exp_total_omegas = {((0, 0, 0, 1), (0, 0, 1, 0, 0)): 0.5158061369385518,
-                            ((0, 0, 0, 1), (0, 1, 0, 0, 0)): 0.27043066909631136,
-                            ((0, 0, 1, 0),): 1.1481358615121404,
-                            ((0, 0, 1, 0), (0, 0, 0, 1, 0)): 1.1217646558655263,
-                            ((0, 0, 1, 0, 0),): 0.5158061369385518,
-                            ((0, 1, 0, 0), (0, 0, 0, 1, 0)): 1.1217646558655263,
-                            ((0, 1, 0, 0, 0),): 0.27043066909631136,
-                            ((1, 0, 0, 0),): 0.1708353283825978,
-                            ((1, 0, 0, 0), (0, 0, 0, 1, 0)): 1.1217646558655263}
-        self.assertEqual(exp_total_omegas, self.sequence5.total_omegas)
+        exp_all_omegas = {
+                            (0.1708353283825978, None): {"value": 0.1708353283825978, "nt_events": 1},
+                            (0.1708353283825978, 0.09199853806558903): {
+                                "value": 0.015716600461153824,
+                                "nt_events": 1,
+                            },
+                            (-1, 0.09199853806558903): {"value": 0.09199853806558903, "nt_events": 1},
+                            (None, 0.27043066909631136): {"value": 0.27043066909631136, "nt_events": 1},
+                            (None, -1): {"value": 1, "nt_events": 1},
+                        }
 
+        self.assertEqual(exp_all_omegas, self.sequence5.total_omegas)
         # Tests a mutation that is synonymous in one frame and non-synonymous in the other
         random.seed(9991)
         nt = self.sequence5.nt_sequence[8]
         self.sequence5.set_substitution_rates(nt)
 
-        exp_sub_rates = {'A': 1.355833208815998e-07,
-                         'C': None,
-                         'G': 1.0976188559998076e-06,
-                         'T': 5.510688194538514e-06}
+        exp_sub_rates = {'A': 1.355833208815998e-07, 'C': None, 'G': 1.355833208815998e-07, 'T': 4.51944402938666e-07}
         self.assertEqual(exp_sub_rates, nt.rates)
 
-        exp_omega_keys = {'A': ((0, 0, 0, 1), (1, 0, 0, 0, 0)),
-                          'C': None,
-                          'G': ((0, 0, 0, 1), (1, 0, 0, 0, 0)),
-                          'T': ((0, 0, 0, 1), (0, 0, 0, 1, 0))}
+        exp_omega_keys = {'A': (-1, 0.09199853806558903), 'C': None, 'G': (-1, 0.09199853806558903), 'T': (-1, 0.09199853806558903)}
         self.assertEqual(exp_omega_keys, nt.omega_keys)
 
-        exp_cat_keys = {'A': 'mu1', 'G': 'mu4', 'T': 'mu1'}
+        exp_cat_keys = {'A': 'mu1', 'G': 'mu1', 'T': 'mu1'}
         self.assertEqual(exp_cat_keys, nt.cat_keys)
 
-        exp_total_rate = 6.7438903714199215e-06
+        exp_total_rate = 7.231110447018656e-07
         self.assertEqual(exp_total_rate, nt.mutation_rate)
 
-        exp_all_omegas = {((0, 0, 0, 1), (0, 0, 0, 1, 0)): 1.1217646558655263,
-                          ((0, 0, 0, 1), (0, 0, 1, 0, 0)): 0.5158061369385518,
-                          ((0, 0, 0, 1), (0, 1, 0, 0, 0)): 0.27043066909631136,
-                          ((0, 0, 0, 1), (1, 0, 0, 0, 0)): 0.09199853806558903,
-                          ((0, 0, 1, 0),): 1.1481358615121404,
-                          ((0, 0, 1, 0), (0, 0, 0, 1, 0)): 1.1217646558655263,
-                          ((0, 0, 1, 0, 0),): 0.5158061369385518,
-                          ((0, 1, 0, 0), (0, 0, 0, 1, 0)): 1.1217646558655263,
-                          ((0, 1, 0, 0, 0),): 0.27043066909631136,
-                          ((1, 0, 0, 0),): 0.1708353283825978,
-                          ((1, 0, 0, 0), (0, 0, 0, 1, 0)): 1.1217646558655263}
+        exp_all_omegas = {
+                            (0.1708353283825978, None): {"value": 0.1708353283825978, "nt_events": 1},
+                            (0.1708353283825978, 0.09199853806558903): {
+                                "value": 0.015716600461153824,
+                                "nt_events": 1,
+                            },
+                            (-1, 0.09199853806558903): {"value": 0.09199853806558903, "nt_events": 1},
+                            (None, 0.27043066909631136): {"value": 0.27043066909631136, "nt_events": 1},
+                            (None, -1): {"value": 1, "nt_events": 1},
+                        }
+
         self.assertEqual(exp_all_omegas, self.sequence5.total_omegas)
 
         # Tests a nucleotide involved in multiple non-synonymous codons
@@ -2538,37 +3787,29 @@ class TestSequence5(unittest.TestCase):
         nt = self.sequence5.nt_sequence[7]
         self.sequence5.set_substitution_rates(nt)
 
-        exp_sub_rates = {'A': 2.316242114601123e-08,
-                         'C': None,
-                         'G': 7.952399355049068e-07,
-                         'T': 1.0258954496212767e-05}
+        exp_sub_rates = {'A': 2.3162421146011233e-08, 'C': None, 'G': 2.3162421146011233e-08, 'T': 7.72080704867041e-08}
         self.assertEqual(exp_sub_rates, nt.rates)
 
-        exp_omega_keys = {'A': ((1, 0, 0, 0), (1, 0, 0, 0, 0)),
-                          'C': None,
-                          'G': ((0, 1, 0, 0), (0, 0, 0, 1, 0)),
-                          'T': ((1, 0, 0, 0), (0, 0, 1, 0, 0))}
+        exp_omega_keys = {'A': (0.1708353283825978, 0.09199853806558903), 'C': None, 'G': (0.1708353283825978, 0.09199853806558903), 'T': (0.1708353283825978, 0.09199853806558903)}
         self.assertEqual(exp_omega_keys, nt.omega_keys)
 
-        exp_cat_keys = {'A': 'mu1', 'G': 'mu1', 'T': 'mu6'}
+        exp_cat_keys = {'A': 'mu1', 'G': 'mu1', 'T': 'mu1'}
         self.assertEqual(exp_cat_keys, nt.cat_keys)
 
-        exp_total_rate = 1.1077356852863685e-05
+        exp_total_rate = 1.2353291277872657e-07
         self.assertEqual(exp_total_rate, nt.mutation_rate)
 
-        exp_all_omegas = {((0, 0, 0, 1), (0, 0, 0, 1, 0)): 1.1217646558655263,
-                          ((0, 0, 0, 1), (0, 0, 1, 0, 0)): 0.5158061369385518,
-                          ((0, 0, 0, 1), (0, 1, 0, 0, 0)): 0.27043066909631136,
-                          ((0, 0, 0, 1), (1, 0, 0, 0, 0)): 0.09199853806558903,
-                          ((0, 0, 1, 0),): 1.1481358615121404,
-                          ((0, 0, 1, 0), (0, 0, 0, 1, 0)): 1.1217646558655263,
-                          ((0, 0, 1, 0, 0),): 0.5158061369385518,
-                          ((0, 1, 0, 0), (0, 0, 0, 1, 0)): 1.1217646558655263,
-                          ((0, 1, 0, 0, 0),): 0.27043066909631136,
-                          ((1, 0, 0, 0),): 0.1708353283825978,
-                          ((1, 0, 0, 0), (0, 0, 0, 1, 0)): 1.1217646558655263,
-                          ((1, 0, 0, 0), (0, 0, 1, 0, 0)): 0.5158061369385518,
-                          ((1, 0, 0, 0), (1, 0, 0, 0, 0)): 0.09199853806558903}
+        exp_all_omegas = {
+                            (0.1708353283825978, None): {"value": 0.1708353283825978, "nt_events": 1},
+                            (0.1708353283825978, 0.09199853806558903): {
+                                "value": 0.015716600461153824,
+                                "nt_events": 1,
+                            },
+                            (-1, 0.09199853806558903): {"value": 0.09199853806558903, "nt_events": 1},
+                            (None, 0.27043066909631136): {"value": 0.27043066909631136, "nt_events": 1},
+                            (None, -1): {"value": 1, "nt_events": 1},
+                        }
+
         self.assertEqual(exp_all_omegas, self.sequence5.total_omegas)
 
     def testIsTransv(self):
@@ -2625,6 +3866,7 @@ class TestSequence5(unittest.TestCase):
         result = self.sequence5.is_start_stop_codon(nt, 'T')
         self.assertEqual(expected, result)
 
+    @unittest.skip('create_probability_tree is no longer defined')
     def testCreateProbabilityTree(self):
         expected = {'to_nt': {'A': {'number_of_events': 0,
                                     'from_nt': {'A': None, 'T': {'prob': 0.18749999999999997, 'cat': {'mu1': {'prob': 0.01873576363611503, 'omega': {}, 'number_of_events': 0},
@@ -2719,89 +3961,556 @@ class TestSequence5(unittest.TestCase):
         c8 = self.sequence5.nt_sequence[8]
         c12 = self.sequence5.nt_sequence[12]
 
-        exp_event_tree = {'to_nt': {'A': {'from_nt': {'A': None,
-                                                      'C': {'category': {'mu1': {},
-                                                                         'mu2': {((0, 0, 0, 1), (0, 1, 0, 0, 0)): [c8],
-                                                                                 ((1, 0, 0, 0), (0, 0, 0, 1, 0)): [c7]},
-                                                                         'mu3': {},
-                                                                         'mu4': {},
-                                                                         'mu5': {},
-                                                                         'mu6': {((0, 0, 1, 0, 0),): [c12]}}},
-                                                      'G': {'category': {'mu1': {},
-                                                                         'mu2': {},
-                                                                         'mu3': {},
-                                                                         'mu4': {},
-                                                                         'mu5': {},
-                                                                         'mu6': {}}},
-                                                      'T': {'category': {'mu1': {},
-                                                                         'mu2': {},
-                                                                         'mu3': {},
-                                                                         'mu4': {},
-                                                                         'mu5': {},
-                                                                         'mu6': {}}}}},
-                                    'C': {'from_nt': {'A': {'category': {'mu1': {((1, 0, 0, 0),): [a3]},
-                                                                         'mu2': {},
-                                                                         'mu3': {},
-                                                                         'mu4': {},
-                                                                         'mu5': {},
-                                                                         'mu6': {}}},
-                                                      'C': None,
-                                                      'G': {'category': {'mu1': {},
-                                                                         'mu2': {},
-                                                                         'mu3': {},
-                                                                         'mu4': {},
-                                                                         'mu5': {},
-                                                                         'mu6': {}}},
-                                                      'T': {'category': {'mu1': {},
-                                                                         'mu2': {},
-                                                                         'mu3': {},
-                                                                         'mu4': {},
-                                                                         'mu5': {},
-                                                                         'mu6': {}}}}},
-                                    'G': {'from_nt': {'A': {'category': {'mu1': {},
-                                                                         'mu2': {},
-                                                                         'mu3': {((0, 0, 1, 0),): [a3]},
-                                                                         'mu4': {},
-                                                                         'mu5': {},
-                                                                         'mu6': {}}},
-                                                      'C': {'category': {'mu1': {((0, 0, 0, 1), (0, 0, 1, 0, 0)): [c8]},
-                                                                         'mu2': {((0, 0, 1, 0), (0, 0, 0, 1, 0)): [c7]},
-                                                                         'mu3': {},
-                                                                         'mu4': {},
-                                                                         'mu5': {((0, 1, 0, 0, 0),): [c12]},
-                                                                         'mu6': {}}},
-                                                      'G': None,
-                                                      'T': {'category': {'mu1': {},
-                                                                         'mu2': {},
-                                                                         'mu3': {},
-                                                                         'mu4': {},
-                                                                         'mu5': {},
-                                                                         'mu6': {}}}}},
-                                    'T': {'from_nt': {'A': {'category': {'mu1': {},
-                                                                         'mu2': {},
-                                                                         'mu3': {((1, 0, 0, 0),): [a3]},
-                                                                         'mu4': {},
-                                                                         'mu5': {},
-                                                                         'mu6': {}}},
-                                                      'C': {'category': {'mu1': {((0, 0, 0, 0, 1),): [c12]},
-                                                                         'mu2': {},
-                                                                         'mu3': {((0, 0, 0, 1), (0, 0, 1, 0, 0)): [c8]},
-                                                                         'mu4': {},
-                                                                         'mu5': {},
-                                                                         'mu6': {((0, 1, 0, 0), (0, 0, 0, 1, 0)): [c7]}}},
-                                                      'G': {'category': {'mu1': {},
-                                                                         'mu2': {},
-                                                                         'mu3': {},
-                                                                         'mu4': {},
-                                                                         'mu5': {},
-                                                                         'mu6': {}}},
-                                                      'T': None}}}}
+        exp_event_tree = \
+                        {
+                            "to_nt": {
+                                "A": {
+                                    "from_nt": {
+                                        "A": None,
+                                        "C": {
+                                            "mu1": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu2": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu3": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {
+                                                    (-1, 0.09199853806558903): [c8],
+                                                    "nt_events": 1,
+                                                    "region_weight": 0.09199853806558903,
+                                                },
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 1,
+                                            },
+                                            "mu4": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu5": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {
+                                                    (None, 0.27043066909631136): [c12],
+                                                    "nt_events": 1,
+                                                    "region_weight": 0.27043066909631136,
+                                                },
+                                                "nt_events": 1,
+                                            },
+                                            "mu6": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {
+                                                    (0.1708353283825978, 0.09199853806558903): [c7],
+                                                    "nt_events": 1,
+                                                    "region_weight": 0.015716600461153824,
+                                                },
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 1,
+                                            },
+                                            "nt_events": 3,
+                                        },
+                                        "G": {
+                                            "mu1": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu2": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu3": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu4": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu5": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu6": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "nt_events": 0,
+                                        },
+                                        "T": {
+                                            "mu1": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu2": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu3": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu4": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu5": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu6": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "nt_events": 0,
+                                        },
+                                    },
+                                    "nt_events": 3,
+                                },
+                                "C": {
+                                    "from_nt": {
+                                        "A": {
+                                            "mu1": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu2": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu3": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu4": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu5": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu6": {
+                                                (1, 0): {
+                                                    (0.1708353283825978, None): [a3, a3],
+                                                    "nt_events": 1,
+                                                    "region_weight": 0.1708353283825978,
+                                                },
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 1,
+                                            },
+                                            "nt_events": 1,
+                                        },
+                                        "C": None,
+                                        "G": {
+                                            "mu1": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu2": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu3": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu4": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu5": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu6": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "nt_events": 0,
+                                        },
+                                        "T": {
+                                            "mu1": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu2": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu3": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu4": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu5": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu6": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "nt_events": 0,
+                                        },
+                                    },
+                                    "nt_events": 1,
+                                },
+                                "G": {
+                                    "from_nt": {
+                                        "A": {
+                                            "mu1": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu2": {
+                                                (1, 0): {
+                                                    (0.1708353283825978, None): [a3, a3],
+                                                    "nt_events": 1,
+                                                    "region_weight": 0.1708353283825978,
+                                                },
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 1,
+                                            },
+                                            "mu3": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu4": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu5": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu6": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "nt_events": 1,
+                                        },
+                                        "C": {
+                                            "mu1": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu2": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {
+                                                    (None, 0.27043066909631136): [c12],
+                                                    "nt_events": 1,
+                                                    "region_weight": 0.27043066909631136,
+                                                },
+                                                "nt_events": 1,
+                                            },
+                                            "mu3": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {
+                                                    (0.1708353283825978, 0.09199853806558903): [c7],
+                                                    "nt_events": 1,
+                                                    "region_weight": 0.015716600461153824,
+                                                },
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 1,
+                                            },
+                                            "mu4": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu5": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {
+                                                    (-1, 0.09199853806558903): [c8],
+                                                    "nt_events": 1,
+                                                    "region_weight": 0.09199853806558903,
+                                                },
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 1,
+                                            },
+                                            "mu6": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "nt_events": 3,
+                                        },
+                                        "G": None,
+                                        "T": {
+                                            "mu1": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu2": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu3": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu4": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu5": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu6": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "nt_events": 0,
+                                        },
+                                    },
+                                    "nt_events": 4,
+                                },
+                                "T": {
+                                    "from_nt": {
+                                        "A": {
+                                            "mu1": {
+                                                (1, 0): {
+                                                    (0.1708353283825978, None): [a3, a3],
+                                                    "nt_events": 1,
+                                                    "region_weight": 0.1708353283825978,
+                                                },
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 1,
+                                            },
+                                            "mu2": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu3": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu4": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu5": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu6": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "nt_events": 1,
+                                        },
+                                        "C": {
+                                            "mu1": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu2": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {
+                                                    (0.1708353283825978, 0.09199853806558903): [c7],
+                                                    "nt_events": 1,
+                                                    "region_weight": 0.015716600461153824,
+                                                },
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 1,
+                                            },
+                                            "mu3": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {(None, -1): [c12], "nt_events": 1, "region_weight": 1},
+                                                "nt_events": 1,
+                                            },
+                                            "mu4": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu5": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu6": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {
+                                                    (-1, 0.09199853806558903): [c8],
+                                                    "nt_events": 1,
+                                                    "region_weight": 0.09199853806558903,
+                                                },
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 1,
+                                            },
+                                            "nt_events": 3,
+                                        },
+                                        "G": {
+                                            "mu1": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu2": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu3": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu4": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu5": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "mu6": {
+                                                (1, 0): {"nt_events": 0, "region_weight": 0},
+                                                (1, 1): {"nt_events": 0, "region_weight": 0},
+                                                (0, 1): {"nt_events": 0, "region_weight": 0},
+                                                "nt_events": 0,
+                                            },
+                                            "nt_events": 0,
+                                        },
+                                        "T": None,
+                                    },
+                                    "nt_events": 4,
+                                },
+                            }
+                        }
+
+
         res_omega_key = self.sequence5.nt_in_event_tree(a3)
         self.assertEqual(exp_event_tree, self.sequence5.event_tree)
 
         # No new omega keys are created initially
-        self.assertEqual({}, res_omega_key)
+        self.assertEqual(None, res_omega_key)
 
+    @unittest.skip('count_nts_on_event_tree is no longer defined')
     def testCountNtsOnEventTree(self):
         exp_count = 12
         res_count = self.sequence5.count_nts_on_event_tree()
@@ -2816,41 +4525,41 @@ class TestSequence5(unittest.TestCase):
 
     def testCheckMutationRates(self):
         exp_sub_rates = [
-            {'A': None, 'C': 0.0, 'G': 0.0, 'T': 0.0},
-            {'A': 0.0, 'C': 0.0, 'G': 0.0, 'T': None},
-            {'A': 0.0, 'C': 0.0, 'G': None, 'T': 0.0},
-            {'A': None, 'C': 5.035388960093674e-07, 'G': 5.8482810783176505e-05, 'T': 2.6105613071930803e-06},
-            {'A': None, 'C': 0.0, 'G': 0.0, 'T': 0.0},
-            {'A': 0.0, 'C': 0.0, 'G': 0.0, 'T': None},
-            {'A': 0.0, 'C': 0.0, 'G': None, 'T': 0.0},
-            {'A': 8.291369071409994e-07, 'C': None, 'G': 5.572394341408454e-06, 'T': 6.282199909613655e-05},
-            {'A': 1.170045500327795e-06, 'C': None, 'G': 7.601719597693948e-07, 'T': 1.3136856759987016e-05},
-            {'A': 0.0, 'C': 0.0, 'G': 0.0, 'T': None},
-            {'A': 0.0, 'C': 0.0, 'G': None, 'T': 0.0},
-            {'A': None, 'C': 0.0, 'G': 0.0, 'T': 0.0},
-            {'A': 1.8015514577705695e-05, 'C': None, 'G': 4.965465882349613e-06, 'T': 4.912517225180892e-06},
-            {'A': 0.0, 'C': 0.0, 'G': 0.0, 'T': None},
-            {'A': None, 'C': 0.0, 'G': 0.0, 'T': 0.0},
-            {'A': None, 'C': 0.0, 'G': 0.0, 'T': 0.0}
+            {'A': None, 'C': None, 'G': None, 'T': None},
+            {'A': None, 'C': None, 'G': None, 'T': None},
+            {'A': None, 'C': None, 'G': None, 'T': None},
+            {'A': None, 'C': 1.1933500315179366e-05, 'G': 4.927574916928588e-06, 'T': 5.035388960093674e-07},
+            {'A': None, 'C': None, 'G': None, 'T': None},
+            {'A': None, 'C': None, 'G': None, 'T': None},
+            {'A': None, 'C': None, 'G': None, 'T': None},
+            {'A': 5.489322915008737e-07, 'C': None, 'G': 1.2008391189617825e-07, 'T': 2.2666484428304817e-07},
+            {'A': 7.029220070174351e-07, 'C': None, 'G': 1.6892152192547133e-06, 'T': 1.0710748896768025e-05},
+            {'A': None, 'C': None, 'G': None, 'T': None},
+            {'A': None, 'C': None, 'G': None, 'T': None},
+            {'A': None, 'C': None, 'G': None, 'T': None},
+            {'A': 4.965465882349613e-06, 'C': None, 'G': 1.1700455003277953e-06, 'T': 2.546859337106339e-05},
+            {'A': None, 'C': None, 'G': None, 'T': None},
+            {'A': None, 'C': None, 'G': None, 'T': None},
+            {'A': None, 'C': None, 'G': None, 'T': None},
         ]
 
         exp_total_rates = [
             0,
             0,
             0,
-            6.159691098637895e-05,
+            1.7364614128117323e-05,
             0,
             0,
             0,
-            6.922353034468601e-05,
-            1.5067074220084205e-05,
+            8.956810476801001e-07,
+            1.3102886123040173e-05,
             0,
             0,
             0,
-            2.78934976852362e-05,
+            3.1604104753740795e-05,
             0,
             0,
-            0
+            0,
         ]
 
         for pos, nt in enumerate(self.sequence5.nt_sequence):
@@ -2926,6 +4635,23 @@ class TestSequence5(unittest.TestCase):
         result = codon.creates_stop(0, 'T')
         self.assertEqual(exp, result)
 
+    def testGetCodons(self):
+        expected = self.plus_0_codons
+        result = self.sequence5.get_codons()
+        self.assertEqual(expected, result)
+
+    def testGetRightNT(self):
+        nts = [Nucleotide(nt, pos) for pos, nt in enumerate("ATGAATGCCTGACTAA")]
+        for pos, nt in enumerate(nts):
+            result = self.sequence5.get_right_nt(pos)
+            self.assertEqual(result, nts[pos + 1])
+
+    def testGetLeftNT(self):
+        nts = [Nucleotide(nt, pos) for pos, nt in enumerate("ATGAATGCCTGACTAA")]
+        for pos, nt in enumerate(nts):
+            result = self.sequence5.get_left_nt(pos)
+            self.assertEqual(result, nts[pos - 1])
+            
 
 class TestSequence6(unittest.TestCase):
     """
@@ -2943,7 +4669,8 @@ class TestSequence6(unittest.TestCase):
         s6 = 'ATGATGGCCCTAA'
         sorted_orfs = {'+0': [{'coords': [(0, 5), (6, 13)],
                                'omega_classes': 3, 'omega_shape': 1.5,
-                               'omega_values': [0.1708353283825978, 0.4810288100937172, 1.1481358615121404]}],
+                               'omega_values': [0.1708353283825978, 0.4810288100937172, 1.1481358615121404],
+                               'orf_map': np.array([1])}], 
                        '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
         pi6 = Sequence.get_frequency_rates(s6)
         self.sequence6 = Sequence(s6, sorted_orfs, KAPPA, GLOBAL_RATE, pi6, CAT_VALUES)
@@ -2963,21 +4690,31 @@ class TestSequence6(unittest.TestCase):
 
     def testDeepcopy(self):
         # Check that Sequences are different objects with the same attributes
-        new_sequence1 = self.sequence6.__deepcopy__(memodict={})
-        self.assertIsNot(self.sequence6, new_sequence1)
-        self.assertEqual(self.sequence6.orfs, new_sequence1.orfs)
-        self.assertEqual(self.sequence6.kappa, new_sequence1.kappa)
-        self.assertEqual(self.sequence6.global_rate, new_sequence1.global_rate)
-        self.assertEqual(self.sequence6.pi, new_sequence1.pi)
-        self.assertEqual(self.sequence6.is_circular, new_sequence1.is_circular)
+        new_sequence6 = self.sequence6.__deepcopy__(memodict={})
+        self.assertIsNot(self.sequence6, new_sequence6)
+
+        # self.assertEqual(self.sequence6.orfs, new_sequence6.orfs) # This assertion fails if 'orf_map' np.array has more than one element
+        strands = ['+0', '+1', '+2', '-0', '-1', '-2']
+        for strand in strands:
+            for orf, new_orf in zip(self.sequence6.orfs[strand], new_sequence6.orfs[strand]):
+                self.assertEqual(orf['coords'], new_orf['coords'])
+                self.assertEqual(orf['omega_classes'], new_orf['omega_classes'])
+                self.assertEqual(orf['omega_shape'], new_orf['omega_shape'])
+                self.assertEqual(orf['omega_values'], new_orf['omega_values'])
+                self.assertTrue((orf['orf_map'] == new_orf['orf_map']).all())
+
+        self.assertEqual(self.sequence6.kappa, new_sequence6.kappa)
+        self.assertEqual(self.sequence6.global_rate, new_sequence6.global_rate)
+        self.assertEqual(self.sequence6.pi, new_sequence6.pi)
+        self.assertEqual(self.sequence6.is_circular, new_sequence6.is_circular)
 
         # Event trees reference different Nucleotides, but the Nucleotides have the same states
-        self.assertNotEqual(self.sequence6.event_tree, new_sequence1.event_tree)
-        self.assertCountEqual(self.sequence6.event_tree, new_sequence1.event_tree)
+        self.assertNotEqual(self.sequence6.event_tree, new_sequence6.event_tree)
+        self.assertCountEqual(self.sequence6.event_tree, new_sequence6.event_tree)
 
         # Check that Nucleotides are different objects with the same attributes
         for pos, nt in enumerate(self.sequence6.nt_sequence):
-            new_nt = new_sequence1.nt_sequence[pos]
+            new_nt = new_sequence6.nt_sequence[pos]
             self.assertIsNot(nt, new_nt)
 
             self.assertEqual(nt.state, new_nt.state)
@@ -2993,7 +4730,14 @@ class TestSequence6(unittest.TestCase):
             for i, codon in enumerate(nt.codons):
                 new_codon = new_nt.codons[i]
                 self.assertIsNot(codon, new_codon)
-                self.assertEqual(codon.orf, new_codon.orf)
+                # self.assertEqual(codon.orf, new_codon.orf) # This assertion fails if 'orf_map' np.array has more than one element
+
+                orf, new_orf = codon.orf, new_codon.orf
+                self.assertEqual(orf['coords'], new_orf['coords'])
+                self.assertEqual(orf['omega_classes'], new_orf['omega_classes'])
+                self.assertEqual(orf['omega_shape'], new_orf['omega_shape'])
+                self.assertEqual(orf['omega_values'], new_orf['omega_values'])
+                self.assertTrue((orf['orf_map'] == new_orf['orf_map']).all())
                 self.assertEqual(codon.frame, new_codon.frame)
                 self.assertEqual(str(codon.nts_in_codon), str(new_codon.nts_in_codon))
 
@@ -3003,82 +4747,127 @@ class TestSequence6(unittest.TestCase):
         self.assertEqual(expected, result)
 
     def testCreateEventTree(self):
-        expected = {'to_nt': {'A': {'from_nt': {'A': None,
-                                                'C': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'G': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'T': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}}}},
-                              'C': {'from_nt': {'A': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'C': None,
-                                                'G': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'T': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}}}},
-                              'G': {'from_nt': {'A': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'C': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'G': None,
-                                                'T': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}}}},
-                              'T': {'from_nt': {'A': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'C': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'G': {'category': {'mu1': {},
-                                                                   'mu2': {},
-                                                                   'mu3': {},
-                                                                   'mu4': {},
-                                                                   'mu5': {},
-                                                                   'mu6': {}}},
-                                                'T': None}}}}
+        expected = {
+                        "to_nt": {
+                            "A": {
+                                "from_nt": {
+                                    "A": None,
+                                    "C": {
+                                        "mu1": {(1,): {}, (0,): {}},
+                                        "mu2": {(1,): {}, (0,): {}},
+                                        "mu3": {(1,): {}, (0,): {}},
+                                        "mu4": {(1,): {}, (0,): {}},
+                                        "mu5": {(1,): {}, (0,): {}},
+                                        "mu6": {(1,): {}, (0,): {}},
+                                    },
+                                    "G": {
+                                        "mu1": {(1,): {}, (0,): {}},
+                                        "mu2": {(1,): {}, (0,): {}},
+                                        "mu3": {(1,): {}, (0,): {}},
+                                        "mu4": {(1,): {}, (0,): {}},
+                                        "mu5": {(1,): {}, (0,): {}},
+                                        "mu6": {(1,): {}, (0,): {}},
+                                    },
+                                    "T": {
+                                        "mu1": {(1,): {}, (0,): {}},
+                                        "mu2": {(1,): {}, (0,): {}},
+                                        "mu3": {(1,): {}, (0,): {}},
+                                        "mu4": {(1,): {}, (0,): {}},
+                                        "mu5": {(1,): {}, (0,): {}},
+                                        "mu6": {(1,): {}, (0,): {}},
+                                    },
+                                }
+                            },
+                            "C": {
+                                "from_nt": {
+                                    "A": {
+                                        "mu1": {(1,): {}, (0,): {}},
+                                        "mu2": {(1,): {}, (0,): {}},
+                                        "mu3": {(1,): {}, (0,): {}},
+                                        "mu4": {(1,): {}, (0,): {}},
+                                        "mu5": {(1,): {}, (0,): {}},
+                                        "mu6": {(1,): {}, (0,): {}},
+                                    },
+                                    "C": None,
+                                    "G": {
+                                        "mu1": {(1,): {}, (0,): {}},
+                                        "mu2": {(1,): {}, (0,): {}},
+                                        "mu3": {(1,): {}, (0,): {}},
+                                        "mu4": {(1,): {}, (0,): {}},
+                                        "mu5": {(1,): {}, (0,): {}},
+                                        "mu6": {(1,): {}, (0,): {}},
+                                    },
+                                    "T": {
+                                        "mu1": {(1,): {}, (0,): {}},
+                                        "mu2": {(1,): {}, (0,): {}},
+                                        "mu3": {(1,): {}, (0,): {}},
+                                        "mu4": {(1,): {}, (0,): {}},
+                                        "mu5": {(1,): {}, (0,): {}},
+                                        "mu6": {(1,): {}, (0,): {}},
+                                    },
+                                }
+                            },
+                            "G": {
+                                "from_nt": {
+                                    "A": {
+                                        "mu1": {(1,): {}, (0,): {}},
+                                        "mu2": {(1,): {}, (0,): {}},
+                                        "mu3": {(1,): {}, (0,): {}},
+                                        "mu4": {(1,): {}, (0,): {}},
+                                        "mu5": {(1,): {}, (0,): {}},
+                                        "mu6": {(1,): {}, (0,): {}},
+                                    },
+                                    "C": {
+                                        "mu1": {(1,): {}, (0,): {}},
+                                        "mu2": {(1,): {}, (0,): {}},
+                                        "mu3": {(1,): {}, (0,): {}},
+                                        "mu4": {(1,): {}, (0,): {}},
+                                        "mu5": {(1,): {}, (0,): {}},
+                                        "mu6": {(1,): {}, (0,): {}},
+                                    },
+                                    "G": None,
+                                    "T": {
+                                        "mu1": {(1,): {}, (0,): {}},
+                                        "mu2": {(1,): {}, (0,): {}},
+                                        "mu3": {(1,): {}, (0,): {}},
+                                        "mu4": {(1,): {}, (0,): {}},
+                                        "mu5": {(1,): {}, (0,): {}},
+                                        "mu6": {(1,): {}, (0,): {}},
+                                    },
+                                }
+                            },
+                            "T": {
+                                "from_nt": {
+                                    "A": {
+                                        "mu1": {(1,): {}, (0,): {}},
+                                        "mu2": {(1,): {}, (0,): {}},
+                                        "mu3": {(1,): {}, (0,): {}},
+                                        "mu4": {(1,): {}, (0,): {}},
+                                        "mu5": {(1,): {}, (0,): {}},
+                                        "mu6": {(1,): {}, (0,): {}},
+                                    },
+                                    "C": {
+                                        "mu1": {(1,): {}, (0,): {}},
+                                        "mu2": {(1,): {}, (0,): {}},
+                                        "mu3": {(1,): {}, (0,): {}},
+                                        "mu4": {(1,): {}, (0,): {}},
+                                        "mu5": {(1,): {}, (0,): {}},
+                                        "mu6": {(1,): {}, (0,): {}},
+                                    },
+                                    "G": {
+                                        "mu1": {(1,): {}, (0,): {}},
+                                        "mu2": {(1,): {}, (0,): {}},
+                                        "mu3": {(1,): {}, (0,): {}},
+                                        "mu4": {(1,): {}, (0,): {}},
+                                        "mu5": {(1,): {}, (0,): {}},
+                                        "mu6": {(1,): {}, (0,): {}},
+                                    },
+                                    "T": None,
+                                }
+                            },
+                        }
+                    }
+
         result = self.sequence6.create_event_tree()
         self.assertEqual(expected, result)
 
@@ -3088,14 +4877,11 @@ class TestSequence6(unittest.TestCase):
         nt = self.sequence6.nt_sequence[5]
         self.sequence6.set_substitution_rates(nt)
 
-        exp_sub_rates = {'A': 4.814194289867335e-05,
-                         'C': 1.4442582869602003e-05,
-                         'G': None,
-                         'T': 1.4442582869602003e-05}
+        exp_sub_rates = {'A': 4.814194289867335e-05, 'C': 1.4442582869602003e-05, 'G': None, 'T': 1.4442582869602003e-05}
         self.assertEqual(exp_sub_rates, nt.rates)
 
         # No omega keys because nt treated as synonymous mutation
-        exp_omega_keys = {'A': (), 'C': (), 'G': None, 'T': ()}
+        exp_omega_keys = {'A': (None,), 'C': (None,), 'G': None, 'T': (None,)}
         self.assertEqual(exp_omega_keys, nt.omega_keys)
 
         exp_cat_keys = {'A': 'mu4', 'C': 'mu4', 'T': 'mu4'}
@@ -3103,28 +4889,23 @@ class TestSequence6(unittest.TestCase):
 
         exp_total_rate = 7.702710863787735e-05
         self.assertEqual(exp_total_rate, nt.mutation_rate)
-        exp_total_omegas = {((0, 0, 1, 0),): 1.1481358615121404,
-                            ((0, 1, 0, 0),): 0.4810288100937172,
-                            ((1, 0, 0, 0),): 0.1708353283825978}
+        exp_total_omegas = {(0.4810288100937172,): {'value': 0.4810288100937172, 'nt_events': 1}, (None,): {'value': 1, 'nt_events': 1}, (-1,): {'value': 1, 'nt_events': 1}}
         self.assertEqual(exp_total_omegas, self.sequence6.total_omegas)
 
         # Tests internal methionine
         nt = self.sequence6.nt_sequence[3]
         self.sequence6.set_substitution_rates(nt)
 
-        exp_sub_rates = {'A': None,
-                         'C': 8.104909747635022e-06,
-                         'G': 0.0002180922769842364,
-                         'T': 2.2349715960390447e-05}
+        exp_sub_rates = {'A': None, 'C': 2.7411913172937843e-05, 'G': 1.1318913328738838e-05, 'T': 1.4410639058920151e-05}
         self.assertEqual(exp_sub_rates, nt.rates)
 
-        exp_omega_keys = {'A': None, 'C': ((0, 0, 1, 0),), 'G': ((0, 0, 1, 0),), 'T': ((0, 0, 1, 0),)}
+        exp_omega_keys = {'A': None, 'C': (0.4810288100937172,), 'G': (0.4810288100937172,), 'T': (0.4810288100937172,)}
         self.assertEqual(exp_omega_keys, nt.omega_keys)
 
-        exp_cat_keys = {'C': 'mu2', 'G': 'mu6', 'T': 'mu4'}
+        exp_cat_keys = {'C': 'mu6', 'G': 'mu2', 'T': 'mu5'}
         self.assertEqual(exp_cat_keys, nt.cat_keys)
 
-        exp_total_rate = 0.00024854690269226186
+        exp_total_rate = 5.314146556059683e-05
         self.assertEqual(exp_total_rate, nt.mutation_rate)
         self.assertEqual(exp_total_omegas, self.sequence6.total_omegas)
 
@@ -3164,6 +4945,7 @@ class TestSequence6(unittest.TestCase):
         result = self.sequence6.is_start_stop_codon(nt, 'C')
         self.assertEqual(expected, result)
 
+    @unittest.skip('create_probability_tree is no longer defined')
     def testCreateProbabilityTree(self):
         expected = {'to_nt': {'A': {'number_of_events': 0,
                                     'from_nt': {'A': None,
@@ -3257,92 +5039,495 @@ class TestSequence6(unittest.TestCase):
         c8 = self.sequence6.nt_sequence[8]
         c9 = self.sequence6.nt_sequence[9]
 
-        exp_event_tree = {'to_nt': {'A': {'from_nt': {'A': None,
-                                                      'C': {'category': {'mu1': {},
-                                                                         'mu2': {},
-                                                                         'mu3': {((0, 0, 0, 1),): [c9],
-                                                                                 ((0, 1, 0, 0),): [c7],
-                                                                                 ((1, 0, 0, 0),): [c8]},
-                                                                         'mu4': {},
-                                                                         'mu5': {},
-                                                                         'mu6': {}}},
-                                                      'G': {'category': {'mu1': {},
-                                                                         'mu2': {((0, 1, 0, 0),): [g6]},
-                                                                         'mu3': {},
-                                                                         'mu4': {},
-                                                                         'mu5': {},
-                                                                         'mu6': {}}},
-                                                      'T': {'category': {'mu1': {((0, 1, 0, 0),): [t4]},
-                                                                         'mu2': {},
-                                                                         'mu3': {},
-                                                                         'mu4': {},
-                                                                         'mu5': {},
-                                                                         'mu6': {}}}}},
-                                    'C': {'from_nt': {'A': {'category': {'mu1': {},
-                                                                         'mu2': {},
-                                                                         'mu3': {},
-                                                                         'mu4': {((0, 1, 0, 0),): [a3]},
-                                                                         'mu5': {},
-                                                                         'mu6': {}}},
-                                                      'C': None,
-                                                      'G': {'category': {'mu1': {},
-                                                                         'mu2': {((1, 0, 0, 0),): [g6]},
-                                                                         'mu3': {},
-                                                                         'mu4': {},
-                                                                         'mu5': {},
-                                                                         'mu6': {}}},
-                                                      'T': {'category': {'mu1': {((0, 1, 0, 0),): [t4]},
-                                                                         'mu2': {},
-                                                                         'mu3': {},
-                                                                         'mu4': {},
-                                                                         'mu5': {},
-                                                                         'mu6': {}}}}},
-                                    'G': {'from_nt': {'A': {'category': {'mu1': {((0, 0, 1, 0),): [a3]},
-                                                                         'mu2': {},
-                                                                         'mu3': {},
-                                                                         'mu4': {},
-                                                                         'mu5': {},
-                                                                         'mu6': {}}},
-                                                      'C': {'category': {'mu1': {},
-                                                                         'mu2': {((0, 0, 0, 1),): [c9]},
-                                                                         'mu3': {},
-                                                                         'mu4': {},
-                                                                         'mu5': {((0, 1, 0, 0),): [c8]},
-                                                                         'mu6': {((0, 0, 1, 0),): [c7]}}},
-                                                      'G': None,
-                                                      'T': {'category': {'mu1': {},
-                                                                         'mu2': {},
-                                                                         'mu3': {},
-                                                                         'mu4': {((1, 0, 0, 0),): [t4]},
-                                                                         'mu5': {},
-                                                                         'mu6': {}}}}},
-                                    'T': {'from_nt': {'A': {'category': {'mu1': {},
-                                                                         'mu2': {},
-                                                                         'mu3': {((0, 1, 0, 0),): [a3]},
-                                                                         'mu4': {},
-                                                                         'mu5': {},
-                                                                         'mu6': {}}},
-                                                      'C': {'category': {'mu1': {},
-                                                                         'mu2': {},
-                                                                         'mu3': {((1, 0, 0, 0),): [c7]},
-                                                                         'mu4': {},
-                                                                         'mu5': {((0, 0, 0, 1),): [c9]},
-                                                                         'mu6': {((0, 0, 1, 0),): [c8]}}},
-                                                      'G': {'category': {'mu1': {},
-                                                                         'mu2': {},
-                                                                         'mu3': {((0, 1, 0, 0),): [g6]},
-                                                                         'mu4': {},
-                                                                         'mu5': {},
-                                                                         'mu6': {}}},
-                                                      'T': None}}}}
-
+        exp_event_tree = \
+                            {
+                                "to_nt": {
+                                    "A": {
+                                        "from_nt": {
+                                            "A": None,
+                                            "C": {
+                                                "mu1": {
+                                                    (1,): {
+                                                        (0.4810288100937172,): [c7, c8],
+                                                        "nt_events": 2,
+                                                        "region_weight": 0.9620576201874343,
+                                                    },
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 2,
+                                                },
+                                                "mu2": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "mu3": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "mu4": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "mu5": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "mu6": {
+                                                    (1,): {(-1,): [c9], "nt_events": 1, "region_weight": 1},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 1,
+                                                },
+                                                "nt_events": 3,
+                                            },
+                                            "G": {
+                                                "mu1": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "mu2": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "mu3": {
+                                                    (1,): {
+                                                        (0.4810288100937172,): [g6],
+                                                        "nt_events": 1,
+                                                        "region_weight": 0.4810288100937172,
+                                                    },
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 1,
+                                                },
+                                                "mu4": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {(None,): [g5, g5], "nt_events": 1, "region_weight": 1},
+                                                    "nt_events": 1,
+                                                },
+                                                "mu5": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "mu6": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "nt_events": 2,
+                                            },
+                                            "T": {
+                                                "mu1": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "mu2": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "mu3": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "mu4": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "mu5": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "mu6": {
+                                                    (1,): {
+                                                        (0.4810288100937172,): [t4],
+                                                        "nt_events": 1,
+                                                        "region_weight": 0.4810288100937172,
+                                                    },
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 1,
+                                                },
+                                                "nt_events": 1,
+                                            },
+                                        },
+                                        "nt_events": 6,
+                                    },
+                                    "C": {
+                                        "from_nt": {
+                                            "A": {
+                                                "mu1": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "mu2": {
+                                                    (1,): {
+                                                        (0.4810288100937172,): [a3],
+                                                        "nt_events": 1,
+                                                        "region_weight": 0.4810288100937172,
+                                                    },
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 1,
+                                                },
+                                                "mu3": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "mu4": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "mu5": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "mu6": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "nt_events": 1,
+                                            },
+                                            "C": None,
+                                            "G": {
+                                                "mu1": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "mu2": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "mu3": {
+                                                    (1,): {
+                                                        (0.4810288100937172,): [g6],
+                                                        "nt_events": 1,
+                                                        "region_weight": 0.4810288100937172,
+                                                    },
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 1,
+                                                },
+                                                "mu4": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "mu5": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "mu6": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {(None,): [g5, g5], "nt_events": 1, "region_weight": 1},
+                                                    "nt_events": 1,
+                                                },
+                                                "nt_events": 2,
+                                            },
+                                            "T": {
+                                                "mu1": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "mu2": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "mu3": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "mu4": {
+                                                    (1,): {
+                                                        (0.4810288100937172,): [t4],
+                                                        "nt_events": 1,
+                                                        "region_weight": 0.4810288100937172,
+                                                    },
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 1,
+                                                },
+                                                "mu5": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "mu6": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "nt_events": 1,
+                                            },
+                                        },
+                                        "nt_events": 4,
+                                    },
+                                    "G": {
+                                        "from_nt": {
+                                            "A": {
+                                                "mu1": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "mu2": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "mu3": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "mu4": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "mu5": {
+                                                    (1,): {
+                                                        (0.4810288100937172,): [a3],
+                                                        "nt_events": 1,
+                                                        "region_weight": 0.4810288100937172,
+                                                    },
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 1,
+                                                },
+                                                "mu6": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "nt_events": 1,
+                                            },
+                                            "C": {
+                                                "mu1": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "mu2": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "mu3": {
+                                                    (1,): {
+                                                        (0.4810288100937172,): [c7],
+                                                        "nt_events": 1,
+                                                        "region_weight": 0.4810288100937172,
+                                                    },
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 1,
+                                                },
+                                                "mu4": {
+                                                    (1,): {
+                                                        (0.4810288100937172,): [c8],
+                                                        "nt_events": 1,
+                                                        "region_weight": 0.4810288100937172,
+                                                    },
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 1,
+                                                },
+                                                "mu5": {
+                                                    (1,): {(-1,): [c9], "nt_events": 1, "region_weight": 1},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 1,
+                                                },
+                                                "mu6": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "nt_events": 3,
+                                            },
+                                            "G": None,
+                                            "T": {
+                                                "mu1": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "mu2": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "mu3": {
+                                                    (1,): {
+                                                        (0.4810288100937172,): [t4],
+                                                        "nt_events": 1,
+                                                        "region_weight": 0.4810288100937172,
+                                                    },
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 1,
+                                                },
+                                                "mu4": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "mu5": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "mu6": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "nt_events": 1,
+                                            },
+                                        },
+                                        "nt_events": 5,
+                                    },
+                                    "T": {
+                                        "from_nt": {
+                                            "A": {
+                                                "mu1": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "mu2": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "mu3": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "mu4": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "mu5": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "mu6": {
+                                                    (1,): {
+                                                        (0.4810288100937172,): [a3],
+                                                        "nt_events": 1,
+                                                        "region_weight": 0.4810288100937172,
+                                                    },
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 1,
+                                                },
+                                                "nt_events": 1,
+                                            },
+                                            "C": {
+                                                "mu1": {
+                                                    (1,): {
+                                                        (0.4810288100937172,): [c7],
+                                                        "nt_events": 1,
+                                                        "region_weight": 0.4810288100937172,
+                                                    },
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 1,
+                                                },
+                                                "mu2": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "mu3": {
+                                                    (1,): {(-1,): [c9], "nt_events": 1, "region_weight": 1},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 1,
+                                                },
+                                                "mu4": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "mu5": {
+                                                    (1,): {
+                                                        (0.4810288100937172,): [c8],
+                                                        "nt_events": 1,
+                                                        "region_weight": 0.4810288100937172,
+                                                    },
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 1,
+                                                },
+                                                "mu6": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "nt_events": 3,
+                                            },
+                                            "G": {
+                                                "mu1": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {(None,): [g5, g5], "nt_events": 1, "region_weight": 1},
+                                                    "nt_events": 1,
+                                                },
+                                                "mu2": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "mu3": {
+                                                    (1,): {
+                                                        (0.4810288100937172,): [g6],
+                                                        "nt_events": 1,
+                                                        "region_weight": 0.4810288100937172,
+                                                    },
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 1,
+                                                },
+                                                "mu4": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "mu5": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "mu6": {
+                                                    (1,): {"nt_events": 0, "region_weight": 0},
+                                                    (0,): {"nt_events": 0, "region_weight": 0},
+                                                    "nt_events": 0,
+                                                },
+                                                "nt_events": 2,
+                                            },
+                                            "T": None,
+                                        },
+                                        "nt_events": 6,
+                                    },
+                                }
+                            }
 
         res_omega_key = self.sequence6.nt_in_event_tree(g5)
         self.assertEqual(exp_event_tree, self.sequence6.event_tree)
 
         # No new omega keys are created initially
-        self.assertEqual({}, res_omega_key)
+        self.assertEqual(None, res_omega_key)
 
+    @unittest.skip('count_nts_on_event_tree is no longer defined')
     def testCountNtsOnEventTree(self):
         exp_count = 18
         res_count = self.sequence6.count_nts_on_event_tree()
@@ -3357,31 +5542,31 @@ class TestSequence6(unittest.TestCase):
 
     def testCheckMutationRates(self):
         exp_sub_rates = [
-            {'A': None, 'C': 0.0, 'G': 0.0, 'T': 0.0},
-            {'A': 0.0, 'C': 0.0, 'G': 0.0, 'T': None},
-            {'A': 0.0, 'C': 0.0, 'G': None, 'T': 0.0},
-            {'A': None, 'C': 9.363750088077444e-06, 'G': 9.202492268016581e-06, 'T': 5.9966043487159576e-06},
-            {'A': 8.581647355903267e-07, 'C': 2.8605491186344227e-06, 'G': 2.4673033872213396e-06, 'T': None},
-            {'A': 7.40895641364097e-05, 'C': 4.227994381423898e-05, 'G': None, 'T': 2.2226869240922907e-05},
-            {'A': 8.397903437451395e-06, 'C': 8.947438664949276e-07, 'G': None, 'T': 4.4490935490473226e-06},
-            {'A': 4.4490935490473226e-06, 'C': None, 'G': 4.854311971584616e-05, 'T': 5.266921935564986e-06},
-            {'A': 1.5800765806694958e-06, 'C': None, 'G': 1.0691764463069788e-05, 'T': 0.00016181039905282054},
-            {'A': 9.249120750544072e-06, 'C': None, 'G': 5.237463907296068e-06, 'T': 7.40895641364097e-05},
-            {'A': 0.0, 'C': 0.0, 'G': 0.0, 'T': None},
-            {'A': None, 'C': 0.0, 'G': 0.0, 'T': 0.0},
-            {'A': None, 'C': 0.0, 'G': 0.0, 'T': 0.0}
+            {'A': None, 'C': None, 'G': None, 'T': None},
+            {'A': None, 'C': None, 'G': None, 'T': None},
+            {'A': None, 'C': None, 'G': None, 'T': None},
+            {'A': None, 'C': 3.395673998621651e-06, 'G': 4.803546352973384e-05, 'T': 2.7411913172937843e-05},
+            {'A': 2.0337871063792594e-05, 'C': 2.315766150814852e-05, 'G': 4.449093549047323e-06, 'T': None},
+            {'A': 4.814194289867335e-05, 'C': 4.227994381423898e-05, 'G': None, 'T': 1.7840194133551658e-06},
+            {'A': 1.4830311830157746e-05, 'C': 4.449093549047323e-06, 'G': None, 'T': 4.449093549047323e-06},
+            {'A': 8.581647355903268e-07, 'C': None, 'G': 4.449093549047323e-06, 'T': 2.8605491186344227e-06},
+            {'A': 8.581647355903268e-07, 'C': None, 'G': 6.9472984524445545e-06, 'T': 3.5639214876899296e-05},
+            {'A': 4.227994381423898e-05, 'C': None, 'G': 2.2226869240922907e-05, 'T': 3.083040250181358e-05},
+            {'A': None, 'C': None, 'G': None, 'T': None},
+            {'A': None, 'C': None, 'G': None, 'T': None},
+            {'A': None, 'C': None, 'G': None, 'T': None},
         ]
 
         exp_total_rates = [0,
                            0,
                            0,
-                           2.4562846704809983e-05,
-                           6.186017241446089e-06,
-                           0.0001385963771915716,
-                           1.3741740852993645e-05,
-                           5.8259135200458473e-05,
-                           0.00017408224009655984,
-                           8.857614879424983e-05,
+                           7.884305070129333e-05,
+                           4.794462612098844e-05,
+                           9.22059061262675e-05,
+                           2.3728498928252395e-05,
+                           8.167807403272074e-06,
+                           4.344467806493418e-05,
+                           9.533721555697547e-05,
                            0,
                            0,
                            0]
@@ -3452,6 +5637,30 @@ class TestSequence6(unittest.TestCase):
         result = codon.creates_stop(0, 'G')
         self.assertEqual(exp, result)
 
+    def testGetCodons(self):
+        expected = self.seq6_codons
+        result = self.sequence6.get_codons()
+        self.assertEqual(expected, result)
+
+    def testGetRightNT(self):
+        nts = [Nucleotide(nt, pos) for pos, nt in enumerate("ATGATGGCCCTAA")]
+        for pos, nt in enumerate(nts):
+            result = self.sequence6.get_right_nt(pos)
+            self.assertEqual(result, nts[pos + 1])
+
+    def testGetLeftNT(self):
+        nts = [Nucleotide(nt, pos) for pos, nt in enumerate("ATGATGGCCCTAA")]
+        for pos, nt in enumerate(nts):
+            result = self.sequence6.get_left_nt(pos)
+            self.assertEqual(result, nts[pos - 1])
+
+
+def main(out = sys.stderr, verbosity = 2):
+    loader = unittest.TestLoader()
+  
+    suite = loader.loadTestsFromModule(sys.modules[__name__])
+    unittest.TextTestRunner(out, verbosity = verbosity).run(suite)
 
 if __name__ == '__main__':
-    unittest.main()
+    with open('testing.out', 'w') as f:
+        main(f)
