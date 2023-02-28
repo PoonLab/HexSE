@@ -4,6 +4,7 @@ import yaml
 
 from hexse.run_simulation import *
 from hexse.settings import Settings
+from hexse.sequence_info import Nucleotide
 import argparse
 
 CURR_ABSPATH = os.path.dirname(os.path.abspath(__file__))
@@ -329,29 +330,33 @@ class TestDiscretize(unittest.TestCase):
         alpha = 1.25
         ncat = 4
         expected = np.array([0.09199853806558903, 0.27043066909631136, 0.5158061369385518, 1.1217646558655263])
-        result = discretize(alpha, ncat, dist=ss.gamma, scale=0)
-        self.assertEqual(expected.all(), result.all())
+        result = discretize(alpha, ncat, dist=ss.gamma, scale=0.4)
+        for exp_val, res_val in zip(expected, result):
+            self.assertAlmostEquals(exp_val, res_val)
 
     def test_discertize_gamma_str(self):
         alpha = 1.25
         ncat = 4
         expected = np.array([0.09199853806558903, 0.27043066909631136, 0.5158061369385518, 1.1217646558655263])
-        result = discretize(alpha, ncat, dist='ss.gamma', scale=0)
-        self.assertEqual(expected.all(), result.all())
+        result = discretize(alpha, ncat, dist='ss.gamma', scale=0.4)
+        for exp_val, res_val in zip(expected, result):
+            self.assertAlmostEquals(exp_val, res_val)
 
     def test_discretize_lognorm(self):
         alpha = 1.25
         ncat = 4
-        expected = np.array([0.18399708, 0.54086134, 1.03161227, 2.24352931])
-        result = discretize(alpha, ncat, dist=ss.lognorm, scale=0)
-        self.assertEqual(expected.all(), result.all())
+        expected = np.array([0.18399707, 0.53208673, 1.19849136, 4.86332671])
+        result = discretize(alpha, ncat, dist=ss.lognorm, scale=0.7757874)
+        for exp_val, res_val in zip(expected, result):
+            self.assertAlmostEquals(exp_val, res_val)
 
     def test_discretize_lognorm_str(self):
         alpha = 1.25
         ncat = 4
-        expected = np.array([0.18399708, 0.54086134, 1.03161227, 2.24352931])
-        result = discretize(alpha, ncat, dist='ss.lognorm', scale=0)
-        self.assertEqual(expected.all(), result.all())
+        expected = np.array([0.18399707, 0.53208673, 1.19849136, 4.86332671])
+        result = discretize(alpha, ncat, dist='ss.lognorm', scale=0.7757874)
+        for exp_val, res_val in zip(expected, result):
+            self.assertAlmostEquals(exp_val, res_val)
 
 
 class TestReadSequence(unittest.TestCase):
@@ -423,7 +428,7 @@ class TestReadOrfs(unittest.TestCase):
     def test_yaml_format(self):
         seq = os.path.join(CURR_ABSPATH, 'fixtures/test_seq.fa')
         tree = os.path.join(CURR_ABSPATH, 'fixtures/test_tree.txt')
-        config = os.path.join(CURR_ABSPATH, 'fixtures/test_HBV.yaml')
+        config = os.path.join(CURR_ABSPATH, 'fixtures/conf_complete_HBV.yaml')
 
         args = argparse.Namespace(seq=seq, tree=tree, config=config)
         settings = Settings(args)
@@ -431,32 +436,25 @@ class TestReadOrfs(unittest.TestCase):
         with open(config, 'r') as stream:
             settings_yaml = yaml.safe_load(stream)
 
-        exp_orfs = {'+': [{'coords': [[2849, 3182]], 'omega_shape': 1.5, 'omega_classes': 3, 'omega_scale': None, 
-                           'omega_values': [0.28472554730432975, 0.8017146834895289, 1.9135597691869002]}, 
-                          {'coords': [[0, 837]], 'omega_shape': 1.7, 'omega_classes': 4, 'omega_scale': None, 
-                           'omega_values': [0.2546315346928122, 0.6187820264159969, 
-                                            1.0602878358803063, 2.066298602998443]}, 
-                          {'coords': [[3173, 3182]], 'omega_shape': 1.9, 'omega_classes': 5, 'omega_scale': None, 
-                           'omega_values': [0.24299466301064465, 0.5367901643069017, 0.8347352424578409, 
-                                            1.232290499360166, 2.153189430839229]}, 
-                          {'coords': [[156, 837]], 'omega_shape': 1.2, 'omega_classes': 6, 'omega_scale': None, 
-                           'omega_values': [0.12024956490941223, 0.34220561109733705, 0.5945133970685264, 
-                                            0.9177008036588394, 1.3984361616412855, 2.6268944615728804]}, 
-                          {'coords': [[1375, 1840]], 'omega_shape': 1.3, 'omega_classes': 7, 'omega_scale': None, 
-                           'omega_values': [0.11904243326372371, 0.3154129285521276, 0.5206117248835243, 
-                                            0.761133505770069, 1.0697477104347362, 1.5271712900390908, 
-                                            2.686880407027805]}, 
-                          {'coords': [[1815, 2454]], 'omega_shape': 1.25, 'omega_classes': 3, 'omega_scale': None, 
-                           'omega_values': [0.2409026301066901, 0.7650856087860596, 1.9940117610865642]}, 
-                          {'coords': [[1853, 1922]], 'omega_shape': 1.87, 'omega_classes': 4, 'omega_scale': None, 
-                           'omega_values': [0.2772466012740689, 0.6404372134662386, 
-                                            1.0663680865428011, 2.0159480987088285]}, 
-                          {'coords': [[1902, 2454]], 'omega_shape': 2.5, 'omega_classes': 5, 'omega_scale': None, 
-                           'omega_values': [0.3075971532102495, 0.5999467116400771, 0.8730832667988613, 
-                                            1.222399372994519, 1.9969734953254998]}], 
-                    '-': []}
+        exp_orfs = {'+': [{'coords': [[1375, 1840]],
+                           'dn_values': [0.42584203488769556, 1.0711311227395655, 
+                                         1.7848172815920647, 2.780153100609863, 5.1880564601470684],
+                           'ds_values': [0.6137056388801096, 3.386294361119891]},
+                           {'coords': [[1815, 2454]],
+                           'dn_values': [0.13695378264465718, 0.4767518562354524, 
+                                         0.9999999999999997, 2.3862943611198904],
+                           'ds_values': [0.6137056388801096, 3.386294361119891]},
+                           {'coords': [[2308, 3182],
+                           [0, 1625]],
+                           'dn_values': [1.8965767845633317, 6.103423215436677],
+                           'ds_values': [0.6137056388801096, 3.386294361119891]},
+                           {'coords': [[2849, 3182],
+                           [0, 837]],
+                           'dn_values': [0.3329677267246186, 1.0887942245237032, 2.8982380487141928],
+                           'ds_values': [0.6137056388801096, 3.386294361119891]}],
+                           '-': []}
 
-        res_orfs = settings.parse_orfs_from_yaml(settings_yaml)
+        res_orfs = settings.parse_orfs_from_yaml()
         self.maxDiff = None
         self.assertDictEqual(exp_orfs, res_orfs)
 
@@ -503,7 +501,7 @@ class TestGetParameters(unittest.TestCase):
         s = 'ATGTGATAA'
         pi = [0.05, 0.05, 0.05, 0.85]   # input file takes priority
 
-        path = os.path.join(CURR_ABSPATH, 'fixtures/test_HBV.yaml')
+        path = os.path.join(CURR_ABSPATH, 'fixtures/conf_complete_HBV.yaml')
         args = argparse.Namespace(seq="", config=path, tree=None)
         settings = Settings(args)
 
@@ -533,7 +531,7 @@ class TestGetParameters(unittest.TestCase):
     def test_get_kappa_settings(self):
         expected = 0.3  # Input file takes priority
 
-        path = os.path.join(CURR_ABSPATH, 'fixtures/test_HBV.yaml')
+        path = os.path.join(CURR_ABSPATH, 'fixtures/conf_complete_HBV.yaml')
         args = argparse.Namespace(seq="", config=path, tree=None)
         settings = Settings(args)
 
@@ -550,7 +548,7 @@ class TestGetParameters(unittest.TestCase):
     def test_get_mu_settings(self):
         expected = 0.05  # Input file takes priority
 
-        path = os.path.join(CURR_ABSPATH, 'fixtures/test_HBV.yaml')
+        path = os.path.join(CURR_ABSPATH, 'fixtures/conf_complete_HBV.yaml')
         args = argparse.Namespace(seq="", config=path, tree=None)
         settings = Settings(args)
 
@@ -589,89 +587,6 @@ class TestResolveAmbiguities(unittest.TestCase):
         self.assertEqual(expected, result)
 
 
-class TestSetGlobalOmegaValues(unittest.TestCase):
-    """
-    Tests set_global_omega_values
-    """
-
-    def testSimpleUse(self):
-        expected = {'+0': [{'coords': [(0, 11)], 'omega_values': [0.28472554730432975, 0.8017146834895289, 1.9135597691869002],
-                            'omega_shape': 1.7, 'omega_classes': 4}],
-                    '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
-        orfs = {'+0': [{'coords': [(0, 11)], 'omega_values': [1.42, 0.67, 1.22, 0.74]}],
-                '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
-        result = set_global_omega_values(orfs, [0.28472554730432975, 0.8017146834895289, 1.9135597691869002], 1.7, 4)
-        self.assertEqual(expected, result)
-
-    def testMultipleOrfs(self):
-        expected = {'+': [{'coords': [(0, 23)], 'omega_values': [0.28472554730432975, 0.8017146834895289, 1.9135597691869002],
-                           'omega_shape': 1.7, 'omega_classes': 4},
-                          {'coords': [(5, 19)], 'omega_values': [0.28472554730432975, 0.8017146834895289, 1.9135597691869002],
-                           'omega_shape': 1.7, 'omega_classes': 4}],
-                    '-': []}
-        orfs = {'+': [{'coords': [(0, 23)], 'omega_values': [0.56, 0.89, 1.13]},
-                      {'coords': [(5, 19)], 'omega_values': [0.35, 0.78, 1.03, 1.43, 1.80]}],
-                '-': []}
-        result = set_global_omega_values(orfs, [0.28472554730432975, 0.8017146834895289, 1.9135597691869002], 1.7, 4)
-        self.assertEqual(expected, result)
-
-    def testSplicedOrf(self):
-        expected = {'+': [{'coords': [(0, 23), (5, 19)], 'omega_values': [0.28472554730432975, 0.8017146834895289, 1.9135597691869002],
-                           'omega_shape': 1.7, 'omega_classes': 4},
-                          {'coords': [(8, 21)], 'omega_values': [0.28472554730432975, 0.8017146834895289, 1.9135597691869002],
-                           'omega_shape': 1.7, 'omega_classes': 4}],
-                    '-': []}
-        orfs = {'+': [{'coords': [(0, 23), (5, 19)], 'omega_values': [0.56, 0.89, 1.13]},
-                      {'coords': [(8, 21)], 'omega_values': [0.35, 0.78, 1.03, 1.43, 1.80]}],
-                '-': []}
-        result = set_global_omega_values(orfs, [0.28472554730432975, 0.8017146834895289, 1.9135597691869002], 1.7, 4)
-        self.assertEqual(expected, result)
-
-    def testBacktoBackOrfs(self):
-        expected = {'+': [{'coords': [(1, 9)], 'omega_values': [0.28472554730432975, 0.8017146834895289, 1.9135597691869002],
-                           'omega_shape': 1.7, 'omega_classes': 4},
-                          {'coords': [(16, 24)], 'omega_values': [0.28472554730432975, 0.8017146834895289, 1.9135597691869002],
-                           'omega_shape': 1.7, 'omega_classes': 4}],
-                    '-': []}
-        orfs = {'+': [{'coords': [(1, 9)], 'omega_values': [1.42, 0.67, 1.22, 0.74]},
-                      {'coords': [(16, 24)], 'omega_values': [0.56, 0.89, 1.13]}],
-                '-': []}
-        result = set_global_omega_values(orfs, [0.28472554730432975, 0.8017146834895289, 1.9135597691869002], 1.7, 4)
-        self.assertEqual(expected, result)
-
-    def testFwdReverseOrfs(self):
-        expected = {'+': [{'coords': [(5, 49)], 'omega_values': [0.28472554730432975, 0.8017146834895289, 1.9135597691869002],
-                           'omega_shape': 1.7, 'omega_classes': 4}],
-                    '-': [{'coords': [(3, 29)], 'omega_values': [0.28472554730432975, 0.8017146834895289, 1.9135597691869002],
-                           'omega_shape': 1.7, 'omega_classes': 4}]}
-        orfs = {'+': [{'coords': [(5, 49)], 'omega_values': [0.56, 0.89, 1.13]}],
-                '-': [{'coords': [(3, 29)], 'omega_values': [0.35, 0.78, 1.03, 1.43, 1.80]}]}
-        result = set_global_omega_values(orfs, [0.28472554730432975, 0.8017146834895289, 1.9135597691869002], 1.7, 4)
-        self.assertEqual(expected, result)
-
-    def testAllSixOrfs(self):
-        orfs = {'+0': [{'coords': [(0, 8)], 'omega_values': [0.56, 0.89, 1.13]}],
-                '+1': [{'coords': [(1, 9)], 'omega_values': [0.35, 0.78, 1.03, 1.43, 1.80]}],
-                '+2': [{'coords': [(2, 10)], 'omega_values': [0.56, 0.89, 1.13]}],
-                '-0': [{'coords': [(0, 8)], 'omega_values': [0.35, 0.78, 1.03, 1.43, 1.80]}],
-                '-1': [{'coords': [(1, 9)], 'omega_values': [0.56, 0.89, 1.13]}],
-                '-2': [{'coords': [(2, 10)], 'omega_values': [0.35, 0.78, 1.03, 1.43, 1.80]}]}
-        expected = {'+0': [{'coords': [(0, 8)], 'omega_values': [0.28472554730432975, 0.8017146834895289, 1.9135597691869002],
-                            'omega_shape': 1.7, 'omega_classes': 4}],
-                    '+1': [{'coords': [(1, 9)], 'omega_values': [0.28472554730432975, 0.8017146834895289, 1.9135597691869002],
-                            'omega_shape': 1.7, 'omega_classes': 4}],
-                    '+2': [{'coords': [(2, 10)], 'omega_values': [0.28472554730432975, 0.8017146834895289, 1.9135597691869002],
-                            'omega_shape': 1.7, 'omega_classes': 4}],
-                    '-0': [{'coords': [(0, 8)], 'omega_values': [0.28472554730432975, 0.8017146834895289, 1.9135597691869002],
-                            'omega_shape': 1.7, 'omega_classes': 4}],
-                    '-1': [{'coords': [(1, 9)], 'omega_values': [0.28472554730432975, 0.8017146834895289, 1.9135597691869002],
-                            'omega_shape': 1.7, 'omega_classes': 4}],
-                    '-2': [{'coords': [(2, 10)], 'omega_values': [0.28472554730432975, 0.8017146834895289, 1.9135597691869002],
-                            'omega_shape': 1.7, 'omega_classes': 4}]}
-        result = set_global_omega_values(orfs, [0.28472554730432975, 0.8017146834895289, 1.9135597691869002], 1.7, 4)
-        self.assertEqual(expected, result)
-
-
 class TestCreateLogFile(unittest.TestCase):
 
     def test_genbank(self):
@@ -687,9 +602,54 @@ class TestCreateLogFile(unittest.TestCase):
         self.assertEqual(expected, result)
 
 
-class TestFindOVRFs(unittest.TestCase):
-    pass
+class TestCodonIterator(unittest.TestCase):
+    
+    def setUp(self):
+        self.nts = [Nucleotide(nt, pos) for pos, nt in enumerate('ATGCATGCATGCATCG')]
+        
+    def testPositiveStrand(self):
+        result = codon_iterator(self.nts, 0, 11)
+        self.assertEqual((self.nts[:3], 0), next(result)) # ([a0, t1, g2], 0)
+        self.assertEqual((self.nts[3:6], 3), next(result)) # ([[c3, a4, t5], 3)
+        self.assertEqual((self.nts[6:9], 6), next(result)) # ([g6, c7, a8], 6)
+        self.assertEqual((self.nts[9:12], 9), next(result)) # ([t9, g10, c11], 9)
+        self.assertEqual((self.nts[12:15], 12), next(result)) # ([a12, t13, c14], 12)
+        self.assertEqual((self.nts[15:], 15), next(result)) # ([g15], 15)
 
+    def testNegativeStrand(self):
+        nts = self.nts[::-1]
+        result = codon_iterator(self.nts, 11, 0)
+        self.assertEqual((nts[:3], 0), next(result)) # ([g15, c14, t13], 0)
+        self.assertEqual((nts[3:6], 3), next(result)) # ([a12, c11, g10], 3)
+        self.assertEqual((nts[6:9], 6), next(result)) # ([t9, a8, c7], 6)
+        self.assertEqual((nts[9:12], 9), next(result)) # ([g6, t5, a4], 9)
+        self.assertEqual((nts[12:15], 12), next(result)) # ([c3, g2, t1], 12)
+        self.assertEqual((nts[15:], 15), next(result)) # ([a0], 15)
+
+
+class TestFindOVRFs(unittest.TestCase):
+    
+    def testNoOverlap(self):
+        orf_list = [[(2, 10)], [(30, 38)]]
+        expected = {}
+        self.assertEqual(expected, find_ovrfs(orf_list))
+
+    def testPartialOverlap(self):
+        orf_list = [[(2, 30)], [(30, 40)]]
+        expected = {'[(30, 40)]and[(2, 30)]': [[(30, 40)], [(2, 30)], 1, 30, 2]}
+        self.assertEqual(expected, find_ovrfs(orf_list))
+
+    def testCompleteOverlap(self):
+        orf_list = [[(2, 30)], [(15, 28)]]
+        expected = {'[(15, 28)]and[(2, 30)]': [[(15, 28)], [(2, 30)], 14, 15, 2]}
+        self.assertEqual(expected, find_ovrfs(orf_list))
+
+    def testMultipleOverlap(self):
+        orf_list = [[(2, 30)], [(15, 28)], [(14, 23)]]
+        expected = {'[(15, 28)]and[(2, 30)]': [[(15, 28)], [(2, 30)], 14, 15, 2],
+                    '[(14, 23)]and[(2, 30)]': [[(14, 23)], [(2, 30)], 10, 14, 2],
+                    '[(14, 23)]and[(15, 28)]': [[(14, 23)], [(15, 28)], 9, 14, 15]}
+        self.assertEqual(expected, find_ovrfs(orf_list))
 
 
 if __name__ == '__main__':

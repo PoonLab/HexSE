@@ -21,7 +21,7 @@ from .settings import Settings
 from .discretize import discretize
 
 
-def get_args(parser: argparse.ArgumentParser) -> argparse.Namespace:
+def get_args(parser):
     # positional arguments (required)
     parser.add_argument(
         'seq',
@@ -54,7 +54,7 @@ def get_args(parser: argparse.ArgumentParser) -> argparse.Namespace:
     return parser.parse_args()
 
 
-def valid_sequence(seq: str) -> bool:
+def valid_sequence(seq):
     """
     Verifies that the length of the input sequence is valid and the sequence is composed of only nucleotides.
     A valid sequence is assumed to be composed of a START codon, at least one amino acid codon, and a STOP codon.
@@ -64,7 +64,7 @@ def valid_sequence(seq: str) -> bool:
     return is_valid
 
 
-def resolve_ambiguities(seq: str) -> str:
+def resolve_ambiguities(seq):
     """
     Resolves ambiguous positions in nt seq by randomly selecting one of its posibilites
     :return: seq without ambiguities
@@ -78,7 +78,7 @@ def resolve_ambiguities(seq: str) -> str:
     return("".join(new_seq))
 
 
-def valid_orfs(orf_locations: dict, seq_length: int) -> (dict, list):
+def valid_orfs(orf_locations, seq_length):
     """
     Verifies that the input ORFs are a list of tuples containing the start and end positions of ORFs.
     Example of valid input: [(1, 9), (27, 13)]
@@ -127,7 +127,7 @@ def valid_orfs(orf_locations: dict, seq_length: int) -> (dict, list):
     return invalid_orfs, invalid_msg
 
 
-def sort_orfs(orf_locations: dict) -> dict:
+def sort_orfs(orf_locations):
     """
     Store ORFs in position according to plus zero ORF (first of the list).
     They will be classified as (+0, +1, +2, -0, -1, -2)
@@ -163,23 +163,7 @@ def sort_orfs(orf_locations: dict) -> dict:
     return sorted_orfs
 
 
-def set_global_omega_values(orf_locations: dict, omega_values: list, omega_shape: float, omega_classes: int) -> dict:
-    """
-    Sets the dN and dS values for each the reading frames
-    :param orf_locations: dictionary of ORFs sorted by the strand
-    :param omega_values: list of omega values, derived from the discretized gamma distribution
-    return: orf_locations updated to contains dN and dS values for each ORF
-    """
-    for strand in orf_locations:
-        orf_list = orf_locations[strand]
-        for orf in orf_list:
-            orf['omega_values'] = omega_values
-            orf['omega_shape'] = omega_shape
-            orf['omega_classes'] = omega_classes
-
-    return orf_locations
-
-def create_log_file(input_file_name: str) -> str:
+def create_log_file(input_file_name):
     """
     Create a log file with information for the run
     """
@@ -207,7 +191,7 @@ def codon_iterator(my_orf, start_pos, end_pos):
         i += 3
 
 
-def count_internal_stop_codons(cds: str) -> int:
+def count_internal_stop_codons(cds):
     """
     Look for stop codons inside the CDS
     :param cds: str, Coding Aequences (if on negative strand, cds must be the complement)
@@ -388,6 +372,8 @@ def main():
     # Make Sequence object
     print("Creating root sequence")
     root_sequence = Sequence(s, orfs, kappa, global_rate, pi, mu_values)
+    
+    # For debugging purposes: return codon information
     if args.ci:
         omegas = omegas_in_orf(root_sequence)
         for coord, omega_list in omegas.items():

@@ -43,7 +43,7 @@ class SimulateOnBranch:
             if None in keys:
                 print("KEYS FROM OMEGA TREE\n",keys)
 
-    def get_substitution(self) -> (str, str, str, tuple, tuple):
+    def get_substitution(self):
         """
         Select a substitution by moving over the event_tree according to the generation of random numbers
         """
@@ -101,7 +101,7 @@ class SimulateOnBranch:
             selected_omega = tuple_key
             selected_nt = random.choice(omega_tree[tuple_key])
         
-        else:  # If region has ORFs, select omega
+        else:  # If region has ORFs, select omega combo
             omega_dict = {}
             for omega_combo in omega_tree.keys():
                 if type(omega_combo) == tuple:  # Ignore the key 'nt_events' that contains the number on events on the branch
@@ -117,7 +117,7 @@ class SimulateOnBranch:
 
 
     @staticmethod
-    def weighted_random_choice(dictionary: dict, sum_values: float) -> str:
+    def weighted_random_choice(dictionary, sum_values):
         """
         Randomly select a key on a dictionary where values correspond to the weight for the key
         :param dictionary: Dictionary to select the value from

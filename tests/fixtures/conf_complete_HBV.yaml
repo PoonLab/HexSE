@@ -1,9 +1,25 @@
 global_rate: 0.05
 kappa: 0.3
 mu: {classes: 2, dist: lognorm, shape: 1.0}
-orfs:
-  1375,1840: {omega_classes: 5, omega_dist: gamma, omega_shape: 1.5}
-  1815,2454: {omega_classes: 4, omega_dist: gamma, omega_shape: 1.0}
-  2308,3182;0,1625: {omega_classes: 2, omega_dist: gamma, omega_shape: 2}
-  2849,3182;0,837: {omega_classes: 3, omega_dist: gamma, omega_shape: 1.2}
 pi: {A: 0.25, C: 0.25, G: 0.25, T: 0.25}
+
+orfs:
+  1375,1840: {
+                dn_class: 5, dn_dist: gamma, dn_shape: 1.5, dn_scale: 1.5, 
+                ds_class: 2, ds_dist: gamma, ds_shape: 1, ds_scale: 2
+                }
+
+  1815,2454: {
+                dn_class: 4, dn_dist: gamma, dn_shape: 1.0, dn_scale: 1.0, 
+                ds_class: 2, ds_dist: gamma, ds_shape: 1, ds_scale: 2
+                }
+
+  2308,3182;0,1625: {
+                dn_class: 2, dn_dist: gamma, dn_shape: 2, dn_scale: 2, 
+                ds_class: 2, ds_dist: gamma, ds_shape: 1, ds_scale: 2
+                }
+
+  2849,3182;0,837: {
+                dn_class: 3, dn_dist: gamma, dn_shape: 1.2, dn_scale: 1.2, 
+                ds_class: 2, ds_dist: gamma, ds_shape: 1, ds_scale: 2
+                }
