@@ -17,11 +17,14 @@ class Settings:
     """
     def __init__(self, args):
 
+        # Sort input files
         self.seq_path = args.seq
         self.seq = self.read_sequence(self.seq_path)  # Curated sequence
         self.file_paths = self.clean_file_paths([self.seq_path, args.config])
         self.yaml = self.read_settings_from_yaml(self.get_yaml_file_path(self.file_paths))
         self.tree = args.tree
+
+        # Retrive from yaml 
         self.orfs = self.get_orfs()
         self.pi = self.get_pi()
         self.kappa = self.yaml.get('kappa', 0.3)
@@ -64,10 +67,13 @@ class Settings:
 
     def get_orfs(self):
         orfs = {}
+        # User specified location
         if 'orfs' in self.yaml.keys():
-            orfs = self.parse_orfs_from_yaml(self.yaml)
+            orfs = self.parse_orfs_from_yaml()
+        # Extract from genbank file    
         else:
             orfs = self.parse_genbank_orfs(self.seq_path)
+            # TODO: Assign distributions to orfs to draw dN and dS values
         
         return orfs
 
@@ -75,7 +81,7 @@ class Settings:
         return [i for i in file_paths if i]
         
     @staticmethod
-    def parse_genbank_orfs(seq_path): #TODO: change name of input
+    def parse_genbank_orfs(seq_path):
         """
         Extract ORFs from the GenBank file
         """
@@ -188,7 +194,7 @@ class Settings:
 
         return strand
 
-    def parse_orfs_from_yaml(self, yaml):
+    def parse_orfs_from_yaml(self):
         """
         Reads ORFs from a YAML file containing the ORF coordinates and the parameters of the dN/dS distribution for each ORF
         :param settings: dictionary representation of YAML file
@@ -196,7 +202,7 @@ class Settings:
         """
         orf_locations = {'+': [], '-': []}
 
-        raw_coords = list(yaml['orfs'].keys())
+        raw_coords = list(self.yaml['orfs'].keys())
 
         for raw_coord in raw_coords:
             orf = {}
@@ -222,21 +228,39 @@ class Settings:
                 strand = self.define_strand(coords[0], coords[1])
                 orf['coords'] = [coords]
 
-            orf['omega_shape'] = yaml['orfs'][raw_coord]['omega_shape']
-            orf['omega_classes'] = yaml['orfs'][raw_coord]['omega_classes']
-            dist = yaml['orfs'][raw_coord]['omega_dist']
-            orf['omega_scale'] = yaml['orfs'][raw_coord].get('scale', None)  # Default sets scale = 1/shape
-            dist = '%s%s' % ('ss.', dist)
-            orf['omega_values'] = list(discretize(yaml['orfs'][raw_coord]['omega_shape'],
-                                                  yaml['orfs'][raw_coord]['omega_classes'], 
-                                                  dist, 
-                                                  orf['omega_scale']))
+            # orf['omega_shape'] = self.yaml['orfs'][raw_coord]['omega_shape']
+            # orf['omega_classes'] = self.yaml['orfs'][raw_coord]['omega_classes']
+            # dist = self.yaml['orfs'][raw_coord]['omega_dist']
+            # orf['omega_scale'] = self.yaml['orfs'][raw_coord].get('scale', None)  # Default sets scale = 1/shape
+            # dist = '%s%s' % ('ss.', dist)
+            # orf['omega_values'] = list(discretize(self.yaml['orfs'][raw_coord].get('omega_shape'),
+            #                                       self.yaml['orfs'][raw_coord]['omega_classes'], 
+            #                                       dist, 
+            #                                       orf['omega_scale']))
+            yaml_coord = self.yaml['orfs'][raw_coord]    
+            orf['dn_values'] = list(
+                                    discretize(
+                                        yaml_coord.get('dn_shape'),
+                                        yaml_coord.get('dn_class'), 
+                                        yaml_coord.get('dn_dist', 'gamma'), 
+                                        yaml_coord.get('dn_scale', None) # Default sets scale = 1/shape
+                                            )
+                                        )
+
+            # If dS is not variable                                                        
+            if 'ds' in yaml_coord.keys():
+                orf['ds'] =  yaml_coord['ds']
+            else:
+                orf['ds_values'] = list(
+                                        discretize(
+                                            yaml_coord.get('ds_shape'),
+                                            yaml_coord.get('ds_class'), 
+                                            yaml_coord.get('ds_dist', 'gamma'), 
+                                            yaml_coord.get('ds_scale', None) # Default sets scale = 1/shape
+                                                )
+                                            )
 
             orf_locations[strand].append(orf)
-        
-        #print(">> RUNING FROM SETTINGS")
-        # pp = pprint.PrettyPrinter(indent=4)
-        # pp.pprint(orf_locations)
     
         return orf_locations
 
@@ -257,4 +281,3 @@ class Settings:
             nt_categories_dict[cat] = item
 
         return nt_categories_dict
-

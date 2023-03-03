@@ -101,7 +101,7 @@ class SimulateOnBranch:
             selected_omega = tuple_key
             selected_nt = random.choice(omega_tree[tuple_key])
         
-        else:  # If region has ORFs, select omega
+        else:  # If region has ORFs, select omega combo
             omega_dict = {}
             for omega_combo in omega_tree.keys():
                 if type(omega_combo) == tuple:  # Ignore the key 'nt_events' that contains the number on events on the branch

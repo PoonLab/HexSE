@@ -163,22 +163,6 @@ def sort_orfs(orf_locations):
     return sorted_orfs
 
 
-def set_global_omega_values(orf_locations, omega_values, omega_shape, omega_classes):
-    """
-    Sets the dN and dS values for each the reading frames
-    :param orf_locations: dictionary of ORFs sorted by the strand
-    :param omega_values: list of omega values, derived from the discretized gamma distribution
-    return: orf_locations updated to contains dN and dS values for each ORF
-    """
-    for strand in orf_locations:
-        orf_list = orf_locations[strand]
-        for orf in orf_list:
-            orf['omega_values'] = omega_values
-            orf['omega_shape'] = omega_shape
-            orf['omega_classes'] = omega_classes
-
-    return orf_locations
-
 def create_log_file(input_file_name):
     """
     Create a log file with information for the run
@@ -388,6 +372,8 @@ def main():
     # Make Sequence object
     print("Creating root sequence")
     root_sequence = Sequence(s, orfs, kappa, global_rate, pi, mu_values)
+    
+    # For debugging purposes: return codon information
     if args.ci:
         omegas = omegas_in_orf(root_sequence)
         for coord, omega_list in omegas.items():

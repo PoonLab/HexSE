@@ -7,6 +7,7 @@ import sys
 import pprint
 from tempfile import tempdir
 import numpy as np
+import sys
 
 TRANSITIONS_DICT = {'A': 'G', 'G': 'A', 'T': 'C', 'C': 'T'}
 
@@ -58,7 +59,6 @@ class Sequence:
     def __init__(self, str_sequence, orfs, kappa, global_rate, pi, cat_values, circular=False):
         """
         Creates a list of nucleotides, locates open reading frames, and creates a list of codons.
-
         :param str_sequence:  str, nucleotide sequence as a string object
         :param orfs:  dict, A dictionary of open reading frames (ORFs) in the sequence, sorted by reading frame where:
                         - the keys are the reading frames (+0, +1, +2, -0, -1, -2)
@@ -165,8 +165,9 @@ class Sequence:
 
         self.count_events_per_layer()
         # pp.pprint(self.event_tree)
-        # pp.pprint(self.regions)
+        # pp.pprint(self.total_omegas)
         # sys.exit()
+        
     def get_codons(self):
         return self.__codons
 
@@ -358,11 +359,11 @@ class Sequence:
                     if self.is_transv(current_nt, to_nt):
                         sub_rates[to_nt] *= self.kappa
 
-                    chosen_omegas = list(self.number_orfs)  # Initialize chosen omegas as list of "None"s with len equal to number of ORFs
-                    computed_omega = 1
+                    selection_values = list(self.number_orfs)  # Initialize chosen omegas as list of "None"s with len equal to number of ORFs
+                    selection_pressure = 1
                     # If nucleotide is part of at least one ORF, select omegas if mutation is non-syn or use "None" if it's syn
                     if nt.codons:
-                    # For each codon, find the combination of omegas that will affect it according to the codons it is part of
+                    # For each codon, find the combination of omegas (dN/dS) and dS that affect it based on coding context
                     # E.g.: [2, 3, None, None, None] represent a nucleotide in two reading frames where both mutations are non-syn. 
                     # Note: "None" means that nt is not part of that ORF
 
@@ -374,21 +375,22 @@ class Sequence:
                             
                             # If mutation is non-synonymous, apply codon omega
                             if codon.is_nonsyn(pos_in_codon, to_nt):
-                                chosen_omegas[orf_index] = codon.omega
-                                computed_omega *= codon.omega                          
-
-                            # Use a -1 to indicate mutation is synonymous
+                                selection_values[orf_index] = codon.omega
+                                selection_pressure *= codon.omega                  
+                            
+                            # If mutation is synonymous, apply codon ds
                             else:
-                                chosen_omegas[orf_index] = -1
+                                selection_pressure *= codon.ds
+                                selection_values[orf_index] = codon.ds
 
                     # Store omega combination and calculated value in total_omega dict
-                    if tuple(chosen_omegas) not in self.total_omegas.keys():
-                        self.total_omegas[tuple(chosen_omegas)] = {'value' : computed_omega}
+                    if tuple(selection_values) not in self.total_omegas.keys():
+                        self.total_omegas[tuple(selection_values)] = {'value' : selection_pressure}
 
-                    selected_omegas[to_nt] = tuple(chosen_omegas)  # Store omega keys used to describe the substitution
+                    selected_omegas[to_nt] = tuple(selection_values)  # Store omega keys used to describe the substitution
                     selected_cat = random.choice(list(self.cat_values))  # Randomly select one of the mu values (mutation rate) 
                     sub_rates[to_nt] *= self.cat_values[selected_cat]  # Apply my value over instant mutation rate
-                    sub_rates[to_nt] *= self.total_omegas[tuple(chosen_omegas)]['value']  # Apply omega value over instant mutation rate
+                    sub_rates[to_nt] *= self.total_omegas[tuple(selection_values)]['value']  # Apply omega value over instant mutation rate
                     my_cat_keys[to_nt] = selected_cat
                 
                 else:  # Inform nucleotide that such subs cannot occur
@@ -617,7 +619,8 @@ class Codon:
         self.frame = frame
         self.orf = orf
         self.nts_in_codon = nts_in_codon  # list of Nucleotide objects in the Codon
-        self.omega = self.select_omega()  # Asign non-syn mutation rate 
+        self.dn, self.ds = self.select_dn_ds()  # Asign non-syn mutation rate 
+        self.omega = self.dn/self.ds
 
     def __repr__(self):
         return ''.join(str(nt) for nt in self.nts_in_codon)
@@ -633,13 +636,16 @@ class Codon:
             if query_nt is nt:
                 return idx
     
-    def select_omega(self):
+    def select_dn_ds(self):
         """
         Set rate at which non-synonymous substitutions occur in the codon
         """
-        omega_values = self.orf['omega_values']
-        codon_omega = random.choice(omega_values)
-        return(codon_omega)
+        dn_values = self.orf['dn_values']
+        codon_dn = random.choice(dn_values)
+
+        ds_values = self.orf['ds_values']
+        codon_ds = random.choice(ds_values)
+        return(codon_dn, codon_ds)
 
     def mutate_codon(self, pos_in_codon, to_nt):
         """
