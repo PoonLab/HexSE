@@ -27,7 +27,7 @@ def discretize(alpha, ncat, dist, scale):
         dist = dist(alpha, scale=scale)
 
     elif dist == ss.lognorm:
-        if not scale:  
+        if scale is None:  
             scale=1  # default to 1
         dist = dist(s=alpha, scale=scale)
 
