@@ -22,7 +22,7 @@ def discretize(alpha, ncat, dist, scale):
     if dist == ss.gamma:
         # In gamma, mean = shape*scale. 
         # If neutral evolution, omega = 1; therefore scale should be 1/shape
-        if not scale:  
+        if scale is None:  
             scale=1/alpha
         dist = dist(alpha, scale=scale)
 
