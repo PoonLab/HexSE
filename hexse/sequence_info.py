@@ -252,9 +252,11 @@ class Sequence:
         Returns the next Nucleotide in the sequence
         :param pos_in_seq: the position of the Nucleotide in the sequence
         """
-        if self.is_circular:
-            if pos_in_seq == len(self.nt_sequence) - 1:
+        if pos_in_seq == len(self.nt_sequence) - 1:
+            if self.is_circular:
                 return self.nt_sequence[0]
+            else:
+                return None
         else:
             return self.nt_sequence[pos_in_seq + 1]
 

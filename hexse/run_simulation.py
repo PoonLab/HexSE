@@ -71,9 +71,12 @@ def resolve_ambiguities(seq):
     """
     new_seq = list(seq.upper())
     for id_nt, nt in enumerate(new_seq):
-        unambiguous_list = AMBIGUOUS_NUCLEOTIDES.get(nt)
-        if unambiguous_list:
-            new_seq[id_nt] = random.choice(unambiguous_list)
+        
+        # get unambiguous_list only if nt is not in NUCLEOTIDES
+        if nt not in NUCLEOTIDES:
+            unambiguous_list = AMBIGUOUS_NUCLEOTIDES[nt]
+            if unambiguous_list:
+                new_seq[id_nt] = random.choice(unambiguous_list)
 
     return("".join(new_seq))
 
