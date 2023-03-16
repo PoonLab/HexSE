@@ -841,23 +841,33 @@ class TestSequence1(unittest.TestCase):
     def testGetRightLeftNT(self):
         seq1 = ''.join(nt.state for nt in self.sequence1.nt_sequence)
 
+        # Testing get_right_nt on a non-circular sequence
         for pos, nt in enumerate(seq1[:-1]):
             result = self.sequence1.get_right_nt(pos)
             self.assertEqual(result.state, seq1[pos + 1])
+        result = self.sequence1.get_right_nt(len(seq1) - 1)
+        self.assertEqual(result, None)
 
+        # Testing get_left_nt on a non-circular sequence
         for pos, nt in enumerate(seq1[1:], 1):
             result = self.sequence1.get_left_nt(pos)
             self.assertEqual(result.state, seq1[pos - 1])
+        result = self.sequence1.get_left_nt(0)
+        self.assertEqual(result, None)
 
-        circular_seq1 = ''.join(nt.state for nt in self.circular_sequence1.nt_sequence)
-
-        for pos, nt in enumerate(circular_seq1):
+        # Testing get_right_nt on a circular sequence
+        for pos, nt in enumerate(seq1[:-1]):
             result = self.circular_sequence1.get_right_nt(pos)
-            self.assertEqual(result.state, self.circular_sequence1[pos + 1])
+            self.assertEqual(result.state, seq1[pos + 1])
+        result = self.circular_sequence1.get_right_nt(len(seq1) - 1)
+        self.assertEqual(result.state, seq1[0])
 
-        for pos, nt in enumerate(circular_seq1):
+        # Testing get_left_nt on a circular sequence
+        for pos, nt in enumerate(seq1[1:], 1):
             result = self.circular_sequence1.get_left_nt(pos)
-            self.assertEqual(result.state, circular_seq1[pos - 1])
+            self.assertEqual(result.state, seq1[pos - 1])
+        result = self.circular_sequence1.get_left_nt(0)
+        self.assertEqual(result.state, seq1[len(seq1) - 1])
 
 class TestSequence2(unittest.TestCase):
     """
@@ -1372,7 +1382,6 @@ class TestSequence2(unittest.TestCase):
                                                                                            'mu6': {'prob': 0.4440237745855198, 'omega': {}, 'number_of_events': 0}}, 'number_of_events': 0},
                                                 'G': None}}}}
         result = self.sequence2.create_probability_tree()
-        print(result)
         self.assertEqual(expected, result)
 
     def testNtInEventTree(self):
@@ -1934,23 +1943,33 @@ class TestSequence2(unittest.TestCase):
 
     def testGetRightLeftNT(self):
         seq2 = ''.join(nt.state for nt in self.sequence2.nt_sequence)
+        # Testing get_right_nt on a non-circular sequence
         for pos, nt in enumerate(seq2[:-1]):
             result = self.sequence2.get_right_nt(pos)
             self.assertEqual(result.state, seq2[pos + 1])
-        
+        result = self.sequence2.get_right_nt(len(seq2) - 1)
+        self.assertEqual(result, None)
+
+        # Testing get_left_nt on a non-circular sequence
         for pos, nt in enumerate(seq2[1:], 1):
             result = self.sequence2.get_left_nt(pos)
             self.assertEqual(result.state, seq2[pos - 1])
+        result = self.sequence2.get_left_nt(0)
+        self.assertEqual(result, None)
 
-        circular_seq2 = ''.join(nt.state for nt in self.circular_sequence2.nt_sequence)
-
-        for pos, nt in enumerate(circular_seq2):
+        # Testing get_right_nt on a circular sequence
+        for pos, nt in enumerate(seq2[:-1]):
             result = self.circular_sequence2.get_right_nt(pos)
-            self.assertEqual(result.state, self.circular_sequence2[pos + 1])
+            self.assertEqual(result.state, seq2[pos + 1])
+        result = self.circular_sequence2.get_right_nt(len(seq2) - 1)
+        self.assertEqual(result.state, seq2[0])
 
-        for pos, nt in enumerate(circular_seq2):
+        # Testing get_left_nt on a circular sequence
+        for pos, nt in enumerate(seq2[1:], 1):
             result = self.circular_sequence2.get_left_nt(pos)
-            self.assertEqual(result.state, circular_seq2[pos - 1])
+            self.assertEqual(result.state, seq2[pos - 1])
+        result = self.circular_sequence2.get_left_nt(0)
+        self.assertEqual(result.state, seq2[len(seq2) - 1])
 
 class TestSequence3(unittest.TestCase):
     """
@@ -2718,24 +2737,33 @@ class TestSequence3(unittest.TestCase):
 
     def testGetRightLeftNT(self):
         seq3 = ''.join(nt.state for nt in self.sequence3.nt_sequence)
+        # Testing get_right_nt on a non-circular sequence
         for pos, nt in enumerate(seq3[:-1]):
             result = self.sequence3.get_right_nt(pos)
             self.assertEqual(result.state, seq3[pos + 1])
+        result = self.sequence3.get_right_nt(len(seq3) - 1)
+        self.assertEqual(result, None)
 
+        # Testing get_left_nt on a non-circular sequence
         for pos, nt in enumerate(seq3[1:], 1):
             result = self.sequence3.get_left_nt(pos)
             self.assertEqual(result.state, seq3[pos - 1])
+        result = self.sequence3.get_left_nt(0)
+        self.assertEqual(result, None)
 
-
-        circular_seq3 = ''.join(nt.state for nt in self.circular_sequence3.nt_sequence)
-
-        for pos, nt in enumerate(circular_seq3):
+        # Testing get_right_nt on a circular sequence
+        for pos, nt in enumerate(seq3[:-1]):
             result = self.circular_sequence3.get_right_nt(pos)
-            self.assertEqual(result.state, self.circular_sequence3[pos + 1])
+            self.assertEqual(result.state, seq3[pos + 1])
+        result = self.circular_sequence3.get_right_nt(len(seq3) - 1)
+        self.assertEqual(result.state, seq3[0])
 
-        for pos, nt in enumerate(circular_seq3):
+        # Testing get_left_nt on a circular sequence
+        for pos, nt in enumerate(seq3[1:], 1):
             result = self.circular_sequence3.get_left_nt(pos)
-            self.assertEqual(result.state, circular_seq3[pos - 1])
+            self.assertEqual(result.state, seq3[pos - 1])
+        result = self.circular_sequence3.get_left_nt(0)
+        self.assertEqual(result.state, seq3[len(seq3) - 1])
 
 class TestSequence4(unittest.TestCase):
     """
@@ -3467,23 +3495,33 @@ class TestSequence4(unittest.TestCase):
 
     def testGetRightLeftNT(self):
         seq4 = ''.join(nt.state for nt in self.sequence4.nt_sequence)
+        # Testing get_right_nt on a non-circular sequence
         for pos, nt in enumerate(seq4[:-1]):
             result = self.sequence4.get_right_nt(pos)
             self.assertEqual(result.state, seq4[pos + 1])
+        result = self.sequence4.get_right_nt(len(seq4) - 1)
+        self.assertEqual(result, None)
 
+        # Testing get_left_nt on a non-circular sequence
         for pos, nt in enumerate(seq4[1:], 1):
             result = self.sequence4.get_left_nt(pos)
             self.assertEqual(result.state, seq4[pos - 1])
+        result = self.sequence4.get_left_nt(0)
+        self.assertEqual(result, None)
 
-        circular_seq4 = ''.join(nt.state for nt in self.circular_sequence4.nt_sequence)
-
-        for pos, nt in enumerate(circular_seq4):
+        # Testing get_right_nt on a circular sequence
+        for pos, nt in enumerate(seq4[:-1]):
             result = self.circular_sequence4.get_right_nt(pos)
-            self.assertEqual(result.state, self.circular_sequence4[pos + 1])
+            self.assertEqual(result.state, seq4[pos + 1])
+        result = self.circular_sequence4.get_right_nt(len(seq4) - 1)
+        self.assertEqual(result.state, seq4[0])
 
-        for pos, nt in enumerate(circular_seq4):
+        # Testing get_left_nt on a circular sequence
+        for pos, nt in enumerate(seq4[1:], 1):
             result = self.circular_sequence4.get_left_nt(pos)
-            self.assertEqual(result.state, circular_seq4[pos - 1])
+            self.assertEqual(result.state, seq4[pos - 1])
+        result = self.circular_sequence4.get_left_nt(0)
+        self.assertEqual(result.state, seq4[len(seq4) - 1])
 
 class TestSequence5(unittest.TestCase):
     """
@@ -4724,25 +4762,35 @@ class TestSequence5(unittest.TestCase):
             expected = complements[pos]
             self.assertEqual(result, expected)
 
-    def testGetRightNT(self):
+    def testGetRightLeftNT(self):
         seq5 = ''.join(nt.state for nt in self.sequence5.nt_sequence)
+        # Testing get_right_nt on a non-circular sequence
         for pos, nt in enumerate(seq5[:-1]):
             result = self.sequence5.get_right_nt(pos)
             self.assertEqual(result.state, seq5[pos + 1])
+        result = self.sequence5.get_right_nt(len(seq5) - 1)
+        self.assertEqual(result, None)
 
+        # Testing get_left_nt on a non-circular sequence
         for pos, nt in enumerate(seq5[1:], 1):
             result = self.sequence5.get_left_nt(pos)
             self.assertEqual(result.state, seq5[pos - 1])
+        result = self.sequence5.get_left_nt(0)
+        self.assertEqual(result, None)
 
-        circular_seq5 = ''.join(nt.state for nt in self.circular_sequence5.nt_sequence)
-
-        for pos, nt in enumerate(circular_seq5):
+        # Testing get_right_nt on a circular sequence
+        for pos, nt in enumerate(seq5[:-1]):
             result = self.circular_sequence5.get_right_nt(pos)
-            self.assertEqual(result.state, self.circular_sequence5[pos + 1])
+            self.assertEqual(result.state, seq5[pos + 1])
+        result = self.circular_sequence5.get_right_nt(len(seq5) - 1)
+        self.assertEqual(result.state, seq5[0])
 
-        for pos, nt in enumerate(circular_seq5):
+        # Testing get_left_nt on a circular sequence
+        for pos, nt in enumerate(seq5[1:], 1):
             result = self.circular_sequence5.get_left_nt(pos)
-            self.assertEqual(result.state, circular_seq5[pos - 1])           
+            self.assertEqual(result.state, seq5[pos - 1])
+        result = self.circular_sequence5.get_left_nt(0)
+        self.assertEqual(result.state, seq5[len(seq5) - 1])
 
 class TestSequence6(unittest.TestCase):
     """
@@ -5693,25 +5741,36 @@ class TestSequence6(unittest.TestCase):
             expected = complements[pos]
             self.assertEqual(result, expected)
 
-    def testGetRightNT(self):
+    def testGetRightLeftNT(self):
         seq6 = ''.join(nt.state for nt in self.sequence6.nt_sequence)
+
+        # Testing get_right_nt on a non-circular sequence
         for pos, nt in enumerate(seq6[:-1]):
             result = self.sequence6.get_right_nt(pos)
             self.assertEqual(result.state, seq6[pos + 1])
+        result = self.sequence6.get_right_nt(len(seq6) - 1)
+        self.assertEqual(result, None)
 
+        # Testing get_left_nt on a non-circular sequence
         for pos, nt in enumerate(seq6[1:], 1):
             result = self.sequence6.get_left_nt(pos)
             self.assertEqual(result.state, seq6[pos - 1])
+        result = self.sequence6.get_left_nt(0)
+        self.assertEqual(result, None)
 
-        circular_seq6 = ''.join(nt.state for nt in self.circular_sequence6.nt_sequence)
-
-        for pos, nt in enumerate(circular_seq6):
+        # Testing get_right_nt on a circular sequence
+        for pos, nt in enumerate(seq6[:-1]):
             result = self.circular_sequence6.get_right_nt(pos)
-            self.assertEqual(result.state, self.circular_sequence6[pos + 1])
+            self.assertEqual(result.state, seq6[pos + 1])
+        result = self.circular_sequence6.get_right_nt(len(seq6) - 1)
+        self.assertEqual(result.state, seq6[0])
 
-        for pos, nt in enumerate(circular_seq6):
+        # Testing get_left_nt on a circular sequence
+        for pos, nt in enumerate(seq6[1:], 1):
             result = self.circular_sequence6.get_left_nt(pos)
-            self.assertEqual(result.state, circular_seq6[pos - 1])
+            self.assertEqual(result.state, seq6[pos - 1])
+        result = self.circular_sequence6.get_left_nt(0)
+        self.assertEqual(result.state, seq6[len(seq6) - 1])
 
 
 if __name__ == '__main__':

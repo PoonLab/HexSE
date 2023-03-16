@@ -22,12 +22,15 @@ def discretize(alpha, ncat, dist, scale=None):
     if dist == ss.gamma:
         # In gamma, mean = shape*scale. 
         # If neutral evolution, omega = 1; therefore scale should be 1/shape
-        if not scale:  
+        if scale == None:  
             scale=1/alpha
+        # Raise an exception when scale is a non positive number
+        if scale <= 0:
+            raise ValueError("Scale cannot be zero or negative")
         dist = dist(alpha, scale=scale)
 
     elif dist == ss.lognorm:
-        if not scale:  
+        if scale == None:  
             scale=1  # default to 1
         dist = dist(s=alpha, scale=scale)
 

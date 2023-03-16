@@ -358,6 +358,13 @@ class TestDiscretize(unittest.TestCase):
         for exp_val, res_val in zip(expected, result):
             self.assertAlmostEquals(exp_val, res_val)
 
+    def test_discretize_scale_0(self):
+        alpha = 1.25
+        ncat = 4
+        with self.assertRaises(ValueError) as err:
+            discretize(alpha, ncat, dist='ss.gamma', scale=0)
+            self.assertEqual(err.exception, 'Scale cannot be zero or negative')
+
 
 class TestReadSequence(unittest.TestCase):
 
@@ -571,8 +578,9 @@ class TestResolveAmbiguities(unittest.TestCase):
     def testBadInput(self):
         seq = "SGDKLJFAHHH"
         expected = "CGGGLJFAACA"
-        result = resolve_ambiguities(seq)
-        self.assertEqual(expected, result)
+        with self.assertRaises(KeyError) as err:
+            resolve_ambiguities(seq)
+            self.assertEqual(err.exception, 'L')
 
     def testLowerCase(self):
         seq = "atgcatgcatgcatcg"
