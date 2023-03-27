@@ -24,7 +24,7 @@ class TestSequence1(unittest.TestCase):
         self.maxDiff = MAX_DIFF
         random.seed(9001)     # Set seed for pseudo-random number generator
 
-        orfs = {'+0': [{'coords': [[0, 21]],
+        self.orfs = {'+0': [{'coords': [[0, 21]],
                         'omega_classes': 3, 'omega_shape': 1.5,
                         'omega_values': [0.1708353283825978, 0.4810288100937172, 1.1481358615121404],
                         'dn_values': [0.42584203488769556, 1.0711311227395655, 1.7848172815920647,
@@ -35,8 +35,8 @@ class TestSequence1(unittest.TestCase):
 
         s1 = 'GTACGATCGATCGATGCTAGC'
         pi1 = Sequence.get_frequency_rates(s1)
-        self.sequence1 = Sequence(s1, orfs, KAPPA, GLOBAL_RATE, pi1, CAT_VALUES)
-        self.circular_sequence1 = Sequence(s1, orfs, KAPPA, GLOBAL_RATE, pi1, CAT_VALUES, circular=True)
+        self.sequence1 = Sequence(s1, self.orfs, KAPPA, GLOBAL_RATE, pi1, CAT_VALUES)
+        self.circular_sequence1 = Sequence(s1, self.orfs, KAPPA, GLOBAL_RATE, pi1, CAT_VALUES, circular=True)
         self.orf = {'coords': [[0, 21]],
                     'omega_classes': 3, 'omega_shape': 1.5,
                     'omega_values': [0.1708353283825978, 0.4810288100937172, 1.1481358615121404],
@@ -869,6 +869,19 @@ class TestSequence1(unittest.TestCase):
         result = self.circular_sequence1.get_left_nt(0)
         self.assertEqual(result.state, seq1[len(seq1) - 1])
 
+    def testGetOverlappingInfo(self):
+        expected = \
+            {'0_21': {'[[0, 20]]': {'codons': [[0, 6]],
+                                    'len': 21,
+                                    'overlaps_with': []}}}
+
+        result = self.sequence1.get_overlapping_info(self.orfs,
+                                                     self.sequence1.regions,
+                                                     self.sequence1.all_coords)
+
+        self.assertEqual(expected, result)
+
+
 class TestSequence2(unittest.TestCase):
     """
     Sequence: ATGAATAAACCCGTATGA
@@ -883,7 +896,7 @@ class TestSequence2(unittest.TestCase):
         self.maxDiff = MAX_DIFF
         random.seed(4001)
 
-        orfs = {'+0': [{'coords': [[0, 21]],
+        self.orfs = {'+0': [{'coords': [[0, 21]],
                         'omega_classes': 3, 'omega_shape': 1.5,
                         'omega_values': [0.1708353283825978, 0.4810288100937172, 1.1481358615121404],
                         'dn_values': [0.13695378264465718, 0.4767518562354524,
@@ -901,8 +914,8 @@ class TestSequence2(unittest.TestCase):
 
         s2 = 'ATGAATAAACCCGTATGA'
         pi2 = Sequence.get_frequency_rates(s2)
-        self.sequence2 = Sequence(s2, orfs, KAPPA, GLOBAL_RATE, pi2, CAT_VALUES)
-        self.circular_sequence2 = Sequence(s2, orfs, KAPPA, GLOBAL_RATE, pi2, CAT_VALUES, circular=True)
+        self.sequence2 = Sequence(s2, self.orfs, KAPPA, GLOBAL_RATE, pi2, CAT_VALUES)
+        self.circular_sequence2 = Sequence(s2, self.orfs, KAPPA, GLOBAL_RATE, pi2, CAT_VALUES, circular=True)
         plus_orf = {'coords': [[0, 21]],
                         'omega_classes': 3, 'omega_shape': 1.5,
                         'omega_values': [0.1708353283825978, 0.4810288100937172, 1.1481358615121404],
@@ -1971,6 +1984,25 @@ class TestSequence2(unittest.TestCase):
         result = self.circular_sequence2.get_left_nt(0)
         self.assertEqual(result.state, seq2[len(seq2) - 1])
 
+    def testGetOverlappingInfo(self):
+        expected = \
+            {'0_21': {'[[0, 2], [15, 17]]': {'overlaps_with': [],
+                                             'len': 6,
+                                             'codons': [[0, 0], [5, 5]]},
+                      '[[3, 14]]': {'overlaps_with': ['3_15'],
+                                    'len': 12,
+                                    'codons': [[1, 4]]}},
+                      '3_15': {'[[3, 14]]': {'overlaps_with': ['0_21'],
+                                             'len': 12,
+                                             'codons': [[0, 3]]}}}
+
+        result = self.sequence2.get_overlapping_info(self.orfs,
+                                                    self.sequence2.regions,
+                                                    self.sequence2.all_coords)
+
+        self.assertEqual(expected, result)
+
+
 class TestSequence3(unittest.TestCase):
     """
     Sequence: ATGACGTGGTGA
@@ -1985,7 +2017,7 @@ class TestSequence3(unittest.TestCase):
         random.seed(555)
 
         s3 = 'ATGACGTGGTGA'
-        sorted_orfs = {'+0': [{'coords': [[0, 12]],
+        self.sorted_orfs = {'+0': [{'coords': [[0, 12]],
                                'omega_classes': 3, 'omega_shape': 1.5,
                                'omega_values': [0.1708353283825978, 0.4810288100937172, 1.1481358615121404],
                                'dn_values': [0.42584203488769556, 1.0711311227395655, 1.7848172815920647,
@@ -1994,8 +2026,8 @@ class TestSequence3(unittest.TestCase):
                                'orf_map': np.array([1])}],
                         '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
         pi3 = Sequence.get_frequency_rates(s3)
-        self.sequence3 = Sequence(s3, sorted_orfs, KAPPA, GLOBAL_RATE, pi3, CAT_VALUES)
-        self.circular_sequence3 = Sequence(s3, sorted_orfs, KAPPA, GLOBAL_RATE, pi3, CAT_VALUES, circular=True)
+        self.sequence3 = Sequence(s3, self.sorted_orfs, KAPPA, GLOBAL_RATE, pi3, CAT_VALUES)
+        self.circular_sequence3 = Sequence(s3, self.sorted_orfs, KAPPA, GLOBAL_RATE, pi3, CAT_VALUES, circular=True)
         self.seq3_codons = self.sequence3.find_codons('+0', {'coords': [[0, 12]],
                                                              'omega_classes': 3, 'omega_shape': 1.5,
                                                              'omega_values': [0.1708353283825978, 0.4810288100937172, 1.1481358615121404],
@@ -2765,6 +2797,19 @@ class TestSequence3(unittest.TestCase):
         result = self.circular_sequence3.get_left_nt(0)
         self.assertEqual(result.state, seq3[len(seq3) - 1])
 
+    def testGetOverlappingInfo(self):
+        expected = \
+            {'0_12': {'[[0, 11]]': {'overlaps_with': [],
+                                    'len': 12,
+                                    'codons': [[0, 3]]}}}
+
+        result = self.sequence3.get_overlapping_info(self.sorted_orfs,
+                                                     self.sequence3.regions,
+                                                     self.sequence3.all_coords)
+
+        self.assertEqual(expected, result)
+
+
 class TestSequence4(unittest.TestCase):
     """
     Sequence: ATGATGCCCTAA
@@ -2779,7 +2824,7 @@ class TestSequence4(unittest.TestCase):
         random.seed(5001)
 
         s4 = 'ATGATGCCCTAA'
-        sorted_orfs = {'+0': [{'coords': [[0, 12]],
+        self.sorted_orfs = {'+0': [{'coords': [[0, 12]],
                                'omega_classes': 3, 'omega_shape': 1.5, 
                                'omega_values': [0.1708353283825978, 0.4810288100937172, 1.1481358615121404],
                                'dn_values': [0.3329677267246186, 1.0887942245237032, 2.8982380487141928],
@@ -2788,9 +2833,9 @@ class TestSequence4(unittest.TestCase):
                        '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
         pi4 = Sequence.get_frequency_rates(s4)
         random.seed(4000)
-        self.sequence4 = Sequence(s4, sorted_orfs, KAPPA, GLOBAL_RATE, pi4, CAT_VALUES)
-        self.circular_sequence4 = Sequence(s4, sorted_orfs, KAPPA, GLOBAL_RATE, pi4, CAT_VALUES, circular=True)
-        self.plus_0_orf = sorted_orfs['+0'][0]
+        self.sequence4 = Sequence(s4, self.sorted_orfs, KAPPA, GLOBAL_RATE, pi4, CAT_VALUES)
+        self.circular_sequence4 = Sequence(s4, self.sorted_orfs, KAPPA, GLOBAL_RATE, pi4, CAT_VALUES, circular=True)
+        self.plus_0_orf = self.sorted_orfs['+0'][0]
         self.seq4_codons = self.sequence4.find_codons('+0', self.plus_0_orf)
 
     def testReverseComplement(self):
@@ -3523,6 +3568,20 @@ class TestSequence4(unittest.TestCase):
         result = self.circular_sequence4.get_left_nt(0)
         self.assertEqual(result.state, seq4[len(seq4) - 1])
 
+    def testGetOverlappingInfo(self):
+        expected = \
+            {'0_12': {'[[0, 11]]': {'overlaps_with': [],
+                                    'len': 12,
+                                    'codons': [[0, 3]]}}}
+
+        result = self.sequence4.get_overlapping_info(self.sorted_orfs,
+                                                     self.sequence4.regions,
+                                                     self.sequence4.all_coords)
+
+        self.assertEqual(expected, result)
+        # print(result)
+
+
 class TestSequence5(unittest.TestCase):
     """
     Sequence: ATGAATGCCTGACTAA
@@ -3538,7 +3597,7 @@ class TestSequence5(unittest.TestCase):
         random.seed(9991)
 
         s5 = 'ATGAATGCCTGACTAA'
-        sorted_orfs = {'+0': [{'coords': [[0, 12]],
+        self.sorted_orfs = {'+0': [{'coords': [[0, 12]],
                                'omega_classes': 3, 'omega_shape': 1.5,
                                'omega_values': [0.1708353283825978, 0.4810288100937172, 1.1481358615121404],
                                'dn_values': [0.13695378264465718, 0.4767518562354524,
@@ -3556,10 +3615,10 @@ class TestSequence5(unittest.TestCase):
                         '+2': [], '-0': [], '-1': [], '-2': []}
 
         pi5 = Sequence.get_frequency_rates(s5)
-        self.sequence5 = Sequence(s5, sorted_orfs, KAPPA, GLOBAL_RATE, pi5, CAT_VALUES)
-        self.circular_sequence5 = Sequence(s5, sorted_orfs, KAPPA, GLOBAL_RATE, pi5, CAT_VALUES, circular=True)
-        self.plus_0_orf = sorted_orfs['+0'][0]
-        self.plus_1_orf = sorted_orfs['+1'][0]
+        self.sequence5 = Sequence(s5, self.sorted_orfs, KAPPA, GLOBAL_RATE, pi5, CAT_VALUES)
+        self.circular_sequence5 = Sequence(s5, self.sorted_orfs, KAPPA, GLOBAL_RATE, pi5, CAT_VALUES, circular=True)
+        self.plus_0_orf = self.sorted_orfs['+0'][0]
+        self.plus_1_orf = self.sorted_orfs['+1'][0]
         self.plus_0_codons = self.sequence5.find_codons('+0', self.plus_0_orf)
         self.plus_1_codons = self.sequence5.find_codons('+1', self.plus_1_orf)
 
@@ -4792,6 +4851,28 @@ class TestSequence5(unittest.TestCase):
         result = self.circular_sequence5.get_left_nt(0)
         self.assertEqual(result.state, seq5[len(seq5) - 1])
 
+    def testGetOverlappingInfo(self):
+        expected = \
+            {'0_12': {'[[0, 3]]': {'overlaps_with': [],
+                                   'len': 4,
+                                   'codons': [[0, 1]]},
+                      '[[4, 11]]': {'overlaps_with': ['4_16'],
+                                    'len': 8,
+                                    'codons': [[2, 3]]}},
+             '4_16': {'[[4, 11]]': {'overlaps_with': ['0_12'],
+                                    'len': 8,
+                                    'codons': [[0, 2]]},
+                      '[[12, 15]]': {'overlaps_with': [],
+                                     'len': 4,
+                                     'codons': [[3, 3]]}}}
+
+        result = self.sequence5.get_overlapping_info(self.sorted_orfs,
+                                                     self.sequence5.regions,
+                                                     self.sequence5.all_coords)
+
+        self.assertEqual(expected, result)
+
+
 class TestSequence6(unittest.TestCase):
     """
     Sequence: ATGATGGCCCTAA
@@ -4806,7 +4887,7 @@ class TestSequence6(unittest.TestCase):
         random.seed(4000)
 
         s6 = 'ATGATGGCCCTAA'
-        sorted_orfs = {'+0': [{'coords': [(0, 5), (6, 13)],
+        self.sorted_orfs = {'+0': [{'coords': [(0, 5), (6, 13)],
                                'omega_classes': 3, 'omega_shape': 1.5,
                                'omega_values': [0.1708353283825978, 0.4810288100937172, 1.1481358615121404],
                                'dn_values': [0.3329677267246186,
@@ -4816,9 +4897,9 @@ class TestSequence6(unittest.TestCase):
                                'orf_map': np.array([1])}], 
                        '+1': [], '+2': [], '-0': [], '-1': [], '-2': []}
         pi6 = Sequence.get_frequency_rates(s6)
-        self.sequence6 = Sequence(s6, sorted_orfs, KAPPA, GLOBAL_RATE, pi6, CAT_VALUES)
-        self.circular_sequence6 = Sequence(s6, sorted_orfs, KAPPA, GLOBAL_RATE, pi6, CAT_VALUES, circular=True)
-        self.plus_0_orf = sorted_orfs['+0'][0]
+        self.sequence6 = Sequence(s6, self.sorted_orfs, KAPPA, GLOBAL_RATE, pi6, CAT_VALUES)
+        self.circular_sequence6 = Sequence(s6, self.sorted_orfs, KAPPA, GLOBAL_RATE, pi6, CAT_VALUES, circular=True)
+        self.plus_0_orf = self.sorted_orfs['+0'][0]
         self.seq6_codons = self.sequence6.find_codons('+0', self.plus_0_orf)
 
     def testReverseComplement(self):
@@ -5771,6 +5852,18 @@ class TestSequence6(unittest.TestCase):
             self.assertEqual(result.state, seq6[pos - 1])
         result = self.circular_sequence6.get_left_nt(0)
         self.assertEqual(result.state, seq6[len(seq6) - 1])
+
+    def testGetOverlappingInfo(self):
+        expected = \
+            {'0_5_6_13': {'[[0, 4], [6, 12]]': {'overlaps_with': [],
+                                                'len': 12,
+                                                'codons': [[0, 1], [2, 4]]}}}
+
+        result = self.sequence6.get_overlapping_info(self.sorted_orfs,
+                                                     self.sequence6.regions,
+                                                     self.sequence6.all_coords)
+
+        self.assertEqual(expected, result)
 
 
 if __name__ == '__main__':

@@ -3,9 +3,10 @@
 import random
 import copy
 import sys
-
+import re
 import pprint
 from tempfile import tempdir
+from math import ceil, floor
 import numpy as np
 import sys
 
@@ -445,8 +446,7 @@ class Sequence:
                         branch[omega_keys].append(nt)
                     
                     else:  # Create the omega layer when non existent
-                        branch[omega_keys] = [nt]
-                                    
+                        branch[omega_keys] = [nt]                   
 
     @staticmethod
     def is_transv(from_nt, to_nt):
@@ -517,6 +517,86 @@ class Sequence:
                         meta2 = {'nts_in_subs': nts_in_subs}
                         print(f'>>>>>>>>>>>> meta2: from {key2}', meta2)
                         sys.exit(1)
+
+    def find_overlaps(self, all_coords, regions, self_orf_coords):
+        """
+        Helper function for get_overlapping_info.
+        :param: all_coords: list of lists of ints, Start and end positions
+        of reading frames in seq to iterate over and check for overlap
+        :param: regions: list of lists of ints, Start and end positions 
+        of the region in query, which has to checked if it is overlapping 
+        with any of the other orfs
+        :param: self_orf_coords, list of lists of ints, coordinates of orf
+        to which the "regions" belong to.
+        :return: Overlapping regions and ORFs involved 
+        """
+        overlaps, codons = [], []
+        
+        # Iterate over all available orf coords
+        for coords_list in all_coords:
+            coords_str = re.findall(r'\d+', str(coords_list))
+            ext_left = min(map(int, coords_str))
+            
+            # Iterate over single set of coords
+            # Single orf or one single part of spliced orf
+            for coords in coords_list:
+
+                # Iterate over region coords and check for overlap
+                for region in regions:
+                    orf_left, orf_right = coords
+                    region_left, region_right = region
+                    is_overlap = bool(set(range(orf_left, orf_right))
+                                    & set(range(region_left, region_right)))
+                    if is_overlap:
+
+                        # If not self orf, get overlap info, 
+                        # Else get codon info
+                        if coords_list != self_orf_coords:
+                            overlap = '_'.join(coords_str)
+                            if overlap not in overlaps:
+                                overlaps.append(overlap)
+                        else:
+                            codons.append(
+                                [ceil((region_left - ext_left) / 3),
+                                 floor((region_right - ext_left) / 3)]
+                            )                           
+
+        return overlaps, codons
+
+    def get_overlapping_info(self, orfs, regions, all_coords):
+        """
+        Search for overlapping regions between ORF coordinates
+        :param: orfs: dict, dictionary containing information about
+        orf locations, dn_values, ds_values, and orf_maps
+        :param: regions: dict, co-ordinates and lengths of regions keyed
+        by orf map tuples.
+        :param: all_coords: list, list of lists from all 'coords' keys in orfs
+        :return: data: dict, Overlapping regions and ORFs involved 
+        """
+        data={}
+        
+        for strand in orfs.keys():
+            orf_list = orfs[strand]
+
+            for orf_dict in orf_list:
+                coords_list, mapping = orf_dict['coords'], orf_dict['orf_map']
+                orf_coords = '_'.join(re.findall(r'\d+', str(coords_list)))
+                data[orf_coords] = {}
+
+                for region_map in regions.keys():
+                    is_mapped = (np.array(mapping) * np.array(region_map)).any()
+                    if is_mapped:
+                        region_coords = regions[region_map]['coords']
+                        overlaps, codons = self.find_overlaps(all_coords,
+                                                               region_coords,
+                                                               coords_list)
+                        data[orf_coords][str(region_coords)] = {
+                            'overlaps_with': overlaps,
+                            'len': regions[region_map]['len'],
+                            'codons': codons
+                        }
+
+        return data
 
 
 class Nucleotide:
