@@ -168,7 +168,7 @@ class Sequence:
         # pp.pprint(self.event_tree)
         # pp.pprint(self.total_omegas)
         # sys.exit()
-        
+
     def get_codons(self):
         return self.__codons
 
@@ -248,6 +248,14 @@ class Sequence:
     def get_sequence(self):
         return self.nt_sequence
 
+    def get_instant_rate(self):
+        """
+        Calculate the total mutation rate of sequence
+        :return: the sum of the mutation rates
+        """
+        total_rate = sum([nt.mutation_rate for nt in iter(self.nt_sequence)])
+        return total_rate
+    
     def get_right_nt(self, pos_in_seq):
         """
         Returns the next Nucleotide in the sequence
@@ -403,7 +411,8 @@ class Sequence:
         nt.set_rates(sub_rates)
         nt.set_categories(my_cat_keys)
         nt.set_omega(selected_omegas)
-        nt.get_mutation_rate()  # Sum of mutation rates for all nucleotides is used to calculate rate at which mutations occurs on simulation.py
+        # Overall mutation rate of all nucleotides is used for instant_rate simulation.py
+        nt.set_mutation_rate()
 
     @staticmethod
     def is_start_stop_codon(nt, to_nt):
@@ -594,10 +603,7 @@ class Nucleotide:
     def add_codon(self, codon):
         self.codons.append(codon)
 
-    def set_mutation_rate(self, mutation_rate):
-        self.mutation_rate = mutation_rate
-
-    def get_mutation_rate(self):
+    def set_mutation_rate(self):
         total_rate = 0
         for mutation_rate in self.rates.values():
             if mutation_rate:

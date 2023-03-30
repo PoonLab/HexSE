@@ -141,21 +141,12 @@ class SimulateOnBranch:
 
         return key
 
-    def sum_rates(self):
-        """
-        Calculate the total mutation rate of sequence
-        :return: the sum of the mutation rates
-        """
-        total_rate = sum([nt.mutation_rate for nt in iter(self.sequence.get_sequence())])
-        return total_rate
-
-    def mutate_on_branch(self):
+    def mutate_on_branch(self, instant_rate):
         """
         Simulate molecular evolution in sequence given a branch length
         :return: the mutated sequence
         """
         times_sum = 0
-        instant_rate = self.sum_rates()
 
         while True:
             # Draw a time at which mutation occurs according to mutation rates
@@ -263,7 +254,7 @@ class SimulateOnTree:
         root = self.phylo_tree.root
         clades = self.phylo_tree.find_clades(order='level')
         number_of_clades = sum(1 for _ in clades)
-
+        
         with tqdm(total=number_of_clades - 1, unit='clades') as pbar:
             pbar.set_description("Traversing tree")
             
@@ -276,11 +267,11 @@ class SimulateOnTree:
 
                 # Create a deep copy of the parent sequence
                 parent_sequence = copy.deepcopy(parent.sequence)
+                instant_rate = parent_sequence.get_instant_rate()
 
                 # Mutate sequence and store it on clade
-                # print("Simulating on Branch", clade)
                 simulation = SimulateOnBranch(parent_sequence, clade.branch_length)
-                clade.sequence = simulation.mutate_on_branch()
+                clade.sequence = simulation.mutate_on_branch(instant_rate)
             
                 pbar.update(1)
 
