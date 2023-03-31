@@ -231,10 +231,11 @@ class SimulateOnTree:
     """
     Simulate evolution within a sequence throughout an entire phylogeny
     """
-    def __init__(self, root_sequence, phylo_tree, outfile=None):
+    def __init__(self, root_sequence, phylo_tree, outfile=None, max_events=1000):
         self.root_sequence = root_sequence  # Sequence object
         self.phylo_tree = phylo_tree  # Phylogenetic tree over which sequence will evolve
         self.outfile = outfile
+        self.max_events = max_events  # maximum number of mutations allowed per branch
 
     def get_parent_clade(self, child_clade):
         """
@@ -268,6 +269,13 @@ class SimulateOnTree:
                 # Create a deep copy of the parent sequence
                 parent_sequence = copy.deepcopy(parent.sequence)
                 instant_rate = parent_sequence.get_instant_rate()
+                
+                if (clade.branch_length * instant_rate) > self.max_events:
+                    print(f"Number of events is too high for branch {clade}")
+                    print(f"Instant rate: {instant_rate}")
+                    print(f"Branch length: {clade.branch_length}")
+                    print(f"Number of events: {clade.branch_length * instant_rate}")
+                    sys.exit()
 
                 # Mutate sequence and store it on clade
                 simulation = SimulateOnBranch(parent_sequence, clade.branch_length)
