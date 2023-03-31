@@ -113,6 +113,7 @@ class Sequence:
                             nt.codons.append(codon)  # FIXME: shouldn't Codon __init__ do this?
                         self.__codons.append(codon)
 
+
         """
         # Dict to find ORF combination. 
         Keys are combos where 1 represent presence and 0 absence of the ORF assigned in that position of the tuple. 
@@ -506,8 +507,10 @@ class Sequence:
 
         # Iterate over string by threes and create Codon objects
         codons = []
+        pos_in_orf = 0
         for i in range(3, len(cds)+1, 3):
-            codons.append(Codon(frame, orf, cds[(i-3):i]))
+            codons.append(Codon(frame, orf, cds[(i-3):i], pos_in_orf))
+            pos_in_orf += 1
 
         return codons
 
@@ -616,18 +619,20 @@ class Codon:
     Stores information about the frameshift, ORF, and pointers to 3 Nucleotide objects
     """
 
-    def __init__(self, frame, orf, nts_in_codon):
+    def __init__(self, frame, orf, nts_in_codon, pos_in_orf):
         """
         Create a Codon
         :param frame:  str, the reading frame (+0, +1, +2, -0, -1, -2)
         :param orf:  tuple, containing the reading frame and the coordinates of the orf
         :param nts_in_codon:  a list of pointers to the Nucleotides in the Codon
+        :paran pos_in_orf: int, position of the codon in the open reading frame
         """
         self.frame = frame
         self.orf = orf
         self.nts_in_codon = nts_in_codon  # list of Nucleotide objects in the Codon
         self.dn, self.ds = self.select_dn_ds()  # Asign non-syn mutation rate 
         self.omega = self.dn/self.ds
+        self.pos_in_orf = pos_in_orf
 
     def __repr__(self):
         return ''.join(str(nt) for nt in self.nts_in_codon)
