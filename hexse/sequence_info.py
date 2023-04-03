@@ -3,6 +3,7 @@
 import random
 import copy
 import sys
+import operator
 
 import pprint
 from tempfile import tempdir
@@ -50,13 +51,19 @@ CODON_DICT = {'TTT': 'F', 'TTC': 'F', 'TTA': 'L', 'TTG': 'L',
               'GGT': 'G', 'GGC': 'G', 'GGA': 'G', 'GGG': 'G',
               '---': '-', 'XXX': '?'}
 
+OPS = {
+        "+": operator.add,
+        "-": operator.sub,
+        "*": operator.mul
+    }
+
 
 class Sequence:
     """
     Store inputs and create sequence objects
     """
 
-    def __init__(self, str_sequence, orfs, kappa, global_rate, pi, cat_values, circular=False):
+    def __init__(self, str_sequence, orfs, kappa, global_rate, pi, cat_values, op = "*", circular=False):
         """
         Creates a list of nucleotides, locates open reading frames, and creates a list of codons.
 
@@ -94,6 +101,16 @@ class Sequence:
         self.__codons = []  # Store references to all codons
         self.total_omegas = {}  # Omega combos and their values. Populated when set_substitution_rates for nucleotides
         self.number_orfs = []  # List of "None"s with lenght equal to number of ORFs in sequence 
+
+        # Define how to combine selection effects
+        self.op_key = op
+        if self.op_key == "*":  # Combine effects mutiplicatively 
+            self.init_selection_pressure = 1
+            self.op = OPS[self.op_key]
+        
+        else:  # Combine effects additively
+            self.init_selection_pressure = 0
+            self.op = OPS[self.op_key] # Define that operator will be multiply by  # Define that operator is add to
 
         pp = pprint.PrettyPrinter(indent=2)
         # Create Nucleotides
@@ -342,6 +359,42 @@ class Sequence:
            
         return event_tree
 
+    def get_nt_selection(self, nt, to_nt, selection_pressure):
+        """
+        Combine the effects of synonymous or non-synonymous mutations on a nucleotide given the codons it belongs to
+        :param nt: Nucleotide object
+        :param op: str, operator to be used to combine effects of selection in overlapping genes (multiplicatively, additive, other??)
+        :return selection_pressure: int, combined effects of dN and dS over acting over nucleotide
+        :return selection_values: list, values of selection for the nucleotide on each codon it is part of   
+        """
+
+        selection_values = list(self.number_orfs)  # Initialize chosen omegas as list of "None"s with len equal to number of ORFs
+         
+        # If nucleotide is part of at least one ORF, select omegas if mutation is non-syn or use "None" if it's syn
+        if nt.codons:
+        # For each codon, find the combination of omegas (dN/dS) and dS that affect it based on coding context
+        # E.g.: [2, 3, None, None, None] represent a nucleotide in two reading frames where both mutations are non-syn. 
+        # Note: "None" means that nt is not part of that ORF
+
+            for codon in nt.codons:
+
+                codon_orf = codon.orf['orf_map']  # tuple of 1s and 0s Eg., (1, 0, 0)
+                orf_index = np.where(codon_orf==1)[0][0]  # The position with a 1 indicates the ORF for the codon
+                pos_in_codon = codon.nt_in_pos(nt)
+                
+                # If mutation is non-synonymous, apply codon omega
+                if codon.is_nonsyn(pos_in_codon, to_nt):
+                    selection_values[orf_index] = codon.omega
+                    selection_pressure = self.op(selection_pressure, codon.omega)
+                
+                # If mutation is synonymous, apply codon ds
+                else:
+                    self.op(selection_pressure, codon.ds)
+                    selection_values[orf_index] = codon.ds
+
+        return selection_values, selection_pressure
+
+
     def set_substitution_rates(self, nt):
         """
         Calculates substitution rates of a nucleotide
@@ -353,6 +406,8 @@ class Sequence:
         sub_rates = {}
         selected_omegas = {}
         my_cat_keys = {}
+
+        # Define starting selection based on how to combine selection effects
 
         for to_nt in NUCLEOTIDES:
              
@@ -369,30 +424,9 @@ class Sequence:
                     if self.is_transv(current_nt, to_nt):
                         sub_rates[to_nt] *= self.kappa
 
-                    selection_values = list(self.number_orfs)  # Initialize chosen omegas as list of "None"s with len equal to number of ORFs
-                    selection_pressure = 1
-                    # If nucleotide is part of at least one ORF, select omegas if mutation is non-syn or use "None" if it's syn
-                    if nt.codons:
-                    # For each codon, find the combination of omegas (dN/dS) and dS that affect it based on coding context
-                    # E.g.: [2, 3, None, None, None] represent a nucleotide in two reading frames where both mutations are non-syn. 
-                    # Note: "None" means that nt is not part of that ORF
-
-                        for codon in nt.codons:
-
-                            codon_orf = codon.orf['orf_map']  # tuple of 1s and 0s Eg., (1, 0, 0)
-                            orf_index = np.where(codon_orf==1)[0][0]  # The position with a 1 indicates the ORF for the codon
-                            pos_in_codon = codon.nt_in_pos(nt)
-                            
-                            # If mutation is non-synonymous, apply codon omega
-                            if codon.is_nonsyn(pos_in_codon, to_nt):
-                                selection_values[orf_index] = codon.omega
-                                selection_pressure *= codon.omega                  
-                            
-                            # If mutation is synonymous, apply codon ds
-                            else:
-                                selection_pressure *= codon.ds
-                                selection_values[orf_index] = codon.ds
-
+                    selection_pressure = copy.copy(self.init_selection_pressure)
+                    selection_values, selection_pressure = self.get_nt_selection(nt, to_nt, selection_pressure)
+                    
                     # Store omega combination and calculated value in total_omega dict
                     if tuple(selection_values) not in self.total_omegas.keys():
                         self.total_omegas[tuple(selection_values)] = {'value' : selection_pressure}

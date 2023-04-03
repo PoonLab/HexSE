@@ -245,7 +245,7 @@ class SimulateOnTree:
         node_path = self.phylo_tree.get_path(child_clade)
         return node_path[-2] if len(node_path) > 1 else self.phylo_tree.root
 
-    def traverse_tree(self):
+    def traverse_tree(self, th):
         """
         Mutate a sequence along a phylogeny by traversing it in level-order
         :return phylo_tree: A Phylo tree with Clade objects annotated with sequences.
@@ -270,7 +270,7 @@ class SimulateOnTree:
                 parent_sequence = copy.deepcopy(parent.sequence)
                 instant_rate = parent_sequence.get_instant_rate()
                 
-                if (clade.branch_length * instant_rate) > self.max_events:
+                if th and(clade.branch_length * instant_rate) > self.max_events:
                     print(f"Number of events is too high for branch {clade}")
                     print(f"Instant rate: {instant_rate}")
                     print(f"Branch length: {clade.branch_length}")
@@ -285,11 +285,11 @@ class SimulateOnTree:
 
         return self.phylo_tree
 
-    def get_alignment(self, outfile=None):
+    def get_alignment(self, outfile=None, th=None):
         """
         Iterates over tips (terminal nodes) of tree and returns sequence
         """
-        final_tree = self.traverse_tree()
+        final_tree = self.traverse_tree(th)
 
         if outfile is not None:
             with open(outfile, 'w+') as out_handle:
