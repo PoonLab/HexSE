@@ -66,7 +66,6 @@ class Sequence:
     def __init__(self, str_sequence, orfs, kappa, global_rate, pi, cat_values, op = "*", circular=False):
         """
         Creates a list of nucleotides, locates open reading frames, and creates a list of codons.
-
         :param str_sequence:  str, nucleotide sequence as a string object
         :param orfs:  dict, A dictionary of open reading frames (ORFs) in the sequence, sorted by reading frame where:
                         - the keys are the reading frames (+0, +1, +2, -0, -1, -2)
@@ -279,9 +278,11 @@ class Sequence:
         Returns the next Nucleotide in the sequence
         :param pos_in_seq: the position of the Nucleotide in the sequence
         """
-        if self.is_circular:
-            if pos_in_seq == len(self.nt_sequence) - 1:
+        if pos_in_seq == len(self.nt_sequence) - 1:
+            if self.is_circular:
                 return self.nt_sequence[0]
+            else:
+                return None
         else:
             return self.nt_sequence[pos_in_seq + 1]
 
