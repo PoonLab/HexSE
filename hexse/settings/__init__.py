@@ -281,4 +281,3 @@ class Settings:
             nt_categories_dict[cat] = item
 
         return nt_categories_dict
-

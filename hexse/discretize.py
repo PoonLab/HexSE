@@ -2,7 +2,7 @@ import scipy
 import numpy as np
 import scipy.stats as ss
 
-def discretize(alpha, ncat, dist, scale):
+def discretize(alpha, ncat, dist, scale=None):
     """
     Divide a distribution into a number of intervals with equal probability and get the mid point of those intervals
     From https://gist.github.com/kgori/95f604131ce92ec15f4338635a86dfb9
@@ -22,12 +22,15 @@ def discretize(alpha, ncat, dist, scale):
     if dist == ss.gamma:
         # In gamma, mean = shape*scale. 
         # If neutral evolution, omega = 1; therefore scale should be 1/shape
-        if scale is None:  
+        if scale is None:
             scale=1/alpha
+        # Raise an exception when scale is a non positive number
+        if scale <= 0:
+            raise ValueError("Scale cannot be zero or negative")
         dist = dist(alpha, scale=scale)
 
     elif dist == ss.lognorm:
-        if scale is None:  
+        if scale is None:
             scale=1  # default to 1
         dist = dist(s=alpha, scale=scale)
 
