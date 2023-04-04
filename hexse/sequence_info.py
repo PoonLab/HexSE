@@ -103,9 +103,9 @@ class Sequence:
 
         # Define how to combine selection effects
         self.op_key = op
-        if self.op_key == "*":  # Combine effects mutiplicatively 
+        if not self.op_key or self.op_key == "*":  # By default, combine effects mutiplicatively 
             self.init_selection_pressure = 1
-            self.op = OPS[self.op_key]
+            self.op = OPS["*"]
         
         else:  # Combine effects additively
             self.init_selection_pressure = 0
