@@ -44,12 +44,22 @@ def get_args(parser):
     )
 
     parser.add_argument(
-        '--logfile', default=None, help='Path to the log file; defaults to stdout.'
+        '--logfile', help='Path to the log file; defaults to stdout.'
     )
 
     parser.add_argument(
         '--ci', action='store_true', help='optional, return codon info.'
     )
+
+    parser.add_argument(
+        '--th', default=None,
+        help = "tresshold int, specicy threshold for maximum number of mutations per branch before killing process"
+    ) 
+
+    parser.add_argument(
+        '--op', default=None,
+        help = "string, operator to be used when combining selection effects"
+    ) 
 
     return parser.parse_args()
 
@@ -371,7 +381,7 @@ def main():
 
     # Make Sequence object
     print("Creating root sequence")
-    root_sequence = Sequence(s, orfs, kappa, global_rate, pi, mu_values)
+    root_sequence = Sequence(s, orfs, kappa, global_rate, pi, mu_values, args.op)
     
     # For debugging purposes: return codon information
     if args.ci:
@@ -389,7 +399,7 @@ def main():
 
     # Run simulation
     simulation = SimulateOnTree(root_sequence, phylo_tree, args.outfile)
-    simulation.get_alignment(args.outfile)
+    simulation.get_alignment(args.outfile, args.th)
 
     end_time = datetime.now()
     logging.info(
