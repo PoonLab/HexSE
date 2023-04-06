@@ -16,7 +16,7 @@ from datetime import datetime
 from .sequence_info import NUCLEOTIDES
 from .sequence_info import AMBIGUOUS_NUCLEOTIDES
 from .sequence_info import Sequence
-from .simulation import SimulateOnTree
+from .simulation import SimulateOnTree, TooManyEventsError
 from .settings import Settings
 from .discretize import discretize
 
@@ -402,7 +402,13 @@ def main():
 
     # Run simulation
     simulation = SimulateOnTree(root_sequence, phylo_tree, args.outfile)
-    simulation.get_alignment(args.outfile, args.th)
+    try:
+        th = float(args.th) if args.th else None
+        simulation.get_alignment(args.outfile, th)
+    except TooManyEventsError as error:
+        logging.fatal(error)
+        print(error)
+        sys.exit(1)
 
     end_time = datetime.now()
     logging.info(
