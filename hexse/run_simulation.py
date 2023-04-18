@@ -16,7 +16,7 @@ from datetime import datetime
 from .sequence_info import NUCLEOTIDES
 from .sequence_info import AMBIGUOUS_NUCLEOTIDES
 from .sequence_info import Sequence
-from .simulation import SimulateOnTree
+from .simulation import SimulateOnTree, TooManyEventsError
 from .settings import Settings
 from .discretize import discretize
 
@@ -44,7 +44,7 @@ def get_args(parser):
     )
 
     parser.add_argument(
-        '--logfile', default=None, help='Path to the log file; defaults to stdout.'
+        '--logfile', help='Path to the log file; defaults to stdout.'
     )
 
     parser.add_argument(
@@ -54,6 +54,16 @@ def get_args(parser):
     parser.add_argument(
         '--ovi', action='store_true', help='optional, return overlap info.'
     )
+
+    parser.add_argument(
+        '--th', default=None,
+        help = "tresshold int, specicy threshold for maximum number of mutations per branch before killing process"
+    ) 
+
+    parser.add_argument(
+        '--op', default=None,
+        help = "string, operator to be used when combining selection effects"
+    ) 
 
     return parser.parse_args()
 
@@ -381,7 +391,7 @@ def main():
 
     # Make Sequence object
     print("Creating root sequence")
-    root_sequence = Sequence(s, orfs, kappa, global_rate, pi, mu_values)
+    root_sequence = Sequence(s, orfs, kappa, global_rate, pi, mu_values, args.op)
     
     # For debugging purposes: return codon information
     if args.ci:
@@ -408,7 +418,13 @@ def main():
 
     # Run simulation
     simulation = SimulateOnTree(root_sequence, phylo_tree, args.outfile)
-    simulation.get_alignment(args.outfile)
+    try:
+        th = float(args.th) if args.th else None
+        simulation.get_alignment(args.outfile, th)
+    except TooManyEventsError as error:
+        logging.fatal(error)
+        print(error)
+        sys.exit(1)
 
     end_time = datetime.now()
     logging.info(
