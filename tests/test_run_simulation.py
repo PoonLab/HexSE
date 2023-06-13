@@ -332,7 +332,7 @@ class TestDiscretize(unittest.TestCase):
         expected = np.array([0.09199853806558903, 0.27043066909631136, 0.5158061369385518, 1.1217646558655263])
         result = discretize(alpha, ncat, dist=ss.gamma, scale=0.4)
         for exp_val, res_val in zip(expected, result):
-            self.assertAlmostEquals(exp_val, res_val)
+            self.assertAlmostEqual(exp_val, res_val)
 
     def test_discertize_gamma_str(self):
         alpha = 1.25
@@ -340,7 +340,7 @@ class TestDiscretize(unittest.TestCase):
         expected = np.array([0.09199853806558903, 0.27043066909631136, 0.5158061369385518, 1.1217646558655263])
         result = discretize(alpha, ncat, dist='ss.gamma', scale=0.4)
         for exp_val, res_val in zip(expected, result):
-            self.assertAlmostEquals(exp_val, res_val)
+            self.assertAlmostEqual(exp_val, res_val)
 
     def test_discretize_lognorm(self):
         alpha = 1.25
@@ -348,7 +348,7 @@ class TestDiscretize(unittest.TestCase):
         expected = np.array([0.18399707, 0.53208673, 1.19849136, 4.86332671])
         result = discretize(alpha, ncat, dist=ss.lognorm, scale=0.7757874)
         for exp_val, res_val in zip(expected, result):
-            self.assertAlmostEquals(exp_val, res_val)
+            self.assertAlmostEqual(exp_val, res_val)
 
     def test_discretize_lognorm_str(self):
         alpha = 1.25
@@ -356,7 +356,7 @@ class TestDiscretize(unittest.TestCase):
         expected = np.array([0.18399707, 0.53208673, 1.19849136, 4.86332671])
         result = discretize(alpha, ncat, dist='ss.lognorm', scale=0.7757874)
         for exp_val, res_val in zip(expected, result):
-            self.assertAlmostEquals(exp_val, res_val)
+            self.assertAlmostEqual(exp_val, res_val)
 
     def test_discretize_scale_0(self):
         alpha = 1.25

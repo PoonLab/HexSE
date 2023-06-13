@@ -11,7 +11,7 @@ from tqdm import tqdm
 
 NUCLEOTIDES = ['A', 'C', 'G', 'T']
 
-def is_stop(to_nt, from_nt):
+def is_stop(to_nt, from_nt): # pragma: no cover
     """
     Check if a STOP codon is being introduced in the sequence
     """
@@ -247,6 +247,7 @@ class SimulateOnTree:
     def traverse_tree(self, th):
         """
         Mutate a sequence along a phylogeny by traversing it in level-order
+        :param th: int, threshold for maximum number of mutations per branch before killing process
         :return phylo_tree: A Phylo tree with Clade objects annotated with sequences.
         """
         # Assign root_seq to root Clade

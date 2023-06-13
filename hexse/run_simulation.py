@@ -52,6 +52,10 @@ def get_args(parser):
     )
 
     parser.add_argument(
+        '--ovi', action='store_true', help='optional, return overlap info.'
+    )
+
+    parser.add_argument(
         '--th', default=None,
         help = "tresshold int, specicy threshold for maximum number of mutations per branch before killing process"
     ) 
@@ -223,6 +227,7 @@ def count_internal_stop_codons(cds):
 
     return stop_count
 
+
 def find_ovrfs(orf_list):
     """
     Search for overlapping regions between ORF coordinates
@@ -253,22 +258,24 @@ def find_ovrfs(orf_list):
 
     return overlaps
 
-def omegas_in_orf(seq):
-        """
-        From sequence object, get omega rates in each codon per orf
-        :param: Sequence object.
-        :return: dict, keyed by orf coordinates. Values are lists with omegas in orf
-        """
-        codons = seq.get_codons()
-        orf_omegas = {}
-        for codon in codons:
-            orf = str(codon.orf['coords'])
-            if orf not in orf_omegas:
-                orf_omegas[orf] = [codon.omega]
-            else:
-                orf_omegas[orf].append(codon.omega)
 
-        return orf_omegas
+def omegas_in_orf(seq):
+    """
+    From sequence object, get omega rates in each codon per orf
+    :param: Sequence object.
+    :return: dict, keyed by orf coordinates. Values are lists with omegas in orf
+    """
+    codons = seq.get_codons()
+    orf_omegas = {}
+    for codon in codons:
+        orf = str(codon.orf['coords'])
+        if orf not in orf_omegas:
+            orf_omegas[orf] = [codon.omega]
+        else:
+            orf_omegas[orf].append(codon.omega)
+
+    return orf_omegas
+
 
 def main():
 
@@ -395,10 +402,19 @@ def main():
         with open(f"{args.outfile}.omegas", 'w+') as write_file:
             json.dump(omegas, write_file, indent=4)
 
+    regions = root_sequence.regions
+    if args.ovi:
+        all_coords = [orf['coords'] for strand in 
+                      orf_locations for orf in orf_locations[strand]]
+        overlap_info = root_sequence.get_overlapping_info(orfs, regions, all_coords)
+        print(f"Overlap info: {pprint.pformat(overlap_info)}")
+        with open(f"{args.outfile}.overlaps", 'w+') as write_file:
+            json.dump(overlap_info, write_file, indent=4)
+
     print(f"Regions info:")
-    pp.pprint(root_sequence.regions)
+    pp.pprint(regions)
     print("\n")
-    logging.info(f"\n\nREGIONS\n{pp.pformat(root_sequence.regions)}\n")
+    logging.info(f"\n\nREGIONS\n{pp.pformat(regions)}\n")
 
     # Run simulation
     simulation = SimulateOnTree(root_sequence, phylo_tree, args.outfile)
