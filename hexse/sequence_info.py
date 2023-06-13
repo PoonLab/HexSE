@@ -3,9 +3,9 @@
 import random
 import copy
 import sys
-
+import operator
+import re
 import pprint
-from tempfile import tempdir
 import numpy as np
 import sys
 
@@ -50,13 +50,19 @@ CODON_DICT = {'TTT': 'F', 'TTC': 'F', 'TTA': 'L', 'TTG': 'L',
               'GGT': 'G', 'GGC': 'G', 'GGA': 'G', 'GGG': 'G',
               '---': '-', 'XXX': '?'}
 
+OPS = {
+        "+": operator.add,
+        "-": operator.sub,
+        "*": operator.mul
+    }
+
 
 class Sequence:
     """
     Store inputs and create sequence objects
     """
 
-    def __init__(self, str_sequence, orfs, kappa, global_rate, pi, cat_values, circular=False):
+    def __init__(self, str_sequence, orfs, kappa, global_rate, pi, cat_values, op = "*", circular=False):
         """
         Creates a list of nucleotides, locates open reading frames, and creates a list of codons.
         :param str_sequence:  str, nucleotide sequence as a string object
@@ -94,6 +100,16 @@ class Sequence:
         self.total_omegas = {}  # Omega combos and their values. Populated when set_substitution_rates for nucleotides
         self.number_orfs = []  # List of "None"s with lenght equal to number of ORFs in sequence 
 
+        # Define how to combine selection effects
+        self.op_key = op
+        if not self.op_key or self.op_key == "*":  # By default, combine effects mutiplicatively 
+            self.init_selection_pressure = 1
+            self.op = OPS["*"]
+        
+        else:  # Combine effects additively
+            self.init_selection_pressure = 0
+            self.op = OPS[self.op_key] # Define that operator will be multiply by  # Define that operator is add to
+
         pp = pprint.PrettyPrinter(indent=2)
         # Create Nucleotides
         for pos_in_seq, nt in enumerate(str_sequence):
@@ -111,6 +127,7 @@ class Sequence:
                         for nt in codon.nts_in_codon:
                             nt.codons.append(codon)  # FIXME: shouldn't Codon __init__ do this?
                         self.__codons.append(codon)
+
 
         """
         # Dict to find ORF combination. 
@@ -167,7 +184,7 @@ class Sequence:
         # pp.pprint(self.event_tree)
         # pp.pprint(self.total_omegas)
         # sys.exit()
-        
+
     def get_codons(self):
         return self.__codons
 
@@ -246,6 +263,14 @@ class Sequence:
 
     def get_sequence(self):
         return self.nt_sequence
+
+    def get_instant_rate(self):
+        """
+        Calculate the total mutation rate of sequence
+        :return: the sum of the mutation rates
+        """
+        total_rate = sum([nt.mutation_rate for nt in iter(self.nt_sequence)])
+        return total_rate
 
     def get_right_nt(self, pos_in_seq):
         """
@@ -334,6 +359,42 @@ class Sequence:
            
         return event_tree
 
+    def get_nt_selection(self, nt, to_nt, selection_pressure):
+        """
+        Combine the effects of synonymous or non-synonymous mutations on a nucleotide given the codons it belongs to
+        :param nt: Nucleotide object
+        :param op: str, operator to be used to combine effects of selection in overlapping genes (multiplicatively, additive, other??)
+        :return selection_pressure: int, combined effects of dN and dS over acting over nucleotide
+        :return selection_values: list, values of selection for the nucleotide on each codon it is part of   
+        """
+
+        selection_values = list(self.number_orfs)  # Initialize chosen omegas as list of "None"s with len equal to number of ORFs
+         
+        # If nucleotide is part of at least one ORF, select omegas if mutation is non-syn or use "None" if it's syn
+        if nt.codons:
+        # For each codon, find the combination of omegas (dN/dS) and dS that affect it based on coding context
+        # E.g.: [2, 3, None, None, None] represent a nucleotide in two reading frames where both mutations are non-syn. 
+        # Note: "None" means that nt is not part of that ORF
+
+            for codon in nt.codons:
+
+                codon_orf = codon.orf['orf_map']  # tuple of 1s and 0s Eg., (1, 0, 0)
+                orf_index = np.where(codon_orf==1)[0][0]  # The position with a 1 indicates the ORF for the codon
+                pos_in_codon = codon.nt_in_pos(nt)
+                
+                # If mutation is non-synonymous, apply codon omega
+                if codon.is_nonsyn(pos_in_codon, to_nt):
+                    selection_values[orf_index] = codon.omega
+                    selection_pressure = self.op(selection_pressure, codon.omega)
+                
+                # If mutation is synonymous, apply codon ds
+                else:
+                    self.op(selection_pressure, codon.ds)
+                    selection_values[orf_index] = codon.ds
+
+        return selection_values, selection_pressure
+
+
     def set_substitution_rates(self, nt):
         """
         Calculates substitution rates of a nucleotide
@@ -345,6 +406,8 @@ class Sequence:
         sub_rates = {}
         selected_omegas = {}
         my_cat_keys = {}
+
+        # Define starting selection based on how to combine selection effects
 
         for to_nt in NUCLEOTIDES:
              
@@ -361,30 +424,9 @@ class Sequence:
                     if self.is_transv(current_nt, to_nt):
                         sub_rates[to_nt] *= self.kappa
 
-                    selection_values = list(self.number_orfs)  # Initialize chosen omegas as list of "None"s with len equal to number of ORFs
-                    selection_pressure = 1
-                    # If nucleotide is part of at least one ORF, select omegas if mutation is non-syn or use "None" if it's syn
-                    if nt.codons:
-                    # For each codon, find the combination of omegas (dN/dS) and dS that affect it based on coding context
-                    # E.g.: [2, 3, None, None, None] represent a nucleotide in two reading frames where both mutations are non-syn. 
-                    # Note: "None" means that nt is not part of that ORF
-
-                        for codon in nt.codons:
-
-                            codon_orf = codon.orf['orf_map']  # tuple of 1s and 0s Eg., (1, 0, 0)
-                            orf_index = np.where(codon_orf==1)[0][0]  # The position with a 1 indicates the ORF for the codon
-                            pos_in_codon = codon.nt_in_pos(nt)
-                            
-                            # If mutation is non-synonymous, apply codon omega
-                            if codon.is_nonsyn(pos_in_codon, to_nt):
-                                selection_values[orf_index] = codon.omega
-                                selection_pressure *= codon.omega                  
-                            
-                            # If mutation is synonymous, apply codon ds
-                            else:
-                                selection_pressure *= codon.ds
-                                selection_values[orf_index] = codon.ds
-
+                    selection_pressure = copy.copy(self.init_selection_pressure)
+                    selection_values, selection_pressure = self.get_nt_selection(nt, to_nt, selection_pressure)
+                    
                     # Store omega combination and calculated value in total_omega dict
                     if tuple(selection_values) not in self.total_omegas.keys():
                         self.total_omegas[tuple(selection_values)] = {'value' : selection_pressure}
@@ -404,7 +446,8 @@ class Sequence:
         nt.set_rates(sub_rates)
         nt.set_categories(my_cat_keys)
         nt.set_omega(selected_omegas)
-        nt.get_mutation_rate()  # Sum of mutation rates for all nucleotides is used to calculate rate at which mutations occurs on simulation.py
+        # Overall mutation rate of all nucleotides is used for instant_rate simulation.py
+        nt.set_mutation_rate()
 
     @staticmethod
     def is_start_stop_codon(nt, to_nt):
@@ -445,8 +488,7 @@ class Sequence:
                         branch[omega_keys].append(nt)
                     
                     else:  # Create the omega layer when non existent
-                        branch[omega_keys] = [nt]
-                                    
+                        branch[omega_keys] = [nt]                   
 
     @staticmethod
     def is_transv(from_nt, to_nt):
@@ -498,12 +540,14 @@ class Sequence:
 
         # Iterate over string by threes and create Codon objects
         codons = []
+        pos_in_orf = 0
         for i in range(3, len(cds)+1, 3):
-            codons.append(Codon(frame, orf, cds[(i-3):i]))
+            codons.append(Codon(frame, orf, cds[(i-3):i], pos_in_orf))
+            pos_in_orf += 1
 
         return codons
 
-    def check_event_tree(self):
+    def check_event_tree(self): # pragma: no cover
         """
         When debugging, useful to check if nucleotides are being properly stored on the Event Tree
         """
@@ -517,6 +561,116 @@ class Sequence:
                         meta2 = {'nts_in_subs': nts_in_subs}
                         print(f'>>>>>>>>>>>> meta2: from {key2}', meta2)
                         sys.exit(1)
+
+    def get_correct_codon(self, region_coord, orf_coords, left_flag=True):
+        """
+        Helper function for find_overlaps. Takes in a
+        region coordinate and the coordinates of an orf,
+        and returs a position of required codon.
+        :param: region_coord: int, Either left or right coord of a region
+        :param: orf_coords: list of lists of ints, coordinates of orf
+        to which the "regions" belong to.
+        :param: left_flag: bool, should be given as True if 
+        region_coord is the left coord of the region and false otherwise
+        :return: int, position of a complete codon which either at the beginning 
+        or at the end of a region
+        """
+
+        # If left_flag is true, increment nt position by 1, until an nt in 0th pos is found
+        # Otherwise increment nt position by -1, until an nt in 2nd pos is found
+        if left_flag:
+            pos, inc = 0, 1
+        else:
+            pos, inc = 2, -1
+
+        nt = self.nt_sequence[region_coord]
+        for codon in nt.codons:
+            
+            # Filter out the codon that doesn't belong to orf_coords
+            if codon.orf['coords'] == orf_coords:
+                if codon.nts_in_codon.index(nt) == pos:
+                    return codon.pos_in_orf
+                else:
+                    return self.get_correct_codon(region_coord + inc, orf_coords, left_flag)
+
+    def find_overlaps(self, all_coords, regions, self_orf_coords):
+        """
+        Helper function for get_overlapping_info.
+        :param: all_coords: list of lists of ints, Start and end positions
+        of reading frames in seq to iterate over and check for overlap
+        :param: regions: list of lists of ints, Start and end positions 
+        of the region in query, which has to checked if it is overlapping 
+        with any of the other orfs
+        :param: self_orf_coords: list of lists of ints, coordinates of orf
+        to which the "regions" belong to.
+        :return: Overlapping regions and ORFs involved 
+        """
+        overlaps, codons = [], []
+        
+        # Iterate over all available orf coords
+        for coords_list in all_coords:
+            coords_str = re.findall(r'\d+', str(coords_list))
+            
+            # Iterate over single set of coords
+            # Single orf or one single part of spliced orf
+            for coords in coords_list:
+
+                # Iterate over region coords and check for overlap
+                for region in regions:
+                    orf_left, orf_right = coords
+                    region_left, region_right = region
+                    is_overlap = bool(set(range(orf_left, orf_right))
+                                    & set(range(region_left, region_right)))
+                    if is_overlap:
+
+                        # If not self orf, get overlap info, 
+                        # Else get codon info
+                        if coords_list != self_orf_coords:
+                            overlap = '_'.join(coords_str)
+                            if overlap not in overlaps:
+                                overlaps.append(overlap)
+                        else:
+                            codons.append([
+                                self.get_correct_codon(region_left, self_orf_coords),
+                                self.get_correct_codon(region_right, self_orf_coords, False)
+                            ])
+
+        return overlaps, codons
+
+    def get_overlapping_info(self, orfs, regions, all_coords):
+        """
+        Search for overlapping regions between ORF coordinates
+        :param: orfs: dict, dictionary containing information about
+        orf locations, dn_values, ds_values, and orf_maps
+        :param: regions: dict, co-ordinates and lengths of regions keyed
+        by orf map tuples.
+        :param: all_coords: list, list of lists from all 'coords' keys in orfs
+        :return: data: dict, Overlapping regions and ORFs involved 
+        """
+        data = {}
+        
+        for strand in orfs.keys():
+            orfs_list = orfs[strand]
+
+            for orf_dict in orfs_list:
+                coords_list, mapping = orf_dict['coords'], orf_dict['orf_map']
+                orf_coords = '_'.join(re.findall(r'\d+', str(coords_list)))
+                data[orf_coords] = {}
+
+                for region_map in regions.keys():
+                    is_mapped = (np.array(mapping) * np.array(region_map)).any()
+                    if is_mapped:
+                        region_coords = regions[region_map]['coords']
+                        overlaps, codons = self.find_overlaps(all_coords,
+                                                              region_coords,
+                                                              coords_list)
+                        data[orf_coords][str(region_coords)] = {
+                            'overlaps_with': overlaps,
+                            'len': regions[region_map]['len'],
+                            'codons': codons
+                        }
+
+        return data
 
 
 class Nucleotide:
@@ -595,10 +749,7 @@ class Nucleotide:
     def add_codon(self, codon):
         self.codons.append(codon)
 
-    def set_mutation_rate(self, mutation_rate):
-        self.mutation_rate = mutation_rate
-
-    def get_mutation_rate(self):
+    def set_mutation_rate(self):
         total_rate = 0
         for mutation_rate in self.rates.values():
             if mutation_rate:
@@ -611,21 +762,26 @@ class Codon:
     Stores information about the frameshift, ORF, and pointers to 3 Nucleotide objects
     """
 
-    def __init__(self, frame, orf, nts_in_codon):
+    def __init__(self, frame, orf, nts_in_codon, pos_in_orf):
         """
         Create a Codon
         :param frame:  str, the reading frame (+0, +1, +2, -0, -1, -2)
         :param orf:  tuple, containing the reading frame and the coordinates of the orf
         :param nts_in_codon:  a list of pointers to the Nucleotides in the Codon
+        :paran pos_in_orf: int, position of the codon in the open reading frame
         """
         self.frame = frame
         self.orf = orf
         self.nts_in_codon = nts_in_codon  # list of Nucleotide objects in the Codon
         self.dn, self.ds = self.select_dn_ds()  # Asign non-syn mutation rate 
         self.omega = self.dn/self.ds
+        self.pos_in_orf = pos_in_orf
 
     def __repr__(self):
         return ''.join(str(nt) for nt in self.nts_in_codon)
+
+    def __getitem__(self, index):
+        return self.nts_in_codon[index]
 
     def nt_in_pos(self, query_nt):
         """

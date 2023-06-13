@@ -11,7 +11,7 @@ from tqdm import tqdm
 
 NUCLEOTIDES = ['A', 'C', 'G', 'T']
 
-def is_stop(to_nt, from_nt):
+def is_stop(to_nt, from_nt): # pragma: no cover
     """
     Check if a STOP codon is being introduced in the sequence
     """
@@ -141,21 +141,12 @@ class SimulateOnBranch:
 
         return key
 
-    def sum_rates(self):
-        """
-        Calculate the total mutation rate of sequence
-        :return: the sum of the mutation rates
-        """
-        total_rate = sum([nt.mutation_rate for nt in iter(self.sequence.get_sequence())])
-        return total_rate
-
-    def mutate_on_branch(self):
+    def mutate_on_branch(self, instant_rate):
         """
         Simulate molecular evolution in sequence given a branch length
         :return: the mutated sequence
         """
         times_sum = 0
-        instant_rate = self.sum_rates()
 
         while True:
             # Draw a time at which mutation occurs according to mutation rates
@@ -253,9 +244,10 @@ class SimulateOnTree:
         node_path = self.phylo_tree.get_path(child_clade)
         return node_path[-2] if len(node_path) > 1 else self.phylo_tree.root
 
-    def traverse_tree(self):
+    def traverse_tree(self, th):
         """
         Mutate a sequence along a phylogeny by traversing it in level-order
+        :param th: int, threshold for maximum number of mutations per branch before killing process
         :return phylo_tree: A Phylo tree with Clade objects annotated with sequences.
         """
         # Assign root_seq to root Clade
@@ -263,7 +255,7 @@ class SimulateOnTree:
         root = self.phylo_tree.root
         clades = self.phylo_tree.find_clades(order='level')
         number_of_clades = sum(1 for _ in clades)
-
+        
         with tqdm(total=number_of_clades - 1, unit='clades') as pbar:
             pbar.set_description("Traversing tree")
             
@@ -276,21 +268,24 @@ class SimulateOnTree:
 
                 # Create a deep copy of the parent sequence
                 parent_sequence = copy.deepcopy(parent.sequence)
+                instant_rate = parent_sequence.get_instant_rate()
+                
+                if th and (clade.branch_length * instant_rate) > th:
+                    raise TooManyEventsError(instant_rate, clade)
 
                 # Mutate sequence and store it on clade
-                # print("Simulating on Branch", clade)
                 simulation = SimulateOnBranch(parent_sequence, clade.branch_length)
-                clade.sequence = simulation.mutate_on_branch()
+                clade.sequence = simulation.mutate_on_branch(instant_rate)
             
                 pbar.update(1)
 
         return self.phylo_tree
 
-    def get_alignment(self, outfile=None):
+    def get_alignment(self, outfile=None, th=None):
         """
         Iterates over tips (terminal nodes) of tree and returns sequence
         """
-        final_tree = self.traverse_tree()
+        final_tree = self.traverse_tree(th)
 
         if outfile is not None:
             with open(outfile, 'w+') as out_handle:
@@ -300,3 +295,23 @@ class SimulateOnTree:
             for clade in final_tree.get_terminals():
                 pass
                 print(">{} \n{}".format(clade, clade.sequence))
+
+class TooManyEventsError(Exception):
+    """Exception raised when there are too many events in a branch
+    """
+
+    def __init__(self, instant_rate, clade,
+                message="Number of events is too high for branch "):
+        
+        self.instant_rate = instant_rate
+        self.clade = clade
+        branch_length = clade.branch_length
+        n_events = clade.branch_length * instant_rate
+        self.message = '\n'.join([
+            message + str(self.clade),
+            f"Instant rate: {self.instant_rate}",
+            f"Branch length: {branch_length}",
+            f"Number of events: {n_events}"
+        ])
+
+        super().__init__(self.message)
